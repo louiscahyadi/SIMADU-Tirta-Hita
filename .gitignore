@@ -1,0 +1,45 @@
+### Dependencies
+node_modules/
+
+### Next.js output
+.next/
+out/
+.vercel/
+
+### Build caches
+.cache/
+.turbo/
+
+### Testing and coverage
+coverage/
+
+### TypeScript
+*.tsbuildinfo
+
+### Environment files
+.env
+.env.*
+!.env.example
+
+### Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+### OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+### Prisma local databases
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+
+### Misc
+dist/
+*.local

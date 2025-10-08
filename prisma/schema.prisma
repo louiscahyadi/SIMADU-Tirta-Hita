@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ServiceRequest {
+  id                 String   @id @default(cuid())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  customerName       String
+  address            String
+  serviceNumber      String?  // No. S.L.
+  phone              String?
+
+  receivedAt         DateTime? // DITERIMA Hari/Tgl + Jam
+  receivedBy         String?   // Petugas Jaga
+
+  handledAt          DateTime? // DIKERJAKAN OLEH Hari/Tgl + Jam
+  handlerName        String?   // Petugas Penanggulangan
+
+  inspectedAt        DateTime?
+  inspectorName      String?
+
+  reasons            String?   // JSON string of reasons
+  otherReason        String?   // Lain-lain
+  actionTaken        String?   // Tindakan yang dilakukan (ringkas)
+
+  serviceCostBy      String?   // PERUMDA AM | Langganan
+
+  handoverReceiver   String?   // Yang Menerima (BAP mini inside form)
+  handoverCustomer   String?   // Nama Pelanggan
+  handoverAt         DateTime? // Hari/Tanggal penyerahan
+
+  // Relations
+  workOrder          WorkOrder?
+  complaint          Complaint? @relation(name: "ComplaintToServiceRequest")
+}
+
+model WorkOrder {
+  id                 String   @id @default(cuid())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  reportDate         DateTime? // Lap. Hari/Tgl
+  number             String?   // No
+  handledDate        DateTime? // Hari/Tgl. ditangani
+
+  reporterName       String?
+  handlingTime       String?
+  disturbanceLocation String?
+  disturbanceType    String?
+
+  city               String?   // e.g., Singaraja
+  cityDate           DateTime?
+  executorName       String?
+  team               String?
+
+  // Relations
+  serviceRequestId   String?   @unique
+  serviceRequest     ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
+  repairReport       RepairReport?
+  complaint          Complaint? @relation(name: "ComplaintToWorkOrder")
+}
+
+model RepairReport {
+  id                 String   @id @default(cuid())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  actions            String?  // JSON string of actions
+  otherActions       String?
+
+  notHandledReasons  String?  // JSON string of reasons
+  otherNotHandled    String?
+
+  city               String?
+  cityDate           DateTime?
+
+  executorName       String?
+  team               String?
+  authorizedBy       String? // Ka Sub Bag / An.Ka.Bag
+
+  // Relations
+  workOrderId        String?  @unique
+  workOrder          WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
+  complaint          Complaint? @relation(name: "ComplaintToRepairReport")
+}
+
+model Complaint {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  customerName     String
+  address          String
+  mapsLink         String?
+  connectionNumber String? // No Sambungan Pelanggan (No. SL)
+  phone            String?
+  complaintText    String   // Keluhan/Pengaduan (deskripsi bebas)
+  category         String   // Kategori pengaduan dari daftar pilihan
+  processedAt      DateTime?
+
+  // Optional linkage to processing chain
+  serviceRequestId String? @unique
+  workOrderId      String? @unique
+  repairReportId   String? @unique
+
+  serviceRequest   ServiceRequest? @relation(name: "ComplaintToServiceRequest", fields: [serviceRequestId], references: [id], onDelete: SetNull)
+  workOrder        WorkOrder?      @relation(name: "ComplaintToWorkOrder", fields: [workOrderId], references: [id], onDelete: SetNull)
+  repairReport     RepairReport?   @relation(name: "ComplaintToRepairReport", fields: [repairReportId], references: [id], onDelete: SetNull)
+}

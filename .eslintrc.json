@@ -1,0 +1,20 @@
+{
+  "extends": ["next/core-web-vitals", "prettier"],
+  "plugins": ["unused-imports", "import"],
+  "rules": {
+    "unused-imports/no-unused-imports": "error",
+    "import/order": [
+      "warn",
+      {
+        "newlines-between": "always",
+        "alphabetize": { "order": "asc", "caseInsensitive": true },
+        "groups": [
+          ["builtin", "external"],
+          ["internal"],
+          ["parent", "sibling", "index"],
+          ["object", "type"]
+        ]
+      }
+    ]
+  }
+}

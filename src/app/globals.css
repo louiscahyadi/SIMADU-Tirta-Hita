@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900;
+}
+
+.container {
+  @apply max-w-6xl mx-auto px-4;
+}
+
+.card {
+  @apply rounded-lg bg-white shadow border border-gray-200;
+}
+
+.label {
+  @apply text-sm font-medium text-gray-700;
+}
+
+.input {
+  @apply w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500;
+}
+
+.checkbox {
+  @apply h-4 w-4 text-blue-600 border-gray-300 rounded;
+}
+
+.button {
+  @apply inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60;
+}
+
+/* New: standardized black button */
+@layer components {
+  .btn {
+    @apply inline-flex items-center gap-2 rounded-md bg-black px-4 py-2 text-white hover:bg-gray-800 disabled:opacity-60;
+  }
+  .btn-outline {
+    @apply inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-800 hover:bg-gray-100 disabled:opacity-60;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 rounded-md bg-transparent px-4 py-2 text-gray-800 hover:bg-gray-100 disabled:opacity-60;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+}
+
+/* Sticky table header helper */
+.table-sticky thead th {
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 1;
+}
+
+/* Print-specific styles */
+@media print {
+  header,
+  nav,
+  .filter-bar,
+  .pagination,
+  .btn-ekspor {
+    display: none !important;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: #fff;
+  }
+  .card {
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+}
