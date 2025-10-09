@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { entityLabel } from "@/lib/uiLabels";
 
 export const dynamic = "force-dynamic";
 
@@ -133,7 +134,7 @@ export default async function RingkasanPage() {
               Lihat Permintaan Service
             </Link>
             <Link className="btn-outline" href="/daftar-data?tab=workorder">
-              Lihat SPK
+              Lihat Surat Perintah Kerja
             </Link>
           </div>
         </div>
@@ -150,10 +151,10 @@ export default async function RingkasanPage() {
             Permintaan Service
           </Link>
           <Link className="btn-outline" href="/daftar-data?tab=workorder">
-            SPK
+            Surat Perintah Kerja
           </Link>
           <Link className="btn-outline" href="/daftar-data?tab=repair">
-            BA Perbaikan
+            Berita Acara
           </Link>
         </div>
       </div>
@@ -184,9 +185,13 @@ export default async function RingkasanPage() {
           value={complaintsProcessed}
           href="/daftar-data?tab=complaint&status=processed"
         />
-        <Card title="Permintaan Service" value={srCount} href="/daftar-data?tab=service" />
-        <Card title="Surat Perintah Kerja" value={woCount} href="/daftar-data?tab=workorder" />
-        <Card title="Berita Acara" value={rrCount} href="/daftar-data?tab=repair" />
+        <Card
+          title={entityLabel("serviceRequest")}
+          value={srCount}
+          href="/daftar-data?tab=service"
+        />
+        <Card title={entityLabel("workOrder")} value={woCount} href="/daftar-data?tab=workorder" />
+        <Card title={entityLabel("repairReport")} value={rrCount} href="/daftar-data?tab=repair" />
       </div>
 
       <Actions />
@@ -236,7 +241,7 @@ export default async function RingkasanPage() {
                       <td className="px-3 py-2 whitespace-nowrap">
                         {role === "admin" || role === "humas" ? (
                           <Link className="btn-outline btn-sm" href={href}>
-                            Mulai SR
+                            Buat Permintaan Service
                           </Link>
                         ) : (
                           <span className="text-gray-400">-</span>
@@ -262,7 +267,9 @@ export default async function RingkasanPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="card p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">SR tanpa SPK (5 terbaru)</h3>
+              <h3 className="text-lg font-semibold">
+                Permintaan Service tanpa Surat Perintah Kerja (5 terbaru)
+              </h3>
               <Link
                 className="text-blue-700 hover:underline text-sm"
                 href="/daftar-data?tab=service"
@@ -298,7 +305,7 @@ export default async function RingkasanPage() {
                         <td className="px-3 py-2 whitespace-nowrap">
                           {role === "admin" || role === "distribusi" ? (
                             <Link className="btn-outline btn-sm" href={href}>
-                              Buat SPK
+                              Buat Surat Perintah Kerja
                             </Link>
                           ) : (
                             <span className="text-gray-400">-</span>
@@ -320,7 +327,9 @@ export default async function RingkasanPage() {
           </div>
           <div className="card p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">SPK tanpa BA (5 terbaru)</h3>
+              <h3 className="text-lg font-semibold">
+                Surat Perintah Kerja tanpa Berita Acara (5 terbaru)
+              </h3>
               <Link
                 className="text-blue-700 hover:underline text-sm"
                 href="/daftar-data?tab=workorder"
@@ -359,7 +368,7 @@ export default async function RingkasanPage() {
                         <td className="px-3 py-2 whitespace-nowrap">
                           {role === "admin" || role === "distribusi" ? (
                             <Link className="btn-outline btn-sm" href={href}>
-                              Buat BA
+                              Buat Berita Acara
                             </Link>
                           ) : (
                             <span className="text-gray-400">-</span>
