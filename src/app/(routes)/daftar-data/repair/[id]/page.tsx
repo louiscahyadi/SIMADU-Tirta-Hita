@@ -76,7 +76,7 @@ export default async function RepairDetail({ params }: PageProps) {
           { label: "Beranda", href: "/" },
           { label: "Daftar Data", href: "/daftar-data" },
           { label: "Berita Acara Perbaikan", href: "/daftar-data?tab=repair" },
-          { label: `BA: ${rr.city ?? id}` },
+          { label: `Berita Acara: ${rr.city ?? id}` },
         ]}
       />
       <div className="flex items-center justify-between">
@@ -111,19 +111,19 @@ export default async function RepairDetail({ params }: PageProps) {
         <div className="flex items-center gap-2">
           {srEntity ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/service/${srEntity.id}`}>
-              SR
+              Permintaan Service
             </Link>
           ) : (
-            <span className="text-gray-400">SR -</span>
+            <span className="text-gray-400">Permintaan Service -</span>
           )}
           {wo ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${wo.id}`}>
-              WO
+              Surat Perintah Kerja
             </Link>
           ) : (
-            <span className="text-gray-400">WO -</span>
+            <span className="text-gray-400">Surat Perintah Kerja -</span>
           )}
-          <span className="btn-outline btn-sm">RR</span>
+          <span className="btn-outline btn-sm">Berita Acara</span>
           {cFromRr ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/complaint/${cFromRr.id}`}>
               Complaint

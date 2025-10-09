@@ -62,7 +62,7 @@ export default async function ServiceDetail({ params }: PageProps) {
           { label: "Daftar Data", href: "/daftar-data" },
           { label: "Permintaan Service", href: "/daftar-data?tab=service" },
           {
-            label: `SR: ${service.serviceNumber ?? service.customerName ?? id}`,
+            label: `Permintaan Service: ${service.serviceNumber ?? service.customerName ?? id}`,
           },
         ]}
       />
@@ -98,20 +98,22 @@ export default async function ServiceDetail({ params }: PageProps) {
       <div className="card p-4 text-sm">
         <div className="font-medium mb-2">Keterkaitan</div>
         <div className="flex items-center gap-2">
-          <span className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700">SR</span>
+          <span className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700">
+            Permintaan Service
+          </span>
           {wo ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${wo.id}`}>
-              WO
+              Surat Perintah Kerja
             </Link>
           ) : (
-            <span className="text-gray-400">WO -</span>
+            <span className="text-gray-400">Surat Perintah Kerja -</span>
           )}
           {rr ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${rr.id}`}>
-              RR
+              Berita Acara
             </Link>
           ) : (
-            <span className="text-gray-400">RR -</span>
+            <span className="text-gray-400">Berita Acara -</span>
           )}
         </div>
       </div>

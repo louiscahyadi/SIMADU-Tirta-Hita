@@ -57,7 +57,7 @@ export default async function WorkOrderDetail({ params }: PageProps) {
           { label: "Beranda", href: "/" },
           { label: "Daftar Data", href: "/daftar-data" },
           { label: "Surat Perintah Kerja", href: "/daftar-data?tab=workorder" },
-          { label: `SPK: ${wo.number ?? id}` },
+          { label: `Surat Perintah Kerja: ${wo.number ?? id}` },
         ]}
       />
       <div className="flex items-center justify-between">
@@ -91,18 +91,18 @@ export default async function WorkOrderDetail({ params }: PageProps) {
         <div className="flex items-center gap-2">
           {sr ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/service/${sr.id}`}>
-              SR
+              Permintaan Service
             </Link>
           ) : (
-            <span className="text-gray-400">SR -</span>
+            <span className="text-gray-400">Permintaan Service -</span>
           )}
-          <span className="btn-outline btn-sm">WO</span>
+          <span className="btn-outline btn-sm">Surat Perintah Kerja</span>
           {rr ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${rr.id}`}>
-              RR
+              Berita Acara
             </Link>
           ) : (
-            <span className="text-gray-400">RR -</span>
+            <span className="text-gray-400">Berita Acara -</span>
           )}
           {cFromWo ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/complaint/${cFromWo.id}`}>

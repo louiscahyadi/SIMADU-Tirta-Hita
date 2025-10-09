@@ -91,24 +91,24 @@ export default async function ComplaintDetail({ params }: { params: { id: string
               className="btn-outline btn-sm"
               href={`/daftar-data/service/${c.serviceRequestId}`}
             >
-              SR
+              Permintaan Service
             </Link>
           ) : (
-            <span className="text-gray-400">SR -</span>
+            <span className="text-gray-400">Permintaan Service -</span>
           )}
           {c.workOrderId ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${c.workOrderId}`}>
-              WO
+              Surat Perintah Kerja
             </Link>
           ) : (
-            <span className="text-gray-400">WO -</span>
+            <span className="text-gray-400">Surat Perintah Kerja -</span>
           )}
           {c.repairReportId ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${c.repairReportId}`}>
-              RR
+              Berita Acara
             </Link>
           ) : (
-            <span className="text-gray-400">RR -</span>
+            <span className="text-gray-400">Berita Acara -</span>
           )}
         </div>
       </div>
