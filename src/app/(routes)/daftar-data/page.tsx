@@ -707,13 +707,13 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <span className="inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">
-                    SR
+                    Permintaan Service
                   </span>
                   <span>Permintaan Service dibuat</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <span className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
-                    WO
+                    Surat Perintah Kerja
                   </span>
                   <span>Surat Perintah Kerja dibuat</span>
                 </span>
@@ -792,20 +792,24 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                               title: fmt(createdAt) ? `Diterima: ${fmt(createdAt)}` : undefined,
                               color: "yellow",
                             });
-                            // Step 2: SR dibuat
+                            // Step 2: Permintaan Service dibuat
                             steps.push({
                               key: "sr",
-                              label: "SR",
+                              label: "Permintaan Service",
                               active: !!c.serviceRequestId && !c.workOrderId && !c.repairReportId,
-                              title: c.serviceRequestId ? `SR: ${c.serviceRequestId}` : undefined,
+                              title: c.serviceRequestId
+                                ? `Permintaan Service: ${c.serviceRequestId}`
+                                : undefined,
                               color: "indigo",
                             });
-                            // Step 3: SPK dibuat
+                            // Step 3: Surat Perintah Kerja dibuat
                             steps.push({
                               key: "wo",
-                              label: "WO",
+                              label: "Surat Perintah Kerja",
                               active: !!c.workOrderId && !c.repairReportId,
-                              title: c.workOrderId ? `WO: ${c.workOrderId}` : undefined,
+                              title: c.workOrderId
+                                ? `Surat Perintah Kerja: ${c.workOrderId}`
+                                : undefined,
                               color: "blue",
                             });
                             // Step 4: BA Perbaikan selesai
@@ -813,7 +817,9 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                               key: "rr",
                               label: "Selesai",
                               active: !!c.repairReportId,
-                              title: c.repairReportId ? `BA: ${c.repairReportId}` : undefined,
+                              title: c.repairReportId
+                                ? `Berita Acara: ${c.repairReportId}`
+                                : undefined,
                               color: "green",
                             });
 
@@ -873,23 +879,45 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 )}
                                 {achieved === "sr" && (
                                   <>
-                                    <Chip label="SR" color="indigo" title={`Terhubung SR`} solid />
+                                    <Chip
+                                      label="Permintaan Service"
+                                      color="indigo"
+                                      title={`Terhubung Permintaan Service`}
+                                      solid
+                                    />
                                   </>
                                 )}
                                 {achieved === "wo" && (
                                   <>
-                                    <Chip label="SR" color="indigo" title={`Terhubung SR`} />
-                                    <Chip label="WO" color="blue" title={`Terhubung WO`} solid />
+                                    <Chip
+                                      label="Permintaan Service"
+                                      color="indigo"
+                                      title={`Terhubung Permintaan Service`}
+                                    />
+                                    <Chip
+                                      label="Surat Perintah Kerja"
+                                      color="blue"
+                                      title={`Terhubung Surat Perintah Kerja`}
+                                      solid
+                                    />
                                   </>
                                 )}
                                 {achieved === "rr" && (
                                   <>
-                                    <Chip label="SR" color="indigo" title={`Terhubung SR`} />
-                                    <Chip label="WO" color="blue" title={`Terhubung WO`} />
+                                    <Chip
+                                      label="Permintaan Service"
+                                      color="indigo"
+                                      title={`Terhubung Permintaan Service`}
+                                    />
+                                    <Chip
+                                      label="Surat Perintah Kerja"
+                                      color="blue"
+                                      title={`Terhubung Surat Perintah Kerja`}
+                                    />
                                     <Chip
                                       label="Selesai"
                                       color="green"
-                                      title={`BA Perbaikan`}
+                                      title={`Berita Acara Perbaikan`}
                                       solid
                                     />
                                   </>
@@ -1083,10 +1111,10 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   <Link
                                     className="rounded bg-blue-50 px-2 py-0.5 text-blue-700 hover:underline"
                                     href={`/daftar-data/workorder/${woId}`}
-                                    title="Lihat SPK"
-                                    aria-label="Lihat SPK"
+                                    title="Lihat Surat Perintah Kerja"
+                                    aria-label="Lihat Surat Perintah Kerja"
                                   >
-                                    WO
+                                    Surat Perintah Kerja
                                   </Link>
                                   <span
                                     role="tooltip"
@@ -1103,10 +1131,10 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                           <Link
                                             className="rounded bg-green-50 px-2 py-0.5 text-green-700 hover:underline"
                                             href={`/daftar-data/repair/${rrId}`}
-                                            title="Lihat BA Perbaikan"
-                                            aria-label="Lihat BA Perbaikan"
+                                            title="Lihat Berita Acara"
+                                            aria-label="Lihat Berita Acara"
                                           >
-                                            RR
+                                            Berita Acara
                                           </Link>
                                           <span
                                             role="tooltip"
@@ -1342,7 +1370,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                           title="Lihat Permintaan Service"
                                           aria-label="Lihat Permintaan Service"
                                         >
-                                          SR
+                                          Permintaan Service
                                         </Link>
                                       ) : null;
                                     })()
@@ -1351,10 +1379,10 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   <Link
                                     className="rounded bg-green-50 px-2 py-0.5 text-green-700 hover:underline"
                                     href={`/daftar-data/repair/${woToRr.get(w.id)}`}
-                                    title="Lihat BA Perbaikan"
-                                    aria-label="Lihat BA Perbaikan"
+                                    title="Lihat Berita Acara"
+                                    aria-label="Lihat Berita Acara"
                                   >
-                                    RR
+                                    Berita Acara
                                   </Link>
                                 ) : null}
                               </span>
@@ -1557,9 +1585,9 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   <Link
                                     className="rounded bg-blue-50 px-2 py-0.5 text-blue-700 hover:underline"
                                     href={`/daftar-data/workorder/${woId}`}
-                                    title="Lihat SPK"
+                                    title="Lihat Surat Perintah Kerja"
                                   >
-                                    WO
+                                    Surat Perintah Kerja
                                   </Link>
                                 ) : null}
                                 {hasSr ? (
@@ -1568,7 +1596,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                     href={`/daftar-data/service/${woToSr.get(woId!)}`}
                                     title="Lihat Permintaan Service"
                                   >
-                                    SR
+                                    Permintaan Service
                                   </Link>
                                 ) : null}
                               </span>
