@@ -17,7 +17,7 @@ const ENTITY_LABELS: Record<EntityType, LabelInfo> = {
   serviceRequest: {
     singular: "Permintaan Service",
     plural: "Permintaan Service",
-    abbr: "SR",
+    abbr: "PS",
   },
   workOrder: {
     singular: "Surat Perintah Kerja",
@@ -36,6 +36,17 @@ export type LabelOptions = {
   withAbbr?: boolean; // append abbreviation in parentheses e.g., "Permintaan Service (SR)"
 };
 
+export type LabelMode = "full" | "abbr";
+let DEFAULT_MODE: LabelMode = "full";
+
+export function setUiLabelMode(mode: LabelMode) {
+  DEFAULT_MODE = mode;
+}
+
+export function getUiLabelMode(): LabelMode {
+  return DEFAULT_MODE;
+}
+
 export function entityLabel(type: EntityType, opts?: LabelOptions): string {
   const info = ENTITY_LABELS[type];
   const base = opts?.plural ? info.plural : info.singular;
@@ -45,6 +56,16 @@ export function entityLabel(type: EntityType, opts?: LabelOptions): string {
 
 export function entityAbbr(type: EntityType): string | undefined {
   return ENTITY_LABELS[type].abbr;
+}
+
+// Unified accessor that respects a global/default mode and optional override
+export function entityText(
+  type: EntityType,
+  opts?: { mode?: LabelMode; plural?: boolean },
+): string {
+  const mode = opts?.mode ?? DEFAULT_MODE;
+  if (mode === "abbr") return entityAbbr(type) ?? entityLabel(type, { plural: opts?.plural });
+  return entityLabel(type, { plural: opts?.plural });
 }
 
 // Consistent chart styles per entity (used by analytics charts)
