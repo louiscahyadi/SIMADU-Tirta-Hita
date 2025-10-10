@@ -6,6 +6,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { entityLabel, entityAbbr } from "@/lib/uiLabels";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +18,10 @@ type PageProps = {
 type TabId = "complaint" | "service" | "workorder" | "repair";
 
 const tabs: Array<{ id: TabId; label: string }> = [
-  { id: "complaint", label: "Pengaduan" },
-  { id: "service", label: "Permintaan Service" },
-  { id: "workorder", label: "Surat Perintah Kerja" },
-  { id: "repair", label: "Berita Acara Perbaikan" },
+  { id: "complaint", label: entityLabel("complaint") },
+  { id: "service", label: entityLabel("serviceRequest") },
+  { id: "workorder", label: entityLabel("workOrder") },
+  { id: "repair", label: entityLabel("repairReport") },
 ];
 
 function joinJsonArray(value?: string | null): string {
@@ -691,7 +692,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
         {active === "complaint" && (
           <div id="print-area" className="pb-2">
             <div className="mb-3">
-              <div className="font-medium">Pengaduan</div>
+              <div className="font-medium">{entityLabel("complaint")}</div>
               <div className="text-sm text-gray-500">
                 Menampilkan {complaints.length} dari {totalCount} entri
               </div>
@@ -703,25 +704,25 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                   <span className="inline-block rounded-full bg-yellow-50 px-2 py-0.5 text-yellow-700">
                     Baru
                   </span>
-                  <span>Pengaduan baru diterima</span>
+                  <span>{entityLabel("complaint")} baru diterima</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <span className="inline-block rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">
-                    Permintaan Service
+                    {entityAbbr("serviceRequest")}
                   </span>
-                  <span>Permintaan Service dibuat</span>
+                  <span>{entityLabel("serviceRequest")} dibuat</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <span className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-blue-700">
-                    Surat Perintah Kerja
+                    {entityAbbr("workOrder")}
                   </span>
-                  <span>Surat Perintah Kerja dibuat</span>
+                  <span>{entityLabel("workOrder")} dibuat</span>
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <span className="inline-block rounded-full bg-green-600 px-2 py-0.5 text-white">
-                    Selesai
+                    BA
                   </span>
-                  <span>Berita Acara Perbaikan selesai</span>
+                  <span>{entityLabel("repairReport")} selesai</span>
                 </span>
               </div>
             </div>
@@ -795,20 +796,20 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                             // Step 2: Permintaan Service dibuat
                             steps.push({
                               key: "sr",
-                              label: "Permintaan Service",
+                              label: entityLabel("serviceRequest"),
                               active: !!c.serviceRequestId && !c.workOrderId && !c.repairReportId,
                               title: c.serviceRequestId
-                                ? `Permintaan Service: ${c.serviceRequestId}`
+                                ? `${entityLabel("serviceRequest")}: ${c.serviceRequestId}`
                                 : undefined,
                               color: "indigo",
                             });
                             // Step 3: Surat Perintah Kerja dibuat
                             steps.push({
                               key: "wo",
-                              label: "Surat Perintah Kerja",
+                              label: entityLabel("workOrder"),
                               active: !!c.workOrderId && !c.repairReportId,
                               title: c.workOrderId
-                                ? `Surat Perintah Kerja: ${c.workOrderId}`
+                                ? `${entityLabel("workOrder")}: ${c.workOrderId}`
                                 : undefined,
                               color: "blue",
                             });
@@ -818,7 +819,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                               label: "Selesai",
                               active: !!c.repairReportId,
                               title: c.repairReportId
-                                ? `Berita Acara: ${c.repairReportId}`
+                                ? `${entityLabel("repairReport")}: ${c.repairReportId}`
                                 : undefined,
                               color: "green",
                             });
@@ -880,9 +881,12 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 {achieved === "sr" && (
                                   <>
                                     <Chip
-                                      label="Permintaan Service"
+                                      label={
+                                        entityAbbr("serviceRequest") ||
+                                        entityLabel("serviceRequest")
+                                      }
                                       color="indigo"
-                                      title={`Terhubung Permintaan Service`}
+                                      title={`Terhubung ${entityLabel("serviceRequest")}`}
                                       solid
                                     />
                                   </>
@@ -890,14 +894,17 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 {achieved === "wo" && (
                                   <>
                                     <Chip
-                                      label="Permintaan Service"
+                                      label={
+                                        entityAbbr("serviceRequest") ||
+                                        entityLabel("serviceRequest")
+                                      }
                                       color="indigo"
-                                      title={`Terhubung Permintaan Service`}
+                                      title={`Terhubung ${entityLabel("serviceRequest")}`}
                                     />
                                     <Chip
-                                      label="Surat Perintah Kerja"
+                                      label={entityAbbr("workOrder") || entityLabel("workOrder")}
                                       color="blue"
-                                      title={`Terhubung Surat Perintah Kerja`}
+                                      title={`Terhubung ${entityLabel("workOrder")}`}
                                       solid
                                     />
                                   </>
@@ -905,19 +912,22 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 {achieved === "rr" && (
                                   <>
                                     <Chip
-                                      label="Permintaan Service"
+                                      label={
+                                        entityAbbr("serviceRequest") ||
+                                        entityLabel("serviceRequest")
+                                      }
                                       color="indigo"
-                                      title={`Terhubung Permintaan Service`}
+                                      title={`Terhubung ${entityLabel("serviceRequest")}`}
                                     />
                                     <Chip
-                                      label="Surat Perintah Kerja"
+                                      label={entityAbbr("workOrder") || entityLabel("workOrder")}
                                       color="blue"
-                                      title={`Terhubung Surat Perintah Kerja`}
+                                      title={`Terhubung ${entityLabel("workOrder")}`}
                                     />
                                     <Chip
-                                      label="Selesai"
+                                      label={entityAbbr("repairReport") || "Selesai"}
                                       color="green"
-                                      title={`Berita Acara Perbaikan`}
+                                      title={entityLabel("repairReport")}
                                       solid
                                     />
                                   </>
@@ -1054,7 +1064,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
         {active === "service" && (
           <div id="print-area" className="pb-2">
             <div className="mb-3">
-              <div className="font-medium">Permintaan Service</div>
+              <div className="font-medium">{entityLabel("serviceRequest")}</div>
               <div className="text-sm text-gray-500">
                 Menampilkan {services.length} dari {totalCount} entri
               </div>
@@ -1111,16 +1121,16 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   <Link
                                     className="rounded bg-blue-50 px-2 py-0.5 text-blue-700 hover:underline"
                                     href={`/daftar-data/workorder/${woId}`}
-                                    title="Lihat Surat Perintah Kerja"
-                                    aria-label="Lihat Surat Perintah Kerja"
+                                    title={`Lihat ${entityLabel("workOrder")}`}
+                                    aria-label={`Lihat ${entityLabel("workOrder")}`}
                                   >
-                                    Surat Perintah Kerja
+                                    {entityLabel("workOrder")}
                                   </Link>
                                   <span
                                     role="tooltip"
                                     className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
                                   >
-                                    Lihat SPK
+                                    {`Lihat ${entityLabel("workOrder")}`}
                                   </span>
                                 </span>
                                 {hasRr
@@ -1131,16 +1141,16 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                           <Link
                                             className="rounded bg-green-50 px-2 py-0.5 text-green-700 hover:underline"
                                             href={`/daftar-data/repair/${rrId}`}
-                                            title="Lihat Berita Acara"
-                                            aria-label="Lihat Berita Acara"
+                                            title={`Lihat ${entityLabel("repairReport")}`}
+                                            aria-label={`Lihat ${entityLabel("repairReport")}`}
                                           >
-                                            Berita Acara
+                                            {entityLabel("repairReport")}
                                           </Link>
                                           <span
                                             role="tooltip"
                                             className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
                                           >
-                                            Lihat BA Perbaikan
+                                            {`Lihat ${entityLabel("repairReport")}`}
                                           </span>
                                         </span>
                                       ) : null;
@@ -1230,7 +1240,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 d="M3 7h18M3 12h12M3 17h8"
                               />
                             </svg>
-                            <div>Belum ada Permintaan Service.</div>
+                            <div>Belum ada {entityLabel("serviceRequest")}.</div>
                             <div className="flex items-center gap-2">
                               <Link className="btn-outline btn-sm" href={`?tab=service`}>
                                 Reset
@@ -1353,9 +1363,9 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                         <Link
                                           className="rounded bg-rose-50 px-2 py-0.5 text-rose-700 hover:underline"
                                           href={`/daftar-data/complaint/${cid}`}
-                                          title={`ID Pengaduan: ${cid}`}
+                                          title={`ID ${entityLabel("complaint")}: ${cid}`}
                                         >
-                                          Pengaduan
+                                          {entityLabel("complaint")}
                                         </Link>
                                       );
                                     })()
@@ -1367,10 +1377,10 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                         <Link
                                           className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700 hover:underline"
                                           href={`/daftar-data/service/${srId}`}
-                                          title="Lihat Permintaan Service"
-                                          aria-label="Lihat Permintaan Service"
+                                          title={`Lihat ${entityLabel("serviceRequest")}`}
+                                          aria-label={`Lihat ${entityLabel("serviceRequest")}`}
                                         >
-                                          Permintaan Service
+                                          {entityLabel("serviceRequest")}
                                         </Link>
                                       ) : null;
                                     })()
@@ -1379,10 +1389,10 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   <Link
                                     className="rounded bg-green-50 px-2 py-0.5 text-green-700 hover:underline"
                                     href={`/daftar-data/repair/${woToRr.get(w.id)}`}
-                                    title="Lihat Berita Acara"
-                                    aria-label="Lihat Berita Acara"
+                                    title={`Lihat ${entityLabel("repairReport")}`}
+                                    aria-label={`Lihat ${entityLabel("repairReport")}`}
                                   >
-                                    Berita Acara
+                                    {entityLabel("repairReport")}
                                   </Link>
                                 ) : null}
                               </span>
@@ -1450,7 +1460,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 d="M3 7h18M3 12h12M3 17h8"
                               />
                             </svg>
-                            <div>Belum ada Surat Perintah Kerja.</div>
+                            <div>Belum ada {entityLabel("workOrder")}.</div>
                             <div className="flex items-center gap-2">
                               <Link className="btn-outline btn-sm" href={`?tab=workorder`}>
                                 Reset
@@ -1574,9 +1584,9 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                         <Link
                                           className="rounded bg-rose-50 px-2 py-0.5 text-rose-700 hover:underline"
                                           href={`/daftar-data/complaint/${cid}`}
-                                          title={`ID Pengaduan: ${cid}`}
+                                          title={`ID ${entityLabel("complaint")}: ${cid}`}
                                         >
-                                          Pengaduan
+                                          {entityLabel("complaint")}
                                         </Link>
                                       );
                                     })()
@@ -1585,18 +1595,18 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   <Link
                                     className="rounded bg-blue-50 px-2 py-0.5 text-blue-700 hover:underline"
                                     href={`/daftar-data/workorder/${woId}`}
-                                    title="Lihat Surat Perintah Kerja"
+                                    title={`Lihat ${entityLabel("workOrder")}`}
                                   >
-                                    Surat Perintah Kerja
+                                    {entityLabel("workOrder")}
                                   </Link>
                                 ) : null}
                                 {hasSr ? (
                                   <Link
                                     className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700 hover:underline"
                                     href={`/daftar-data/service/${woToSr.get(woId!)}`}
-                                    title="Lihat Permintaan Service"
+                                    title={`Lihat ${entityLabel("serviceRequest")}`}
                                   >
-                                    Permintaan Service
+                                    {entityLabel("serviceRequest")}
                                   </Link>
                                 ) : null}
                               </span>
@@ -1647,7 +1657,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 d="M3 7h18M3 12h12M3 17h8"
                               />
                             </svg>
-                            <div>Belum ada Berita Acara Perbaikan.</div>
+                            <div>Belum ada {entityLabel("repairReport")}.</div>
                             <div className="flex items-center gap-2">
                               <Link
                                 className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
