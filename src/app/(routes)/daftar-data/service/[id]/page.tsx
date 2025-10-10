@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { prisma } from "@/lib/prisma";
+import { entityAbbr, entityLabel } from "@/lib/uiLabels";
 
 type PageProps = { params: { id: string } };
 
@@ -98,22 +99,25 @@ export default async function ServiceDetail({ params }: PageProps) {
       <div className="card p-4 text-sm">
         <div className="font-medium mb-2">Keterkaitan</div>
         <div className="flex items-center gap-2">
-          <span className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700">
-            Permintaan Service
+          <span
+            className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700"
+            title={entityLabel("serviceRequest")}
+          >
+            {entityAbbr("serviceRequest")}
           </span>
           {wo ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${wo.id}`}>
-              Surat Perintah Kerja
+              {entityLabel("workOrder")}
             </Link>
           ) : (
-            <span className="text-gray-400">Surat Perintah Kerja -</span>
+            <span className="text-gray-400">{entityLabel("workOrder")} -</span>
           )}
           {rr ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${rr.id}`}>
-              Berita Acara
+              {entityLabel("repairReport")}
             </Link>
           ) : (
-            <span className="text-gray-400">Berita Acara -</span>
+            <span className="text-gray-400">{entityLabel("repairReport")} -</span>
           )}
         </div>
       </div>
