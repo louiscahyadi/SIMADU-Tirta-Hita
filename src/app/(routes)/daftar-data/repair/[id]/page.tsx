@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { prisma } from "@/lib/prisma";
+import { entityAbbr, entityLabel } from "@/lib/uiLabels";
 
 type PageProps = { params: { id: string } };
 
@@ -111,19 +112,24 @@ export default async function RepairDetail({ params }: PageProps) {
         <div className="flex items-center gap-2">
           {srEntity ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/service/${srEntity.id}`}>
-              Permintaan Service
+              {entityLabel("serviceRequest")}
             </Link>
           ) : (
-            <span className="text-gray-400">Permintaan Service -</span>
+            <span className="text-gray-400">{entityLabel("serviceRequest")} -</span>
           )}
           {wo ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${wo.id}`}>
-              Surat Perintah Kerja
+              {entityLabel("workOrder")}
             </Link>
           ) : (
-            <span className="text-gray-400">Surat Perintah Kerja -</span>
+            <span className="text-gray-400">{entityLabel("workOrder")} -</span>
           )}
-          <span className="btn-outline btn-sm">Berita Acara</span>
+          <span
+            className="rounded bg-green-50 px-2 py-0.5 text-green-700"
+            title={entityLabel("repairReport")}
+          >
+            {entityAbbr("repairReport")}
+          </span>
           {cFromRr ? (
             <Link className="btn-outline btn-sm" href={`/daftar-data/complaint/${cFromRr.id}`}>
               Complaint
