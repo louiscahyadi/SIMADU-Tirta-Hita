@@ -40,7 +40,14 @@ export async function middleware(req: NextRequest) {
   }
 
   // Public pages
-  const publicPaths = ["/", "/pengaduan", "/login", "/api/auth"];
+  const publicPaths = [
+    "/",
+    "/pengaduan",
+    "/login",
+    "/login/humas",
+    "/login/distribusi",
+    "/api/auth",
+  ];
   const isPublic =
     publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/")) ||
     pathname.startsWith("/_next") ||
@@ -68,7 +75,8 @@ export async function middleware(req: NextRequest) {
     const p = pathname;
     const allowHumas =
       role === "humas" &&
-      (p.startsWith("/daftar-data") ||
+      (p.startsWith("/humas") ||
+        p.startsWith("/daftar-data") ||
         p.startsWith("/ringkasan") ||
         p === "/" ||
         p.startsWith("/_next") ||
@@ -76,7 +84,8 @@ export async function middleware(req: NextRequest) {
         p.startsWith("/api/complaints"));
     const allowDistribusi =
       role === "distribusi" &&
-      (p.startsWith("/daftar-data") ||
+      (p.startsWith("/distribusi") ||
+        p.startsWith("/daftar-data") ||
         p.startsWith("/ringkasan") ||
         p === "/" ||
         p.startsWith("/_next") ||
@@ -86,6 +95,13 @@ export async function middleware(req: NextRequest) {
     if (allowHumas || allowDistribusi) {
       const resp = NextResponse.next();
       return applySecurityHeaders(req, resp, isApi);
+    }
+    // If already logged in and trying to access generic /login, route to role dashboard
+    if (p === "/login") {
+      const to =
+        role === "humas" ? "/humas" : role === "distribusi" ? "/distribusi" : "/daftar-data";
+      const redirect = NextResponse.redirect(new URL(to, req.url));
+      return applySecurityHeaders(req, redirect, isApi);
     }
   }
 
