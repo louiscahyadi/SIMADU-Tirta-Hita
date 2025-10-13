@@ -14,48 +14,43 @@ export async function POST(req: Request) {
   const raw = await req.json();
   const data = repairReportSchema.parse(raw);
   const parseDate = (v?: string) => (v ? new Date(v) : null);
-  const created = await prisma.repairReport.create({
-    data: {
-      actions: JSON.stringify(Array.isArray(data.actions) ? data.actions : []),
-      otherActions: data.otherActions ?? null,
-      notHandledReasons: JSON.stringify(
-        Array.isArray(data.notHandledReasons) ? data.notHandledReasons : [],
-      ),
-      otherNotHandled: data.otherNotHandled ?? null,
-      city: data.city ?? null,
-      cityDate: parseDate(data.cityDate) ?? undefined,
-      executorName: data.executorName ?? null,
-      team: data.team ?? null,
-      authorizedBy: data.authorizedBy ?? null,
-      ...(data.workOrderId ? { workOrder: { connect: { id: data.workOrderId } } } : {}),
-    },
-  });
-  // Best-effort: if this RR relates to a WO, and there is a complaint linked to that WO (or to SR behind it),
-  // link the complaint.repairReportId so the UI shows "Selesai".
-  if (data.workOrderId) {
-    try {
-      // Direct WO -> Complaint link
-      const res1 = await (prisma as any).complaint.updateMany({
+  const created = await prisma.$transaction(async (tx) => {
+    const rr = await tx.repairReport.create({
+      data: {
+        actions: JSON.stringify(Array.isArray(data.actions) ? data.actions : []),
+        otherActions: data.otherActions ?? null,
+        notHandledReasons: JSON.stringify(
+          Array.isArray(data.notHandledReasons) ? data.notHandledReasons : [],
+        ),
+        otherNotHandled: data.otherNotHandled ?? null,
+        city: data.city ?? null,
+        cityDate: parseDate(data.cityDate) ?? undefined,
+        executorName: data.executorName ?? null,
+        team: data.team ?? null,
+        authorizedBy: data.authorizedBy ?? null,
+        ...(data.workOrderId ? { workOrder: { connect: { id: data.workOrderId } } } : {}),
+      },
+    });
+    if (data.workOrderId) {
+      const res1 = await (tx as any).complaint.updateMany({
         where: { workOrderId: data.workOrderId, repairReportId: null },
-        data: { repairReportId: created.id, updatedAt: new Date() },
+        data: { repairReportId: rr.id, updatedAt: new Date() },
       });
       if ((res1?.count ?? 0) === 0) {
-        // Try via SR behind the WO
-        const wo = await prisma.workOrder.findUnique({
+        const wo = await tx.workOrder.findUnique({
           where: { id: data.workOrderId },
           select: { serviceRequestId: true },
         });
         if (wo?.serviceRequestId) {
-          await (prisma as any).complaint.updateMany({
+          await (tx as any).complaint.updateMany({
             where: { serviceRequestId: wo.serviceRequestId, repairReportId: null },
-            data: { repairReportId: created.id, updatedAt: new Date() },
+            data: { repairReportId: rr.id, updatedAt: new Date() },
           });
         }
       }
-    } catch {
-      // ignore linking errors; creation succeeded
     }
-  }
+    return rr;
+  });
   return NextResponse.json({
     ...created,
     actions: JSON.parse(created.actions ?? "[]"),
@@ -63,7 +58,9 @@ export async function POST(req: Request) {
   });
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const list = await prisma.repairReport.findMany({
     orderBy: { createdAt: "desc" },
   });
