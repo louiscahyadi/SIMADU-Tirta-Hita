@@ -14,40 +14,39 @@ export async function POST(req: Request) {
   const raw = await req.json();
   const data = workOrderSchema.parse(raw);
   const parseDate = (v?: string) => (v ? new Date(v) : null);
-  const created = await prisma.workOrder.create({
-    data: {
-      reportDate: parseDate(data.reportDate) ?? undefined,
-      number: data.number ?? null,
-      handledDate: parseDate(data.handledDate) ?? undefined,
-      reporterName: data.reporterName ?? null,
-      handlingTime: data.handlingTime ?? null,
-      disturbanceLocation: data.disturbanceLocation ?? null,
-      disturbanceType: data.disturbanceType ?? null,
-      city: data.city ?? null,
-      cityDate: parseDate(data.cityDate) ?? undefined,
-      executorName: data.executorName ?? null,
-      team: data.team ?? null,
-      ...(data.serviceRequestId
-        ? { serviceRequest: { connect: { id: data.serviceRequestId } } }
-        : {}),
-    },
-  });
-  // Best-effort: automatically link this WO back to a Complaint (if the flow lost complaintId)
-  // We update the complaint where serviceRequestId matches, but only if workOrderId is still null.
-  if (data.serviceRequestId) {
-    try {
-      await (prisma as any).complaint.updateMany({
+  const created = await prisma.$transaction(async (tx) => {
+    const wo = await tx.workOrder.create({
+      data: {
+        reportDate: parseDate(data.reportDate) ?? undefined,
+        number: data.number ?? null,
+        handledDate: parseDate(data.handledDate) ?? undefined,
+        reporterName: data.reporterName ?? null,
+        handlingTime: data.handlingTime ?? null,
+        disturbanceLocation: data.disturbanceLocation ?? null,
+        disturbanceType: data.disturbanceType ?? null,
+        city: data.city ?? null,
+        cityDate: parseDate(data.cityDate) ?? undefined,
+        executorName: data.executorName ?? null,
+        team: data.team ?? null,
+        ...(data.serviceRequestId
+          ? { serviceRequest: { connect: { id: data.serviceRequestId } } }
+          : {}),
+      },
+    });
+    if (data.serviceRequestId) {
+      await (tx as any).complaint.updateMany({
         where: { serviceRequestId: data.serviceRequestId, workOrderId: null },
-        data: { workOrderId: created.id, updatedAt: new Date(), processedAt: new Date() },
+        data: { workOrderId: wo.id, updatedAt: new Date(), processedAt: new Date() },
       });
-    } catch {
-      // ignore linking errors; creation succeeded
     }
-  }
+    return wo;
+  });
   return NextResponse.json(created);
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const list = await prisma.workOrder.findMany({
     orderBy: { createdAt: "desc" },
   });
