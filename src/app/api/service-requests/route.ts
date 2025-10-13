@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { z } from "zod";
 
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
       handlerName: data.handlerName ?? null,
       inspectedAt: parseDate(data.inspectedAt) ?? undefined,
       inspectorName: data.inspectorName ?? null,
-      reasons: JSON.stringify(Array.isArray(data.reasons) ? data.reasons : []),
+      reasons: Array.isArray(data.reasons) ? (data.reasons as any) : [],
       otherReason: data.otherReason ?? null,
       actionTaken: data.actionTaken ?? null,
       serviceCostBy: data.serviceCostBy ?? null,
@@ -40,7 +41,6 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ...created,
-    reasons: JSON.parse(created.reasons ?? "[]"),
   });
 }
 
@@ -48,10 +48,27 @@ export async function GET(req: Request) {
   // Ensure request is authenticated
   const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const url = new URL(req.url);
+  const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
+  if (!hasPage) {
+    const list = await prisma.serviceRequest.findMany({ orderBy: { createdAt: "desc" } });
+    return NextResponse.json(list);
+  }
+
+  const page = z.coerce.number().int().positive().default(1).parse(url.searchParams.get("page"));
+  const pageSize = z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(100)
+    .default(10)
+    .parse(url.searchParams.get("pageSize"));
+
+  const total = await prisma.serviceRequest.count();
   const list = await prisma.serviceRequest.findMany({
     orderBy: { createdAt: "desc" },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
   });
-  return NextResponse.json(
-    list.map((i: any) => ({ ...i, reasons: JSON.parse(i.reasons ?? "[]") })),
-  );
+  return NextResponse.json({ total, items: list });
 }

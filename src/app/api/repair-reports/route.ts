@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { z } from "zod";
 
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -17,11 +18,11 @@ export async function POST(req: Request) {
   const created = await prisma.$transaction(async (tx) => {
     const rr = await tx.repairReport.create({
       data: {
-        actions: JSON.stringify(Array.isArray(data.actions) ? data.actions : []),
+        actions: Array.isArray(data.actions) ? (data.actions as any) : [],
         otherActions: data.otherActions ?? null,
-        notHandledReasons: JSON.stringify(
-          Array.isArray(data.notHandledReasons) ? data.notHandledReasons : [],
-        ),
+        notHandledReasons: Array.isArray(data.notHandledReasons)
+          ? (data.notHandledReasons as any)
+          : [],
         otherNotHandled: data.otherNotHandled ?? null,
         city: data.city ?? null,
         cityDate: parseDate(data.cityDate) ?? undefined,
@@ -53,22 +54,31 @@ export async function POST(req: Request) {
   });
   return NextResponse.json({
     ...created,
-    actions: JSON.parse(created.actions ?? "[]"),
-    notHandledReasons: JSON.parse(created.notHandledReasons ?? "[]"),
   });
 }
 
 export async function GET(req: Request) {
   const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const url = new URL(req.url);
+  const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
+  if (!hasPage) {
+    const list = await prisma.repairReport.findMany({ orderBy: { createdAt: "desc" } });
+    return NextResponse.json(list);
+  }
+  const page = z.coerce.number().int().positive().default(1).parse(url.searchParams.get("page"));
+  const pageSize = z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(100)
+    .default(10)
+    .parse(url.searchParams.get("pageSize"));
+  const total = await prisma.repairReport.count();
   const list = await prisma.repairReport.findMany({
     orderBy: { createdAt: "desc" },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
   });
-  return NextResponse.json(
-    list.map((i: any) => ({
-      ...i,
-      actions: JSON.parse(i.actions ?? "[]"),
-      notHandledReasons: JSON.parse(i.notHandledReasons ?? "[]"),
-    })),
-  );
+  return NextResponse.json({ total, items: list });
 }

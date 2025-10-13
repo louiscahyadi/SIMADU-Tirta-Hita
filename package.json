@@ -11,11 +11,19 @@
     "prepare": "husky",
     "prisma": "prisma",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev --name init"
+    "db:migrate": "prisma migrate dev --name init",
+    "db:up": "docker compose up -d mysql",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f mysql",
+    "db:ps": "docker compose ps",
+    "db:seed": "prisma db seed"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
-    "@prisma/client": "^6.17.0",
+    "@prisma/client": "^6.17.1",
     "chart.js": "^4.5.0",
     "next": "^14.2.5",
     "next-auth": "^4.24.7",
@@ -39,14 +47,18 @@
     "lint-staged": "^15.2.10",
     "postcss": "^8.4.47",
     "prettier": "^3.3.3",
-    "prisma": "^6.17.0",
+    "prisma": "^6.17.1",
     "tailwindcss": "^3.4.12",
+    "ts-node": "^10.9.2",
     "typescript": "^5.6.2"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,css,md,json}": [
-      "prettier --write",
-      "eslint --fix"
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,md,json}": [
+      "prettier --write"
     ]
   }
 }

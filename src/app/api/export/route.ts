@@ -18,7 +18,7 @@ function parseDateInput(v?: string) {
 function toCsv(rows: any[], headers: string[], selector: (r: any, h: string) => any) {
   const escape = (val: any) => {
     if (val == null) return "";
-    const s = String(val).replace(/\r?\n/g, " ");
+    const s = (typeof val === "object" ? JSON.stringify(val) : String(val)).replace(/\r?\n/g, " ");
     if (s.includes(",") || s.includes('"')) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   };

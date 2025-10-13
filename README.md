@@ -1,6 +1,6 @@
 # PERUMDA Tirta Hita Buleleng – Sistem Pengaduan
 
-Aplikasi full-stack (Next.js 14 + Prisma + SQLite + Tailwind) untuk menerima laporan/pengaduan pelanggan dan mencatat:
+Aplikasi full-stack (Next.js 14 + Prisma + MySQL + Tailwind) untuk menerima laporan/pengaduan pelanggan dan mencatat:
 
 - Permintaan Service/Perbaikan
 - Surat Perintah Kerja (SPK)
@@ -16,20 +16,49 @@ Aplikasi full-stack (Next.js 14 + Prisma + SQLite + Tailwind) untuk menerima lap
 npm install
 ```
 
-2. Generate Prisma Client dan buat database:
+2. Konfigurasi database MySQL (ubah `.env` dari `.env.example`):
+
+```pwsh
+# Contoh koneksi lokal
+$env:DATABASE_URL = "mysql://root:password@localhost:3306/simadu"
+```
+
+3. Generate Prisma Client dan jalankan migrasi (membuat tabel di MySQL):
 
 ```pwsh
 npm run db:generate
 npm run db:migrate
 ```
 
-3. Jalankan mode development:
+4. Jalankan mode development:
 
 ```pwsh
 npm run dev
 ```
 
 Aplikasi berjalan di http://localhost:3000
+
+## Menjalankan MySQL via Docker
+
+1. Nyalakan MySQL container:
+
+```pwsh
+npm run db:up
+npm run db:ps  # pastikan status Healthy
+```
+
+2. Jalankan migrasi dan seed (opsional, untuk data contoh):
+
+```pwsh
+npm run db:migrate
+npm run db:seed
+```
+
+3. Matikan container (opsional):
+
+```pwsh
+npm run db:down
+```
 
 ## Fitur: Daftar Data
 
@@ -51,7 +80,8 @@ Navigasi ke halaman ini tersedia di header.
 
 ## Catatan
 
-- File `.env` sudah disiapkan untuk SQLite (`file:./dev.db`).
+- Pastikan service MySQL aktif dan kredensial pada `DATABASE_URL` benar.
+- Jika berpindah dari SQLite ke MySQL, data lama tidak otomatis ikut; gunakan migrasi atau seed ulang sesuai kebutuhan.
 - Skema field diadaptasi dari gambar formulir yang Anda lampirkan; jika ada penyesuaian nama kolom atau isian, kabari saya untuk update cepat.
 
 ## Otentikasi Admin (NextAuth)

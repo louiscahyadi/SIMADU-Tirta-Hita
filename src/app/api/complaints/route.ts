@@ -3,7 +3,11 @@ import { getToken } from "next-auth/jwt";
 
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
-import { complaintCreateSchema, complaintQuerySchema } from "@/lib/schemas/complaints";
+import {
+  complaintCreateSchema,
+  complaintQuerySchema,
+  complaintUpdateSchema,
+} from "@/lib/schemas/complaints";
 
 export async function POST(req: NextRequest) {
   try {
@@ -85,26 +89,39 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-    const body = await req.json().catch(() => ({}));
-    const complaintId = id || body?.id;
-    if (!complaintId) {
+    const idFromQuery = searchParams.get("id") || undefined;
+    const raw = await req.json().catch(() => ({}));
+    const parsed = complaintUpdateSchema.parse({ ...raw, id: raw?.id ?? idFromQuery });
+
+    if (!parsed.id) {
       return NextResponse.json({ error: "id wajib" }, { status: 400 });
     }
-    const data: any = {};
-    if (body?.serviceRequestId) data.serviceRequestId = body.serviceRequestId;
-    if (body?.workOrderId) data.workOrderId = body.workOrderId;
-    if (body?.repairReportId) data.repairReportId = body.repairReportId;
-    if (body?.processedAt === null) data.processedAt = null;
-    else data.processedAt = body?.processedAt ? new Date(body.processedAt) : new Date();
+
+    const updateData: any = {};
+    if ("serviceRequestId" in parsed) updateData.serviceRequestId = parsed.serviceRequestId ?? null;
+    if ("workOrderId" in parsed) updateData.workOrderId = parsed.workOrderId ?? null;
+    if ("repairReportId" in parsed) updateData.repairReportId = parsed.repairReportId ?? null;
+    if ("processedAt" in parsed) {
+      updateData.processedAt =
+        parsed.processedAt === null ? null : new Date(parsed.processedAt as string);
+    }
 
     const updated = await prisma.complaint.update({
-      where: { id: complaintId },
-      data,
-      select: { id: true, processedAt: true, serviceRequestId: true },
+      where: { id: parsed.id },
+      data: updateData,
+      select: {
+        id: true,
+        processedAt: true,
+        serviceRequestId: true,
+        workOrderId: true,
+        repairReportId: true,
+      },
     });
     return NextResponse.json(updated);
   } catch (e) {
+    if ((e as any)?.name === "ZodError") {
+      return NextResponse.json({ error: (e as any).flatten?.() ?? String(e) }, { status: 400 });
+    }
     return NextResponse.json({ error: "Gagal update" }, { status: 500 });
   }
 }

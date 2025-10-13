@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -26,7 +26,7 @@ model ServiceRequest {
   inspectedAt        DateTime?
   inspectorName      String?
 
-  reasons            String?   // JSON string of reasons
+  reasons            Json?    // JSON array of reasons
   otherReason        String?   // Lain-lain
   actionTaken        String?   // Tindakan yang dilakukan (ringkas)
 
@@ -39,6 +39,8 @@ model ServiceRequest {
   // Relations
   workOrder          WorkOrder?
   complaint          Complaint? @relation(name: "ComplaintToServiceRequest")
+
+  @@index([createdAt])
 }
 
 model WorkOrder {
@@ -65,6 +67,8 @@ model WorkOrder {
   serviceRequest     ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
   repairReport       RepairReport?
   complaint          Complaint? @relation(name: "ComplaintToWorkOrder")
+
+  @@index([createdAt])
 }
 
 model RepairReport {
@@ -72,10 +76,10 @@ model RepairReport {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  actions            String?  // JSON string of actions
+  actions            Json?    // JSON array of actions
   otherActions       String?
 
-  notHandledReasons  String?  // JSON string of reasons
+  notHandledReasons  Json?    // JSON array of reasons
   otherNotHandled    String?
 
   city               String?
@@ -89,6 +93,8 @@ model RepairReport {
   workOrderId        String?  @unique
   workOrder          WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
   complaint          Complaint? @relation(name: "ComplaintToRepairReport")
+
+  @@index([createdAt])
 }
 
 model Complaint {
@@ -97,11 +103,11 @@ model Complaint {
   updatedAt        DateTime @updatedAt
 
   customerName     String
-  address          String
-  mapsLink         String?
+  address          String   @db.Text
+  mapsLink         String?  @db.VarChar(512)
   connectionNumber String? // No Sambungan Pelanggan (No. SL)
   phone            String?
-  complaintText    String   // Keluhan/Pengaduan (deskripsi bebas)
+  complaintText    String   @db.Text // Keluhan/Pengaduan (deskripsi bebas)
   category         String   // Kategori pengaduan dari daftar pilihan
   processedAt      DateTime?
 
@@ -113,4 +119,6 @@ model Complaint {
   serviceRequest   ServiceRequest? @relation(name: "ComplaintToServiceRequest", fields: [serviceRequestId], references: [id], onDelete: SetNull)
   workOrder        WorkOrder?      @relation(name: "ComplaintToWorkOrder", fields: [workOrderId], references: [id], onDelete: SetNull)
   repairReport     RepairReport?   @relation(name: "ComplaintToRepairReport", fields: [repairReportId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
 }

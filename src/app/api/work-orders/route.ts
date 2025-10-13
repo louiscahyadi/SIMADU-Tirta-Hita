@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { z } from "zod";
 
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -47,8 +48,25 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const list = await prisma.workOrder.findMany({
+  const url = new URL(req.url);
+  const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
+  if (!hasPage) {
+    const list = await prisma.workOrder.findMany({ orderBy: { createdAt: "desc" } });
+    return NextResponse.json(list);
+  }
+  const page = z.coerce.number().int().positive().default(1).parse(url.searchParams.get("page"));
+  const pageSize = z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(100)
+    .default(10)
+    .parse(url.searchParams.get("pageSize"));
+  const total = await prisma.workOrder.count();
+  const items = await prisma.workOrder.findMany({
     orderBy: { createdAt: "desc" },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
   });
-  return NextResponse.json(list);
+  return NextResponse.json({ total, items });
 }
