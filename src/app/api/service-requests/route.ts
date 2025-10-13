@@ -44,8 +44,10 @@ export async function POST(req: Request) {
   });
 }
 
-export async function GET() {
-  // Any authenticated role can view lists via middleware; here we allow all
+export async function GET(req: Request) {
+  // Ensure request is authenticated
+  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const list = await prisma.serviceRequest.findMany({
     orderBy: { createdAt: "desc" },
   });
