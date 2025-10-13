@@ -58,12 +58,12 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
     ...(q
       ? {
           OR: [
-            { customerName: { contains: q } },
-            { address: { contains: q } },
-            { connectionNumber: { contains: q } },
-            { phone: { contains: q } },
-            { complaintText: { contains: q } },
-            { category: { contains: q } },
+            { customerName: { contains: q, mode: "insensitive" } },
+            { address: { contains: q, mode: "insensitive" } },
+            { connectionNumber: { contains: q, mode: "insensitive" } },
+            { phone: { contains: q, mode: "insensitive" } },
+            { complaintText: { contains: q, mode: "insensitive" } },
+            { category: { contains: q, mode: "insensitive" } },
           ],
         }
       : {}),
@@ -95,17 +95,17 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
     ...(q
       ? {
           OR: [
-            { customerName: { contains: q } },
-            { address: { contains: q } },
-            { serviceNumber: { contains: q } },
-            { phone: { contains: q } },
-            { receivedBy: { contains: q } },
-            { handlerName: { contains: q } },
-            { inspectorName: { contains: q } },
-            { actionTaken: { contains: q } },
-            { serviceCostBy: { contains: q } },
-            { handoverReceiver: { contains: q } },
-            { handoverCustomer: { contains: q } },
+            { customerName: { contains: q, mode: "insensitive" } },
+            { address: { contains: q, mode: "insensitive" } },
+            { serviceNumber: { contains: q, mode: "insensitive" } },
+            { phone: { contains: q, mode: "insensitive" } },
+            { receivedBy: { contains: q, mode: "insensitive" } },
+            { handlerName: { contains: q, mode: "insensitive" } },
+            { inspectorName: { contains: q, mode: "insensitive" } },
+            { actionTaken: { contains: q, mode: "insensitive" } },
+            { serviceCostBy: { contains: q, mode: "insensitive" } },
+            { handoverReceiver: { contains: q, mode: "insensitive" } },
+            { handoverCustomer: { contains: q, mode: "insensitive" } },
           ],
         }
       : {}),
@@ -116,12 +116,12 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
     ...(q
       ? {
           OR: [
-            { customerName: { contains: q } },
-            { address: { contains: q } },
-            { connectionNumber: { contains: q } },
-            { phone: { contains: q } },
-            { complaintText: { contains: q } },
-            { category: { contains: q } },
+            { customerName: { contains: q, mode: "insensitive" } },
+            { address: { contains: q, mode: "insensitive" } },
+            { connectionNumber: { contains: q, mode: "insensitive" } },
+            { phone: { contains: q, mode: "insensitive" } },
+            { complaintText: { contains: q, mode: "insensitive" } },
+            { category: { contains: q, mode: "insensitive" } },
           ],
         }
       : {}),
