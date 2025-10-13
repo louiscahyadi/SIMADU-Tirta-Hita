@@ -56,13 +56,13 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
     ...(q
       ? {
           OR: [
-            { number: { contains: q } },
-            { reporterName: { contains: q } },
-            { disturbanceLocation: { contains: q } },
-            { disturbanceType: { contains: q } },
-            { city: { contains: q } },
-            { executorName: { contains: q } },
-            { team: { contains: q } },
+            { number: { contains: q, mode: "insensitive" } },
+            { reporterName: { contains: q, mode: "insensitive" } },
+            { disturbanceLocation: { contains: q, mode: "insensitive" } },
+            { disturbanceType: { contains: q, mode: "insensitive" } },
+            { city: { contains: q, mode: "insensitive" } },
+            { executorName: { contains: q, mode: "insensitive" } },
+            { team: { contains: q, mode: "insensitive" } },
           ],
         }
       : {}),
@@ -72,12 +72,12 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
     ...(q
       ? {
           OR: [
-            { city: { contains: q } },
-            { executorName: { contains: q } },
-            { team: { contains: q } },
-            { authorizedBy: { contains: q } },
-            { otherActions: { contains: q } },
-            { otherNotHandled: { contains: q } },
+            { city: { contains: q, mode: "insensitive" } },
+            { executorName: { contains: q, mode: "insensitive" } },
+            { team: { contains: q, mode: "insensitive" } },
+            { authorizedBy: { contains: q, mode: "insensitive" } },
+            { otherActions: { contains: q, mode: "insensitive" } },
+            { otherNotHandled: { contains: q, mode: "insensitive" } },
           ],
         }
       : {}),
