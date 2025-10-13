@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
+import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 
 function getParam(sp: URLSearchParams, key: string) {
@@ -28,6 +30,8 @@ function toCsv(rows: any[], headers: string[], selector: (r: any, h: string) => 
 }
 
 export async function GET(req: Request) {
+  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const url = new URL(req.url);
   const sp = url.searchParams;
   const tab = (getParam(sp, "tab") || "service") as
@@ -63,12 +67,12 @@ export async function GET(req: Request) {
       ...(q
         ? {
             OR: [
-              { customerName: { contains: q } },
-              { address: { contains: q } },
-              { connectionNumber: { contains: q } },
-              { phone: { contains: q } },
-              { complaintText: { contains: q } },
-              { category: { contains: q } },
+              { customerName: { contains: q, mode: "insensitive" } },
+              { address: { contains: q, mode: "insensitive" } },
+              { connectionNumber: { contains: q, mode: "insensitive" } },
+              { phone: { contains: q, mode: "insensitive" } },
+              { complaintText: { contains: q, mode: "insensitive" } },
+              { category: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -121,17 +125,17 @@ export async function GET(req: Request) {
       ...(q
         ? {
             OR: [
-              { customerName: { contains: q } },
-              { address: { contains: q } },
-              { serviceNumber: { contains: q } },
-              { phone: { contains: q } },
-              { receivedBy: { contains: q } },
-              { handlerName: { contains: q } },
-              { inspectorName: { contains: q } },
-              { actionTaken: { contains: q } },
-              { serviceCostBy: { contains: q } },
-              { handoverReceiver: { contains: q } },
-              { handoverCustomer: { contains: q } },
+              { customerName: { contains: q, mode: "insensitive" } },
+              { address: { contains: q, mode: "insensitive" } },
+              { serviceNumber: { contains: q, mode: "insensitive" } },
+              { phone: { contains: q, mode: "insensitive" } },
+              { receivedBy: { contains: q, mode: "insensitive" } },
+              { handlerName: { contains: q, mode: "insensitive" } },
+              { inspectorName: { contains: q, mode: "insensitive" } },
+              { actionTaken: { contains: q, mode: "insensitive" } },
+              { serviceCostBy: { contains: q, mode: "insensitive" } },
+              { handoverReceiver: { contains: q, mode: "insensitive" } },
+              { handoverCustomer: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -171,14 +175,14 @@ export async function GET(req: Request) {
       ...(q
         ? {
             OR: [
-              { number: { contains: q } },
-              { reporterName: { contains: q } },
-              { handlingTime: { contains: q } },
-              { disturbanceLocation: { contains: q } },
-              { disturbanceType: { contains: q } },
-              { city: { contains: q } },
-              { executorName: { contains: q } },
-              { team: { contains: q } },
+              { number: { contains: q, mode: "insensitive" } },
+              { reporterName: { contains: q, mode: "insensitive" } },
+              { handlingTime: { contains: q, mode: "insensitive" } },
+              { disturbanceLocation: { contains: q, mode: "insensitive" } },
+              { disturbanceType: { contains: q, mode: "insensitive" } },
+              { city: { contains: q, mode: "insensitive" } },
+              { executorName: { contains: q, mode: "insensitive" } },
+              { team: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -217,12 +221,12 @@ export async function GET(req: Request) {
     ...(q
       ? {
           OR: [
-            { city: { contains: q } },
-            { executorName: { contains: q } },
-            { team: { contains: q } },
-            { authorizedBy: { contains: q } },
-            { otherActions: { contains: q } },
-            { otherNotHandled: { contains: q } },
+            { city: { contains: q, mode: "insensitive" } },
+            { executorName: { contains: q, mode: "insensitive" } },
+            { team: { contains: q, mode: "insensitive" } },
+            { authorizedBy: { contains: q, mode: "insensitive" } },
+            { otherActions: { contains: q, mode: "insensitive" } },
+            { otherNotHandled: { contains: q, mode: "insensitive" } },
           ],
         }
       : {}),
