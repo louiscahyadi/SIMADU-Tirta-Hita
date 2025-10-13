@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
 import HumasServiceFormCard from "@/components/HumasServiceFormCard";
+import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { entityLabel } from "@/lib/uiLabels";
@@ -33,7 +34,16 @@ export default async function HumasDashboard() {
     );
   }
 
+  // Incoming complaints: not yet processed and no SR/WO/RR linked
   const latestComplaints = await prisma.complaint.findMany({
+    where: {
+      AND: [
+        { processedAt: null },
+        { serviceRequestId: null },
+        { workOrderId: null },
+        { repairReportId: null },
+      ],
+    },
     orderBy: { createdAt: "desc" },
     take: 5,
   });
@@ -48,6 +58,7 @@ export default async function HumasDashboard() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Dashboard HUMAS</h2>
         <div className="flex gap-2">
+          <PrintButton />
           <Link className="btn-outline btn-sm" href="/humas/status">
             Lihat Status
           </Link>
@@ -67,7 +78,7 @@ export default async function HumasDashboard() {
         <div className="space-y-6">
           <div className="card p-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-medium">Pengaduan Terbaru</h3>
+              <h3 className="font-medium">Pengaduan Masuk (Belum diproses)</h3>
               <Link
                 className="text-blue-700 hover:underline text-sm"
                 href="/daftar-data?tab=complaint"
@@ -76,17 +87,33 @@ export default async function HumasDashboard() {
               </Link>
             </div>
             <ul className="divide-y">
-              {latestComplaints.map((c) => (
-                <li key={c.id} className="py-2 flex items-center justify-between">
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{c.customerName}</div>
-                    <div className="text-xs text-gray-600 truncate">{c.address}</div>
-                  </div>
-                  <div className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                    {formatDate(c.createdAt)}
-                  </div>
-                </li>
-              ))}
+              {latestComplaints.map((c) => {
+                const params = new URLSearchParams({
+                  flow: "service",
+                  customerName: c.customerName || "",
+                  address: c.address || "",
+                  phone: c.phone || "",
+                  connectionNumber: c.connectionNumber || "",
+                  category: c.category || "",
+                  complaintId: c.id,
+                });
+                return (
+                  <li key={c.id} className="py-2 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{c.customerName}</div>
+                      <div className="text-xs text-gray-600 truncate">{c.address}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 whitespace-nowrap">
+                        {formatDate(c.createdAt)}
+                      </span>
+                      <Link className="btn-outline btn-sm" href={`/${"?" + params.toString()}`}>
+                        Buat Permintaan Service
+                      </Link>
+                    </div>
+                  </li>
+                );
+              })}
               {latestComplaints.length === 0 && (
                 <li className="py-6 text-center text-gray-500">Belum ada pengaduan.</li>
               )}
