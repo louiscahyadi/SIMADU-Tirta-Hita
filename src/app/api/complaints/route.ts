@@ -30,6 +30,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  // Require an authenticated session/token; don't rely solely on middleware
+  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const query = complaintQuerySchema.parse({
     q: searchParams.get("q") || undefined,
@@ -52,12 +55,12 @@ export async function GET(req: NextRequest) {
     ...(query.q
       ? {
           OR: [
-            { customerName: { contains: query.q } },
-            { address: { contains: query.q } },
-            { connectionNumber: { contains: query.q } },
-            { phone: { contains: query.q } },
-            { complaintText: { contains: query.q } },
-            { category: { contains: query.q } },
+            { customerName: { contains: query.q, mode: "insensitive" } },
+            { address: { contains: query.q, mode: "insensitive" } },
+            { connectionNumber: { contains: query.q, mode: "insensitive" } },
+            { phone: { contains: query.q, mode: "insensitive" } },
+            { complaintText: { contains: query.q, mode: "insensitive" } },
+            { category: { contains: query.q, mode: "insensitive" } },
           ],
         }
       : {}),
