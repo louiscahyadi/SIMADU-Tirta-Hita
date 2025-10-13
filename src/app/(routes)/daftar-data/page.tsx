@@ -432,12 +432,12 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
       ...(q
         ? {
             OR: [
-              { customerName: { contains: q } },
-              { address: { contains: q } },
-              { connectionNumber: { contains: q } },
-              { phone: { contains: q } },
-              { complaintText: { contains: q } },
-              { category: { contains: q } },
+              { customerName: { contains: q, mode: "insensitive" } },
+              { address: { contains: q, mode: "insensitive" } },
+              { connectionNumber: { contains: q, mode: "insensitive" } },
+              { phone: { contains: q, mode: "insensitive" } },
+              { complaintText: { contains: q, mode: "insensitive" } },
+              { category: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -474,17 +474,17 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
       ...(q
         ? {
             OR: [
-              { customerName: { contains: q } },
-              { address: { contains: q } },
-              { serviceNumber: { contains: q } },
-              { phone: { contains: q } },
-              { receivedBy: { contains: q } },
-              { handlerName: { contains: q } },
-              { inspectorName: { contains: q } },
-              { actionTaken: { contains: q } },
-              { serviceCostBy: { contains: q } },
-              { handoverReceiver: { contains: q } },
-              { handoverCustomer: { contains: q } },
+              { customerName: { contains: q, mode: "insensitive" } },
+              { address: { contains: q, mode: "insensitive" } },
+              { serviceNumber: { contains: q, mode: "insensitive" } },
+              { phone: { contains: q, mode: "insensitive" } },
+              { receivedBy: { contains: q, mode: "insensitive" } },
+              { handlerName: { contains: q, mode: "insensitive" } },
+              { inspectorName: { contains: q, mode: "insensitive" } },
+              { actionTaken: { contains: q, mode: "insensitive" } },
+              { serviceCostBy: { contains: q, mode: "insensitive" } },
+              { handoverReceiver: { contains: q, mode: "insensitive" } },
+              { handoverCustomer: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -519,14 +519,14 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
       ...(q
         ? {
             OR: [
-              { number: { contains: q } },
-              { reporterName: { contains: q } },
-              { handlingTime: { contains: q } },
-              { disturbanceLocation: { contains: q } },
-              { disturbanceType: { contains: q } },
-              { city: { contains: q } },
-              { executorName: { contains: q } },
-              { team: { contains: q } },
+              { number: { contains: q, mode: "insensitive" } },
+              { reporterName: { contains: q, mode: "insensitive" } },
+              { handlingTime: { contains: q, mode: "insensitive" } },
+              { disturbanceLocation: { contains: q, mode: "insensitive" } },
+              { disturbanceType: { contains: q, mode: "insensitive" } },
+              { city: { contains: q, mode: "insensitive" } },
+              { executorName: { contains: q, mode: "insensitive" } },
+              { team: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -567,12 +567,12 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
       ...(q
         ? {
             OR: [
-              { city: { contains: q } },
-              { executorName: { contains: q } },
-              { team: { contains: q } },
-              { authorizedBy: { contains: q } },
-              { otherActions: { contains: q } },
-              { otherNotHandled: { contains: q } },
+              { city: { contains: q, mode: "insensitive" } },
+              { executorName: { contains: q, mode: "insensitive" } },
+              { team: { contains: q, mode: "insensitive" } },
+              { authorizedBy: { contains: q, mode: "insensitive" } },
+              { otherActions: { contains: q, mode: "insensitive" } },
+              { otherNotHandled: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
