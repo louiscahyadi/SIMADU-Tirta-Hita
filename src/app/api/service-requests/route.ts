@@ -9,7 +9,7 @@ import { serviceRequestSchema } from "@/lib/schemas/serviceRequest";
 export async function POST(req: Request) {
   const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   const role = (token as any)?.role as string | undefined;
-  if (!(role === "admin" || role === "humas")) {
+  if (!(role === "humas")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const raw = await req.json();
