@@ -66,18 +66,12 @@ export async function middleware(req: NextRequest) {
   // Role-based route-level guard (coarse):
   // - HUMAS: can access service-requests creation UI/api and complaints listing
   // - DISTRIBUSI: can access work-orders & repair-reports UI/api
-  // - ADMIN: full access
   if (role) {
-    if (role === "admin") {
-      const resp = NextResponse.next();
-      return applySecurityHeaders(req, resp, isApi);
-    }
     const p = pathname;
     const allowHumas =
       role === "humas" &&
       (p.startsWith("/humas") ||
         p.startsWith("/daftar-data") ||
-        p.startsWith("/ringkasan") ||
         p === "/" ||
         p.startsWith("/_next") ||
         p.startsWith("/api/service-requests") ||
@@ -86,7 +80,6 @@ export async function middleware(req: NextRequest) {
       role === "distribusi" &&
       (p.startsWith("/distribusi") ||
         p.startsWith("/daftar-data") ||
-        p.startsWith("/ringkasan") ||
         p === "/" ||
         p.startsWith("/_next") ||
         p.startsWith("/api/work-orders") ||
