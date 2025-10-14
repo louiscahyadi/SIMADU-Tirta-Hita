@@ -8,7 +8,7 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   providers: [
     Credentials({
-      name: "Admin",
+      name: "SIMADU Login",
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
@@ -20,13 +20,6 @@ export const authOptions: NextAuthOptions = {
 
         // Map of allowed credential pairs and roles
         const accounts: Array<{ u: string; p: string; id: string; name: string; role: string }> = [
-          {
-            u: env.ADMIN_USERNAME,
-            p: env.ADMIN_PASSWORD,
-            id: "admin",
-            name: "Administrator",
-            role: "admin",
-          },
           {
             u: env.HUMAS_USERNAME,
             p: env.HUMAS_PASSWORD,
