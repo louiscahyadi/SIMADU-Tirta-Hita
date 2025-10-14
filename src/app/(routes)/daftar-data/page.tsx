@@ -942,8 +942,8 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                             if (c.serviceRequestId) {
                               href = `/daftar-data/service/${c.serviceRequestId}`;
                             } else {
-                              // Only HUMAS or ADMIN can start SR from complaint
-                              if (role === "admin" || role === "humas") {
+                              // Hanya HUMAS dapat memulai SR dari pengaduan
+                              if (role === "humas") {
                                 href = `/?flow=service&complaintId=${encodeURIComponent(
                                   c.id,
                                 )}&customerName=${encodeURIComponent(
@@ -1164,8 +1164,8 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                           {(() => {
                             const woId = srToWo.get(s.id);
                             if (!woId) {
-                              // Only DISTRIBUSI or ADMIN may create WO from SR
-                              if (role === "admin" || role === "distribusi") {
+                              // Hanya DISTRIBUSI dapat membuat WO dari SR
+                              if (role === "distribusi") {
                                 const href = `/?flow=workorder&serviceRequestId=${encodeURIComponent(
                                   s.id,
                                 )}`;
@@ -1179,8 +1179,8 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                             }
                             const hasRr = woToRr.has(woId);
                             if (!hasRr) {
-                              // Only DISTRIBUSI or ADMIN may create Repair Report
-                              if (role === "admin" || role === "distribusi") {
+                              // Hanya DISTRIBUSI dapat membuat Berita Acara
+                              if (role === "distribusi") {
                                 const href = `/?flow=repair&workOrderId=${encodeURIComponent(woId)}`;
                                 return (
                                   <Link
@@ -1403,7 +1403,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                           {(() => {
                             const hasRr = woToRr.has(w.id);
                             if (!hasRr) {
-                              if (role === "admin" || role === "distribusi") {
+                              if (role === "distribusi") {
                                 const href = `/?flow=repair&workOrderId=${encodeURIComponent(w.id)}`;
                                 return (
                                   <Link className="btn-outline btn-sm" href={href}>
