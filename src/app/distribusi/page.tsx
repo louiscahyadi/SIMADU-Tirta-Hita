@@ -25,7 +25,7 @@ export default async function DistribusiDashboard() {
   const session = await getServerSession(authOptions as any);
   const role = (session as any)?.user?.role as string | undefined;
 
-  if (!(role === "admin" || role === "distribusi")) {
+  if (!(role === "distribusi")) {
     return (
       <div className="space-y-3">
         <h2 className="text-xl font-semibold">DISTRIBUSI</h2>
