@@ -85,7 +85,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
     const role = (token as any)?.role as string | undefined;
-    if (!(role === "admin" || role === "humas" || role === "distribusi")) {
+    if (!(role === "humas" || role === "distribusi")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const { searchParams } = new URL(req.url);
