@@ -11,12 +11,11 @@ export default function HeaderAuth() {
   }
 
   const user = session?.user as any;
-  const isAdmin = user?.role === "admin";
   const role = user?.role as string | undefined;
 
   return (
     <div className="flex items-center gap-3">
-      {isAdmin || role === "humas" || role === "distribusi" ? (
+      {role === "humas" || role === "distribusi" ? (
         <>
           <span className="text-sm text-gray-700">{user?.name || "User"}</span>
           {role ? (
