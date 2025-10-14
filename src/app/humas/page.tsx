@@ -25,7 +25,7 @@ export default async function HumasDashboard() {
   const role = (session as any)?.user?.role as string | undefined;
 
   // Quick guard message (middleware also protects)
-  if (!(role === "admin" || role === "humas")) {
+  if (!(role === "humas")) {
     return (
       <div className="space-y-3">
         <h2 className="text-xl font-semibold">HUMAS</h2>
