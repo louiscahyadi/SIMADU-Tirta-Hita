@@ -140,25 +140,7 @@ export default async function RingkasanPage() {
         </div>
       );
     }
-    return (
-      <div className="space-y-2">
-        <div className="font-medium">Aksi Cepat (Admin)</div>
-        <div className="flex flex-wrap gap-2">
-          <Link className="btn-outline" href="/daftar-data?tab=complaint">
-            Pengaduan
-          </Link>
-          <Link className="btn-outline" href="/daftar-data?tab=service">
-            Permintaan Service
-          </Link>
-          <Link className="btn-outline" href="/daftar-data?tab=workorder">
-            Surat Perintah Kerja
-          </Link>
-          <Link className="btn-outline" href="/daftar-data?tab=repair">
-            Berita Acara
-          </Link>
-        </div>
-      </div>
-    );
+    return null;
   };
 
   return (
@@ -197,7 +179,7 @@ export default async function RingkasanPage() {
       <Actions />
 
       {/* Detail progres per role */}
-      {(role === "humas" || role === "admin") && (
+      {role === "humas" && (
         <div className="card p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Pengaduan Baru (5 terbaru)</h3>
@@ -239,7 +221,7 @@ export default async function RingkasanPage() {
                       <td className="px-3 py-2">{c.customerName}</td>
                       <td className="px-3 py-2">{c.category}</td>
                       <td className="px-3 py-2 whitespace-nowrap">
-                        {role === "admin" || role === "humas" ? (
+                        {role === "humas" ? (
                           <Link className="btn-outline btn-sm" href={href}>
                             Buat Permintaan Service
                           </Link>
@@ -263,7 +245,7 @@ export default async function RingkasanPage() {
         </div>
       )}
 
-      {(role === "distribusi" || role === "admin") && (
+      {role === "distribusi" && (
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="card p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -303,7 +285,7 @@ export default async function RingkasanPage() {
                           {s.address}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
-                          {role === "admin" || role === "distribusi" ? (
+                          {role === "distribusi" ? (
                             <Link className="btn-outline btn-sm" href={href}>
                               Buat Surat Perintah Kerja
                             </Link>
@@ -366,7 +348,7 @@ export default async function RingkasanPage() {
                           {w.disturbanceLocation ?? "-"}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
-                          {role === "admin" || role === "distribusi" ? (
+                          {role === "distribusi" ? (
                             <Link className="btn-outline btn-sm" href={href}>
                               Buat Berita Acara
                             </Link>
