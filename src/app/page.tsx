@@ -62,7 +62,6 @@ function HomePageInner() {
         <nav className="flex gap-2">
           {tabs.map((t) => {
             const roleAllows =
-              role === "admin" ||
               (role === "humas" && t.id === "service") ||
               (role === "distribusi" && (t.id === "workorder" || t.id === "repair"));
             const disabledByFlow =
@@ -74,7 +73,7 @@ function HomePageInner() {
                 onClick={() => {
                   if (disabled) {
                     if (!roleAllows) {
-                      alert("Akses ditolak untuk peran Anda. Hubungi admin bila Anda perlu akses.");
+                      alert("Akses ditolak untuk peran Anda.");
                       return;
                     }
                     if (t.id === "workorder") {
@@ -125,7 +124,7 @@ function HomePageInner() {
             </a>
           </div>
         ) : null}
-        {hasFlow && active === "service" && (role === "admin" || role === "humas") && (
+        {hasFlow && active === "service" && role === "humas" && (
           <ServiceRequestForm
             initialData={srInitial}
             onSaved={(id) => {
@@ -139,13 +138,13 @@ function HomePageInner() {
                   body: JSON.stringify({ serviceRequestId: id }),
                 }).catch(() => {});
               }
-              // If HUMAS, stop here and let DISTRIBUSI continue
+              // HUMAS stop here and let DISTRIBUSI continue via dashboard/daftar-data
               if (role === "humas") return;
               setActive("workorder");
             }}
           />
         )}
-        {hasFlow && active === "workorder" && (role === "admin" || role === "distribusi") && (
+        {hasFlow && active === "workorder" && role === "distribusi" && (
           <WorkOrderForm
             serviceRequestId={serviceRequestId}
             onSaved={(id) => {
@@ -161,7 +160,7 @@ function HomePageInner() {
             }}
           />
         )}
-        {hasFlow && active === "repair" && (role === "admin" || role === "distribusi") && (
+        {hasFlow && active === "repair" && role === "distribusi" && (
           <RepairReportForm
             workOrderId={workOrderId}
             onSaved={(repairId) => {
