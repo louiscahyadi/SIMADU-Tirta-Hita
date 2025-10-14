@@ -28,7 +28,7 @@ function getParam(sp: PageProps["searchParams"], key: string) {
 export default async function HumasStatusPage({ searchParams }: PageProps) {
   const session = await getServerSession(authOptions as any);
   const role = (session as any)?.user?.role as string | undefined;
-  if (!(role === "admin" || role === "humas")) {
+  if (!(role === "humas")) {
     return (
       <div className="space-y-3">
         <h2 className="text-xl font-semibold">Status HUMAS</h2>
