@@ -26,11 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <a className="text-gray-700 hover:underline" href="/daftar-data">
                   Daftar Data
                 </a>
-                {/* Ringkasan dihilangkan untuk fokus peran Humas/Distribusi */}
                 <a className="text-gray-700 hover:underline" href="/pengaduan">
                   Pengaduan Publik
                 </a>
-                {/* Analitik dihilangkan untuk fokus peran Humas/Distribusi */}
                 <HeaderAuth />
               </nav>
             </div>
