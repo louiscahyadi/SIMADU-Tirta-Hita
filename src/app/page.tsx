@@ -109,19 +109,64 @@ function HomePageInner() {
 
       <div className="card p-4">
         {!hasFlow ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <h2 className="text-lg font-semibold">Alur Kerja</h2>
-            <ol className="list-decimal list-inside text-gray-700 space-y-1">
-              <li>Terima pengaduan dari pelanggan melalui menu Pengaduan publik.</li>
-              <li>Buka Daftar Data → tab Pengaduan, lalu klik tombol Aksi pada baris pengaduan.</li>
-              <li>
-                Sistem akan membuka alur langkah demi langkah: Permintaan Service → SPK → BA
-                Perbaikan.
-              </li>
-            </ol>
-            <a className="btn-outline btn-sm" href="/daftar-data?tab=complaint">
-              Buka Daftar Pengaduan
-            </a>
+            <div className="text-gray-700">
+              <ol className="list-decimal list-inside space-y-1">
+                <li>
+                  Masuk (Login) kemudian pilih divisi: <span className="font-medium">HUMAS</span>{" "}
+                  atau <span className="font-medium">DISTRIBUSI</span>.
+                </li>
+                <li>
+                  <span className="font-medium">HUMAS</span> → Terima pengaduan dari pelanggan
+                  melalui <span className="font-medium">Pengaduan Publik</span> → buka{" "}
+                  {"Daftar Data"} → tab <span className="font-medium">Pengaduan</span> → klik tombol{" "}
+                  <span className="font-medium">Aksi</span> pada baris pengaduan → sistem membuka
+                  alur langkah: <span className="font-medium">Permintaan Service</span>.
+                </li>
+                <li>
+                  <span className="font-medium">DISTRIBUSI</span> → Terima Permintaan Service dari
+                  HUMAS → buka {"Daftar Permintaan Service"} → klik tombol{" "}
+                  <span className="font-medium">Aksi</span> pada baris → sistem membuka alur
+                  langkah: <span className="font-medium">SPK</span> →{" "}
+                  <span className="font-medium">BA Perbaikan</span>.
+                </li>
+                <li>
+                  HUMAS & DISTRIBUSI dapat memantau progres sampai status akhir{" "}
+                  <span className="font-medium">Selesai</span>, serta melakukan{" "}
+                  <span className="font-medium">Cetak PDF</span> dari tombol Aksi atau dari halaman
+                  detail.
+                </li>
+              </ol>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <a className="btn-outline btn-sm" href="/login/humas" title="Masuk HUMAS">
+                Masuk HUMAS
+              </a>
+              <a className="btn-outline btn-sm" href="/login/distribusi" title="Masuk DISTRIBUSI">
+                Masuk DISTRIBUSI
+              </a>
+              <a
+                className="btn-outline btn-sm"
+                href="/daftar-data?tab=complaint"
+                title="Daftar Pengaduan"
+              >
+                Buka Daftar Pengaduan
+              </a>
+              <a
+                className="btn-outline btn-sm"
+                href="/daftar-data?tab=service"
+                title="Daftar Permintaan Service"
+              >
+                Buka Daftar Permintaan Service
+              </a>
+              <a className="btn-outline btn-sm" href="/humas/status" title="Status HUMAS">
+                Status HUMAS
+              </a>
+              <a className="btn-outline btn-sm" href="/distribusi/status" title="Status DISTRIBUSI">
+                Status DISTRIBUSI
+              </a>
+            </div>
           </div>
         ) : null}
         {hasFlow && active === "service" && role === "humas" && (
