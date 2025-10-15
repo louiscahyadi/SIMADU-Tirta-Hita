@@ -966,6 +966,13 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 ) : (
                                   <span className="text-gray-400">-</span>
                                 )}
+                                <Link
+                                  className="btn-outline btn-sm"
+                                  href={`/daftar-data/complaint/${c.id}?print=1`}
+                                  title="Cetak PDF"
+                                >
+                                  Cetak
+                                </Link>
                                 {c.mapsLink ? (
                                   <a
                                     className="text-gray-700 hover:underline"
@@ -1175,7 +1182,18 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   </Link>
                                 );
                               }
-                              return <span className="text-gray-400">-</span>;
+                              return (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400">-</span>
+                                  <Link
+                                    className="btn-outline btn-sm"
+                                    href={`/daftar-data/service/${s.id}?print=1`}
+                                    title="Cetak PDF"
+                                  >
+                                    Cetak
+                                  </Link>
+                                </div>
+                              );
                             }
                             const hasRr = woToRr.has(woId);
                             if (!hasRr) {
@@ -1191,9 +1209,31 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   </Link>
                                 );
                               }
-                              return <span className="text-gray-400">-</span>;
+                              return (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400">-</span>
+                                  <Link
+                                    className="btn-outline btn-sm"
+                                    href={`/daftar-data/service/${s.id}?print=1`}
+                                    title="Cetak PDF"
+                                  >
+                                    Cetak
+                                  </Link>
+                                </div>
+                              );
                             }
-                            return <span className="text-gray-400">-</span>;
+                            return (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400">-</span>
+                                <Link
+                                  className="btn-outline btn-sm"
+                                  href={`/daftar-data/service/${s.id}?print=1`}
+                                  title="Cetak PDF"
+                                >
+                                  Cetak
+                                </Link>
+                              </div>
+                            );
                           })()}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -1411,9 +1451,31 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   </Link>
                                 );
                               }
-                              return <span className="text-gray-400">-</span>;
+                              return (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-gray-400">-</span>
+                                  <Link
+                                    className="btn-outline btn-sm"
+                                    href={`/daftar-data/workorder/${w.id}?print=1`}
+                                    title="Cetak PDF"
+                                  >
+                                    Cetak
+                                  </Link>
+                                </div>
+                              );
                             }
-                            return <span className="text-gray-400">-</span>;
+                            return (
+                              <div className="flex items-center gap-2">
+                                <span className="text-gray-400">-</span>
+                                <Link
+                                  className="btn-outline btn-sm"
+                                  href={`/daftar-data/workorder/${w.id}?print=1`}
+                                  title="Cetak PDF"
+                                >
+                                  Cetak
+                                </Link>
+                              </div>
+                            );
                           })()}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -1634,6 +1696,13 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                               />
                             </svg>
                             Lihat Detail
+                          </Link>
+                          <Link
+                            className="btn-outline btn-sm ml-2"
+                            href={`/daftar-data/repair/${r.id}?print=1`}
+                            title="Cetak PDF"
+                          >
+                            Cetak
                           </Link>
                         </td>
                       </tr>
