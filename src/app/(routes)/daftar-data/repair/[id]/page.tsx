@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import PrintButton from "@/components/PrintButton";
 import { prisma } from "@/lib/prisma";
 import { entityAbbr, entityLabel } from "@/lib/uiLabels";
 
@@ -19,18 +21,24 @@ function formatDate(d?: Date | string | null) {
   }
 }
 
-function joinJsonArray(strOrArr?: string | string[] | null) {
-  if (!strOrArr) return "-";
+function joinJsonArray(value: any) {
+  if (!value) return "-";
   try {
-    const arr = Array.isArray(strOrArr) ? strOrArr : JSON.parse(strOrArr);
-    if (Array.isArray(arr)) return arr.filter(Boolean).join(", ") || "-";
-    return "-";
-  } catch {
-    return "-";
-  }
+    const parsed = Array.isArray(value)
+      ? value
+      : typeof value === "string"
+        ? JSON.parse(value)
+        : [];
+    if (Array.isArray(parsed))
+      return parsed.filter((v) => typeof v === "string" && v.trim().length).join(", ") || "-";
+  } catch {}
+  return "-";
 }
 
-export default async function RepairDetail({ params }: PageProps) {
+export default async function RepairDetail({
+  params,
+  searchParams,
+}: PageProps & { searchParams?: Record<string, string | string[] | undefined> }) {
   const { id } = params;
   const rr = await prisma.repairReport.findUnique({ where: { id } });
   if (!rr) {
@@ -72,6 +80,11 @@ export default async function RepairDetail({ params }: PageProps) {
 
   return (
     <div className="space-y-4">
+      {(() => {
+        const sp = searchParams ?? {};
+        const v = Array.isArray(sp["print"]) ? sp["print"][0] : sp["print"];
+        return v === "1" ? <AutoPrintOnLoad /> : null;
+      })()}
       <Breadcrumbs
         items={[
           { label: "Beranda", href: "/" },
@@ -82,9 +95,12 @@ export default async function RepairDetail({ params }: PageProps) {
       />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Detail Berita Acara Perbaikan</h2>
-        <Link className="text-sm text-blue-700 hover:underline" href="/daftar-data?tab=repair">
-          ← Kembali
-        </Link>
+        <div className="flex items-center gap-2">
+          <PrintButton />
+          <Link className="text-sm text-blue-700 hover:underline" href="/daftar-data?tab=repair">
+            ← Kembali
+          </Link>
+        </div>
       </div>
       <div className="card p-4 space-y-2 text-sm">
         <div>
