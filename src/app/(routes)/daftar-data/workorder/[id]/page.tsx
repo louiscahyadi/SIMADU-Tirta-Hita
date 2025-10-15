@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import PrintButton from "@/components/PrintButton";
 import { prisma } from "@/lib/prisma";
 import { entityAbbr, entityLabel } from "@/lib/uiLabels";
 
@@ -19,7 +21,10 @@ function formatDate(d?: Date | string | null) {
   }
 }
 
-export default async function WorkOrderDetail({ params }: PageProps) {
+export default async function WorkOrderDetail({
+  params,
+  searchParams,
+}: PageProps & { searchParams?: Record<string, string | string[] | undefined> }) {
   const { id } = params;
   const wo = await prisma.workOrder.findUnique({ where: { id } });
   if (!wo) {
@@ -53,6 +58,11 @@ export default async function WorkOrderDetail({ params }: PageProps) {
 
   return (
     <div className="space-y-4">
+      {(() => {
+        const sp = searchParams ?? {};
+        const v = Array.isArray(sp["print"]) ? sp["print"][0] : sp["print"];
+        return v === "1" ? <AutoPrintOnLoad /> : null;
+      })()}
       <Breadcrumbs
         items={[
           { label: "Beranda", href: "/" },
@@ -63,9 +73,12 @@ export default async function WorkOrderDetail({ params }: PageProps) {
       />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Detail Surat Perintah Kerja</h2>
-        <Link className="text-sm text-blue-700 hover:underline" href="/daftar-data?tab=workorder">
-          ← Kembali
-        </Link>
+        <div className="flex items-center gap-2">
+          <PrintButton />
+          <Link className="text-sm text-blue-700 hover:underline" href="/daftar-data?tab=workorder">
+            ← Kembali
+          </Link>
+        </div>
       </div>
       <div className="card p-4 space-y-2 text-sm">
         <div>
