@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import PrintButton from "@/components/PrintButton";
 import { prisma } from "@/lib/prisma";
 
 function formatDate(d?: Date | string | null) {
@@ -16,7 +18,13 @@ function formatDate(d?: Date | string | null) {
   }
 }
 
-export default async function ComplaintDetail({ params }: { params: { id: string } }) {
+export default async function ComplaintDetail({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   const c = await (prisma as any).complaint.findUnique({
     where: { id: params.id },
   });
@@ -34,6 +42,11 @@ export default async function ComplaintDetail({ params }: { params: { id: string
 
   return (
     <div className="space-y-4">
+      {(() => {
+        const sp = searchParams ?? {};
+        const v = Array.isArray(sp["print"]) ? sp["print"][0] : sp["print"];
+        return v === "1" ? <AutoPrintOnLoad /> : null;
+      })()}
       <Breadcrumbs
         items={[
           { label: "Beranda", href: "/" },
@@ -44,9 +57,12 @@ export default async function ComplaintDetail({ params }: { params: { id: string
       />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Detail Pengaduan</h2>
-        <Link className="text-sm text-blue-700 hover:underline" href="/daftar-data?tab=complaint">
-          ← Kembali
-        </Link>
+        <div className="flex items-center gap-2">
+          <PrintButton />
+          <Link className="text-sm text-blue-700 hover:underline" href="/daftar-data?tab=complaint">
+            ← Kembali
+          </Link>
+        </div>
       </div>
       <div className="card p-4 text-sm space-y-2">
         <div>
