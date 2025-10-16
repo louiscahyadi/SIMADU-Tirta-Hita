@@ -130,11 +130,8 @@ export default async function RingkasanPage() {
         <div className="space-y-2">
           <div className="font-medium">Aksi Cepat (Distribusi)</div>
           <div className="flex flex-wrap gap-2">
-            <Link className="btn-outline" href="/daftar-data?tab=service">
-              Lihat Permintaan Service
-            </Link>
-            <Link className="btn-outline" href="/daftar-data?tab=workorder">
-              Lihat Surat Perintah Kerja
+            <Link className="btn-outline" href="/distribusi/status">
+              Lihat SPK dan BA
             </Link>
           </div>
         </div>
@@ -172,8 +169,8 @@ export default async function RingkasanPage() {
           value={srCount}
           href="/daftar-data?tab=service"
         />
-        <Card title={entityLabel("workOrder")} value={woCount} href="/daftar-data?tab=workorder" />
-        <Card title={entityLabel("repairReport")} value={rrCount} href="/daftar-data?tab=repair" />
+        <Card title={entityLabel("workOrder")} value={woCount} href="/distribusi/status" />
+        <Card title={entityLabel("repairReport")} value={rrCount} href="/distribusi/status" />
       </div>
 
       <Actions />
@@ -222,9 +219,17 @@ export default async function RingkasanPage() {
                       <td className="px-3 py-2">{c.category}</td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         {role === "humas" ? (
-                          <Link className="btn-outline btn-sm" href={href}>
-                            Buat Permintaan Service
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              className="btn-outline btn-sm"
+                              href={`/daftar-data/complaint/${c.id}`}
+                            >
+                              Detail
+                            </Link>
+                            <Link className="btn-outline btn-sm" href={href}>
+                              Buat Permintaan Service
+                            </Link>
+                          </div>
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
@@ -252,10 +257,7 @@ export default async function RingkasanPage() {
               <h3 className="text-lg font-semibold">
                 Permintaan Service tanpa Surat Perintah Kerja (5 terbaru)
               </h3>
-              <Link
-                className="text-blue-700 hover:underline text-sm"
-                href="/daftar-data?tab=service"
-              >
+              <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
                 Lihat semua
               </Link>
             </div>
@@ -312,10 +314,7 @@ export default async function RingkasanPage() {
               <h3 className="text-lg font-semibold">
                 Surat Perintah Kerja tanpa Berita Acara (5 terbaru)
               </h3>
-              <Link
-                className="text-blue-700 hover:underline text-sm"
-                href="/daftar-data?tab=workorder"
-              >
+              <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
                 Lihat semua
               </Link>
             </div>
