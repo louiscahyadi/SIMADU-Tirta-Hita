@@ -64,8 +64,9 @@ export async function middleware(req: NextRequest) {
   const role = (token as any)?.role as string | undefined;
 
   // Role-based route-level guard (coarse):
-  // - HUMAS: can access service-requests creation UI/api and complaints listing
-  // - DISTRIBUSI: can access work-orders & repair-reports UI/api
+  // - HUMAS: can access Daftar Data (list & details) + HUMAS pages + related APIs
+  // - DISTRIBUSI: cannot access Daftar Data listing; may access only detail pages under
+  //   /daftar-data/(service|workorder|repair)/[id] for viewing/printing, plus Distribusi pages/APIs
   if (role) {
     const p = pathname;
     const allowHumas =
@@ -79,7 +80,10 @@ export async function middleware(req: NextRequest) {
     const allowDistribusi =
       role === "distribusi" &&
       (p.startsWith("/distribusi") ||
-        p.startsWith("/daftar-data") ||
+        // Allow viewing detail pages only (not the Daftar Data listing)
+        p.startsWith("/daftar-data/service/") ||
+        p.startsWith("/daftar-data/workorder/") ||
+        p.startsWith("/daftar-data/repair/") ||
         p === "/" ||
         p.startsWith("/_next") ||
         p.startsWith("/api/work-orders") ||
@@ -89,6 +93,10 @@ export async function middleware(req: NextRequest) {
       const resp = NextResponse.next();
       return applySecurityHeaders(req, resp, isApi);
     }
+    // Authenticated but accessing a disallowed route -> send to the proper dashboard
+    const to = role === "humas" ? "/humas" : role === "distribusi" ? "/distribusi" : "/";
+    const redirectHome = NextResponse.redirect(new URL(to, req.url));
+    return applySecurityHeaders(req, redirectHome, isApi);
     // If already logged in and trying to access generic /login, route to role dashboard
     if (p === "/login") {
       const to =
