@@ -138,10 +138,10 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Status DISTRIBUSI</h2>
         <div className="flex gap-2">
-          <Link className="btn-outline btn-sm" href="/daftar-data?tab=workorder">
+          <Link className="btn-outline btn-sm" href="/distribusi/status">
             Lihat SPK
           </Link>
-          <Link className="btn-outline btn-sm" href="/daftar-data?tab=repair">
+          <Link className="btn-outline btn-sm" href="/distribusi/status">
             Lihat Berita Acara
           </Link>
         </div>
@@ -181,8 +181,8 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
                   return (
                     <Link
                       className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700 text-xs"
-                      href={`/daftar-data?${sp.toString()}`}
-                      title="Lihat di Daftar Data"
+                      href={`/distribusi/status?${sp.toString()}`}
+                      title="Lihat di Status Distribusi"
                     >
                       Lihat
                     </Link>
@@ -197,10 +197,7 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
           </div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium">SPK Terbaru</h3>
-            <Link
-              className="text-blue-700 hover:underline text-sm"
-              href="/daftar-data?tab=workorder"
-            >
+            <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
               Lihat semua
             </Link>
           </div>
@@ -279,7 +276,7 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
         <div className="card p-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium">Berita Acara Terbaru</h3>
-            <Link className="text-blue-700 hover:underline text-sm" href="/daftar-data?tab=repair">
+            <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
               Lihat semua
             </Link>
           </div>
