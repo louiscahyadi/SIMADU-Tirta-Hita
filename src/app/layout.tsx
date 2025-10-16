@@ -23,8 +23,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <a className="text-gray-700 hover:underline" href="/">
                   Form Input
                 </a>
-                <a className="text-gray-700 hover:underline" href="/daftar-data">
-                  Daftar Data
+                <a className="text-gray-700 hover:underline" href="/daftar-data" title="HUMAS">
+                  Daftar Data (HUMAS)
                 </a>
                 <a className="text-gray-700 hover:underline" href="/pengaduan">
                   Pengaduan Publik
