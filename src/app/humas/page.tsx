@@ -262,6 +262,9 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
                       <span className="text-xs text-gray-500 whitespace-nowrap">
                         {formatDate(c.createdAt)}
                       </span>
+                      <Link className="btn-outline btn-sm" href={`/daftar-data/complaint/${c.id}`}>
+                        Detail
+                      </Link>
                       <Link className="btn-outline btn-sm" href={`/${"?" + params.toString()}`}>
                         Buat Permintaan Service
                       </Link>
