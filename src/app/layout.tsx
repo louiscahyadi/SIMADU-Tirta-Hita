@@ -20,9 +20,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="container py-4 flex items-center justify-between">
               <h1 className="text-lg font-semibold">PERUMDA Tirta Hita Buleleng</h1>
               <nav className="flex items-center gap-4 text-sm">
-                <a className="text-gray-700 hover:underline" href="/">
-                  Form Input
-                </a>
                 <a className="text-gray-700 hover:underline" href="/daftar-data" title="HUMAS">
                   Daftar Data (HUMAS)
                 </a>
