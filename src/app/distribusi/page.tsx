@@ -247,7 +247,9 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
               return (
                 <li key={s.id} className="py-2 flex items-center justify-between">
                   <div className="min-w-0">
-                    <div className="font-medium truncate">{s.customerName}</div>
+                    <div className="font-medium truncate">
+                      {(s as any).reporterName ?? s.customerName}
+                    </div>
                     <div className="text-xs text-gray-600 truncate">{s.address}</div>
                   </div>
                   <div className="flex items-center gap-2">
