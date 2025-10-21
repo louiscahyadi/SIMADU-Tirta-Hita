@@ -1082,16 +1082,16 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="px-4 py-3 text-left">
-                        {headerSortLink("Tgl Input", "createdAt", "service")}
+                        {headerSortLink("Tgl Permintaan", "requestDate", "service")}
                       </th>
                       <th className="px-4 py-3 text-left min-w-[12rem]">
-                        {headerSortLink("Nama Pelanggan", "customerName", "service")}
+                        {headerSortLink("Nama Pelapor", "reporterName", "service")}
                       </th>
                       <th className="px-4 py-3 text-left min-w-[14rem]">
                         {headerSortLink("Alamat", "address", "service")}
                       </th>
-                      <th className="px-4 py-3 text-left w-20">
-                        {headerSortLink("No. SL", "serviceNumber", "service")}
+                      <th className="px-4 py-3 text-left w-28">
+                        {headerSortLink("Urgensi", "urgency", "service")}
                       </th>
                       <th className="px-4 py-3 text-left">
                         {headerSortLink("Petugas", "handlerName", "service")}
@@ -1108,10 +1108,32 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                         key={s.id}
                         className="border-b border-gray-200 odd:bg-white even:bg-gray-50"
                       >
-                        <td className="px-4 py-3 whitespace-nowrap">{formatDate(s.createdAt)}</td>
-                        <td className="px-4 py-3 font-medium min-w-[12rem]">{s.customerName}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {formatDate((s as any).requestDate ?? s.createdAt)}
+                        </td>
+                        <td className="px-4 py-3 font-medium min-w-[12rem]">
+                          {(s as any).reporterName ?? s.customerName}
+                        </td>
                         <td className="px-4 py-3 align-top min-w-[14rem]">{s.address}</td>
-                        <td className="px-4 py-3 font-medium w-20">{s.serviceNumber ?? "-"}</td>
+                        <td className="px-4 py-3 font-medium w-28">
+                          {(() => {
+                            const u = ((s as any).urgency as string | undefined) ?? undefined;
+                            if (!u) return "-";
+                            const cls =
+                              u === "HIGH"
+                                ? "bg-red-50 text-red-700"
+                                : u === "MEDIUM"
+                                  ? "bg-amber-50 text-amber-700"
+                                  : "bg-green-50 text-green-700"; // LOW
+                            return (
+                              <span
+                                className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${cls}`}
+                              >
+                                {u}
+                              </span>
+                            );
+                          })()}
+                        </td>
                         <td className="px-4 py-3">{s.handlerName ?? s.receivedBy ?? "-"}</td>
                         <td className="px-4 py-3 align-top">
                           <div className="text-gray-700">{joinJsonArray(s.reasons)}</div>
