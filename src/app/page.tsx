@@ -33,11 +33,9 @@ function HomePageInner() {
       // Prefill SR from query (compatible with complaint form linking)
       setActive("service");
       setSrInitial({
-        customerName: sp.get("customerName") || undefined,
+        reporterName: sp.get("customerName") || undefined,
         address: sp.get("address") || undefined,
-        phone: sp.get("phone") || undefined,
-        serviceNumber: sp.get("connectionNumber") || undefined,
-        complaintCategory: sp.get("category") || undefined,
+        reporterPhone: sp.get("phone") || undefined,
       });
       const compId = sp.get("complaintId") || undefined;
       if (compId) setComplaintId(compId);
@@ -171,7 +169,8 @@ function HomePageInner() {
         ) : null}
         {hasFlow && active === "service" && role === "humas" && (
           <ServiceRequestForm
-            initialData={srInitial}
+            initialData={{ ...srInitial, caseId: complaintId }}
+            caseId={complaintId}
             onSaved={(id) => {
               setServiceRequestId(id);
               const complaintId = sp.get("complaintId");
