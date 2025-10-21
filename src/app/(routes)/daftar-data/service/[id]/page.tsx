@@ -76,7 +76,9 @@ export default async function ServiceDetail({
           { label: "Daftar Data", href: "/daftar-data" },
           { label: "Permintaan Service", href: "/daftar-data?tab=service" },
           {
-            label: `Permintaan Service: ${service.serviceNumber ?? service.customerName ?? id}`,
+            label: `Permintaan Service: ${
+              (service as any).reporterName ?? service.customerName ?? id
+            }`,
           },
         ]}
       />
@@ -89,27 +91,64 @@ export default async function ServiceDetail({
           </Link>
         </div>
       </div>
+      {/* PSP primary details */}
       <div className="card p-4 space-y-2 text-sm">
         <div>
+          <span className="text-gray-600">Tgl Permintaan:</span>{" "}
+          {formatDate((service as any).requestDate ?? service.createdAt)}
+        </div>
+        <div>
+          <span className="text-gray-600">Nama Pelapor:</span>{" "}
+          {(service as any).reporterName ?? service.customerName}
+        </div>
+        <div>
+          <span className="text-gray-600">No. Kontak:</span>{" "}
+          {(service as any).reporterPhone ?? service.phone ?? "-"}
+        </div>
+        <div>
+          <span className="text-gray-600">Alamat/Lokasi:</span> {service.address}
+        </div>
+        <div>
+          <span className="text-gray-600">Urgensi:</span>{" "}
+          {(() => {
+            const u = ((service as any).urgency as string | undefined) ?? undefined;
+            if (!u) return "-";
+            const cls =
+              u === "HIGH"
+                ? "bg-red-50 text-red-700"
+                : u === "MEDIUM"
+                  ? "bg-amber-50 text-amber-700"
+                  : "bg-green-50 text-green-700"; // LOW
+            return (
+              <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${cls}`}>
+                {u}
+              </span>
+            );
+          })()}
+        </div>
+        <div>
+          <span className="text-gray-600">Deskripsi/Keluhan:</span>{" "}
+          {(service as any).description ?? "-"}
+        </div>
+        <div>
+          <span className="text-gray-600">Catatan Tambahan:</span> {(service as any).notes ?? "-"}
+        </div>
+      </div>
+
+      {/* Legacy/operational details retained for completeness */}
+      <div className="card p-4 space-y-2 text-sm">
+        <div className="font-medium mb-1">Detail Tambahan</div>
+        <div>
           <span className="text-gray-600">Tgl Input:</span> {formatDate(service.createdAt)}
-        </div>
-        <div>
-          <span className="text-gray-600">Nama:</span> {service.customerName}
-        </div>
-        <div>
-          <span className="text-gray-600">Alamat:</span> {service.address}
         </div>
         <div>
           <span className="text-gray-600">No. SL:</span> {service.serviceNumber ?? "-"}
         </div>
         <div>
-          <span className="text-gray-600">Telepon:</span> {service.phone ?? "-"}
+          <span className="text-gray-600">Alasan (opsional):</span> {joinJsonArray(service.reasons)}
         </div>
         <div>
-          <span className="text-gray-600">Alasan:</span> {joinJsonArray(service.reasons)}
-        </div>
-        <div>
-          <span className="text-gray-600">Tindakan:</span> {service.actionTaken ?? "-"}
+          <span className="text-gray-600">Tindakan (opsional):</span> {service.actionTaken ?? "-"}
         </div>
       </div>
       <div className="card p-4 text-sm">
