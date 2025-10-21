@@ -9,39 +9,38 @@ import { serviceRequestSchema } from "@/lib/schemas/serviceRequest";
 export async function POST(req: Request) {
   const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   const role = (token as any)?.role as string | undefined;
-  if (!(role === "humas")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  if (role !== "humas") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const raw = await req.json();
   const data = serviceRequestSchema.parse(raw);
 
-  const parseDate = (v?: string) => (v ? new Date(v) : null);
-
   const created = await prisma.serviceRequest.create({
     data: {
-      customerName: data.customerName,
+      // kompatibilitas tampilan lama
+      customerName: data.reporterName,
       address: data.address,
-      serviceNumber: data.serviceNumber ?? null,
-      phone: data.phone ?? null,
-      receivedAt: parseDate(data.receivedAt) ?? undefined,
-      receivedBy: data.receivedBy ?? null,
-      handledAt: parseDate(data.handledAt) ?? undefined,
-      handlerName: data.handlerName ?? null,
-      inspectedAt: parseDate(data.inspectedAt) ?? undefined,
-      inspectorName: data.inspectorName ?? null,
-      reasons: Array.isArray(data.reasons) ? (data.reasons as any) : [],
-      otherReason: data.otherReason ?? null,
-      actionTaken: data.actionTaken ?? null,
-      serviceCostBy: data.serviceCostBy ?? null,
-      handoverReceiver: data.handoverReceiver ?? null,
-      handoverCustomer: data.handoverCustomer ?? null,
-      handoverAt: parseDate(data.handoverAt) ?? undefined,
+      phone: data.reporterPhone,
+
+      // PSP fields
+      reporterName: data.reporterName,
+      reporterPhone: data.reporterPhone,
+      description: data.description,
+      urgency: data.urgency, // sudah LOW|MEDIUM|HIGH
+      requestDate: data.requestDate,
+      notes: data.notes ?? null,
     },
   });
 
-  return NextResponse.json({
-    ...created,
-  });
+  if (data.caseId) {
+    await prisma.complaint
+      .update({
+        where: { id: data.caseId },
+        data: { serviceRequestId: created.id, processedAt: new Date() },
+      })
+      .catch(() => {});
+  }
+
+  return NextResponse.json(created);
 }
 
 export async function GET(req: Request) {
