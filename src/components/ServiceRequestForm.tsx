@@ -1,192 +1,151 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { useToast } from "@/components/ToastProvider";
 
-const reasonsList = [
-  "WM Mati",
-  "WM Kabur",
-  "Pipa Bocor",
-  "Kaca WM Pecah",
-  "Tidak ada air",
-  "Bocor sesudah WM",
-  "Bocor sebelum WM",
-  "WM tertanam",
-  "WM dibawah bangunan",
-  "WM diluar tembok batas",
-  "WM ditempat sempit",
-  "WM tertanam bahan bangunan",
-  "Lokasi WM rendah",
-  "Pemakaian tinggi",
-  "Air kecil",
-] as const;
+const phoneRegex = /^[+\d ]+$/;
 
-const schema = z.object({
-  customerName: z.string().min(1),
-  address: z.string().min(1),
-  serviceNumber: z.string().optional(),
-  phone: z.string().optional(),
-  receivedAt: z.string().optional(),
-  receivedBy: z.string().optional(),
-  handledAt: z.string().optional(),
-  handlerName: z.string().optional(),
-  inspectedAt: z.string().optional(),
-  inspectorName: z.string().optional(),
-  reasons: z.array(z.enum(reasonsList)).default([]),
-  otherReason: z.string().optional(),
-  actionTaken: z.string().optional(),
-  serviceCostBy: z.enum(["PERUMDA AM", "Langganan"]).optional(),
-  handoverReceiver: z.string().optional(),
-  handoverCustomer: z.string().optional(),
-  handoverAt: z.string().optional(),
+const uiSchema = z.object({
+  caseId: z.string().optional(),
+  reporterName: z.string().min(2).max(100),
+  reporterPhone: z.string().min(8).max(20).regex(phoneRegex, {
+    message: "Hanya boleh +, spasi, dan angka",
+  }),
+  address: z.string().min(5).max(200),
+  description: z.string().min(10).max(2000),
+  urgency: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
+  requestDate: z.string().min(1), // yyyy-mm-dd
+  notes: z.string().max(2000).optional(),
 });
+
+type UiInput = z.infer<typeof uiSchema>;
 
 export default function ServiceRequestForm({
   onSaved,
   initialData,
+  caseId,
 }: {
   onSaved?: (id: string) => void;
-  initialData?: Partial<z.infer<typeof schema>> & {
-    // passthrough fields from complaint for mapping
-    complaintCategory?: string;
-  };
+  initialData?: Partial<UiInput> & { complaintCategory?: string };
+  caseId?: string;
 }) {
   const { push } = useToast();
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const form = useForm<UiInput>({
+    resolver: zodResolver(uiSchema),
     defaultValues: {
-      reasons: [],
-      customerName: initialData?.customerName || "",
+      caseId: caseId || initialData?.caseId,
+      reporterName: initialData?.reporterName || "",
+      reporterPhone: initialData?.reporterPhone || "",
       address: initialData?.address || "",
-      serviceNumber: initialData?.serviceNumber,
-      phone: initialData?.phone,
-      otherReason: initialData?.otherReason,
-      actionTaken: initialData?.actionTaken,
+      description: initialData?.description || "",
+      urgency: initialData?.urgency || "MEDIUM",
+      requestDate: initialData?.requestDate || today,
+      notes: initialData?.notes || "",
     },
   });
 
-  // Map complaint category to reasons if it matches our list; otherwise drop to otherReason
-  if (initialData?.complaintCategory) {
-    const cat = initialData.complaintCategory as (typeof reasonsList)[number] | string;
-    if ((reasonsList as readonly string[]).includes(cat)) {
-      // set as a reason
-      form.setValue("reasons", [cat as (typeof reasonsList)[number]]);
-    } else if (!form.getValues("otherReason")) {
-      form.setValue("otherReason", cat);
-    }
-  }
-
-  const onSubmit = async (values: z.infer<typeof schema>) => {
+  const onSubmit = async (values: UiInput) => {
+    const payload = {
+      ...values,
+      // normalize
+      notes: values.notes?.trim() ? values.notes : undefined,
+    };
     const res = await fetch("/api/service-requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
+      body: JSON.stringify(payload),
     });
-    if (!res.ok) push({ message: "Gagal menyimpan", type: "error" });
-    else {
-      const json = await res.json();
-      push({ message: "Permintaan service tersimpan", type: "success" });
-      onSaved?.(json.id);
+    if (!res.ok) {
+      push({ message: "Gagal menyimpan", type: "error" });
+      return;
     }
-    form.reset({ reasons: [] });
+    const json = await res.json();
+    push({ message: "Permintaan service tersimpan", type: "success" });
+    onSaved?.(json.id);
+    form.reset({
+      caseId: caseId || "",
+      reporterName: "",
+      reporterPhone: "",
+      address: "",
+      description: "",
+      urgency: "MEDIUM",
+      requestDate: today,
+      notes: "",
+    });
   };
 
+  const { register, handleSubmit, formState } = form;
+  const { errors } = formState;
+
   return (
-    <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+    <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      {/* Hidden caseId when present (from complaint) */}
+      {caseId ? <input type="hidden" {...register("caseId")} value={caseId} /> : null}
+
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="label">Nama Pelanggan</label>
-          <input className="input" {...form.register("customerName")} />
+          <label className="label">Nama Pelapor</label>
+          <input className="input" {...register("reporterName")} />
+          {errors.reporterName && (
+            <div className="text-xs text-red-600">{errors.reporterName.message as string}</div>
+          )}
         </div>
         <div>
-          <label className="label">No. Telp</label>
-          <input className="input" {...form.register("phone")} />
+          <label className="label">No. Kontak</label>
+          <input
+            className="input"
+            placeholder="contoh: +62 812 3456 7890"
+            {...register("reporterPhone")}
+          />
+          {errors.reporterPhone && (
+            <div className="text-xs text-red-600">{errors.reporterPhone.message as string}</div>
+          )}
         </div>
         <div className="md:col-span-2">
-          <label className="label">Alamat</label>
-          <input className="input" {...form.register("address")} />
+          <label className="label">Alamat/Lokasi</label>
+          <input className="input" {...register("address")} />
+          {errors.address && (
+            <div className="text-xs text-red-600">{errors.address.message as string}</div>
+          )}
+        </div>
+        <div className="md:col-span-2">
+          <label className="label">Deskripsi/Keluhan</label>
+          <textarea className="input min-h-[120px]" {...register("description")} />
+          {errors.description && (
+            <div className="text-xs text-red-600">{errors.description.message as string}</div>
+          )}
         </div>
         <div>
-          <label className="label">No. S.L.</label>
-          <input className="input" {...form.register("serviceNumber")} />
-        </div>
-        <div>
-          <label className="label">Diterima (Tanggal & Jam)</label>
-          <input type="datetime-local" className="input" {...form.register("receivedAt")} />
-        </div>
-        <div>
-          <label className="label">Petugas Jaga</label>
-          <input className="input" {...form.register("receivedBy")} />
-        </div>
-        <div>
-          <label className="label">Dikerjakan (Tanggal & Jam)</label>
-          <input type="datetime-local" className="input" {...form.register("handledAt")} />
-        </div>
-        <div>
-          <label className="label">Petugas Penanggulangan</label>
-          <input className="input" {...form.register("handlerName")} />
-        </div>
-        <div>
-          <label className="label">Diperiksa (Tanggal & Jam)</label>
-          <input type="datetime-local" className="input" {...form.register("inspectedAt")} />
-        </div>
-        <div>
-          <label className="label">Nama Pemeriksa</label>
-          <input className="input" {...form.register("inspectorName")} />
-        </div>
-      </div>
-
-      <div>
-        <label className="label">Alasan Permintaan Service</label>
-        <div className="grid md:grid-cols-3 gap-y-2">
-          {reasonsList.map((r) => (
-            <label key={r} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="checkbox" value={r} {...form.register("reasons")} />
-              {r}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4">
-        <div>
-          <label className="label">Lain-lain</label>
-          <input className="input" {...form.register("otherReason")} />
-        </div>
-        <div>
-          <label className="label">Tindakan yang dilakukan</label>
-          <input className="input" {...form.register("actionTaken")} />
-        </div>
-        <div>
-          <label className="label">Biaya service ditanggung</label>
-          <select className="input" {...form.register("serviceCostBy")}>
-            <option value="">Pilih</option>
-            <option>PERUMDA AM</option>
-            <option>Langganan</option>
+          <label className="label">Urgensi</label>
+          <select className="input" {...register("urgency")} defaultValue="MEDIUM">
+            <option value="LOW">LOW</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="HIGH">HIGH</option>
           </select>
+          {errors.urgency && (
+            <div className="text-xs text-red-600">{errors.urgency.message as string}</div>
+          )}
+        </div>
+        <div>
+          <label className="label">Tanggal Permintaan</label>
+          <input type="date" className="input" {...register("requestDate")} />
+          {errors.requestDate && (
+            <div className="text-xs text-red-600">{errors.requestDate.message as string}</div>
+          )}
+        </div>
+        <div className="md:col-span-2">
+          <label className="label">Catatan Tambahan (opsional)</label>
+          <textarea className="input min-h-[80px]" {...register("notes")} />
+          {errors.notes && (
+            <div className="text-xs text-red-600">{errors.notes.message as string}</div>
+          )}
         </div>
       </div>
-
-      <fieldset className="border rounded p-3">
-        <legend className="text-sm font-medium">Berita Acara (Ringkas)</legend>
-        <div className="grid md:grid-cols-3 gap-4">
-          <div>
-            <label className="label">Yang menerima</label>
-            <input className="input" {...form.register("handoverReceiver")} />
-          </div>
-          <div>
-            <label className="label">Nama Pelanggan</label>
-            <input className="input" {...form.register("handoverCustomer")} />
-          </div>
-          <div>
-            <label className="label">Tanggal</label>
-            <input type="datetime-local" className="input" {...form.register("handoverAt")} />
-          </div>
-        </div>
-      </fieldset>
 
       <div className="pt-2">
         <button type="submit" className="btn">
