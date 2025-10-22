@@ -190,6 +190,7 @@ function HomePageInner() {
         )}
         {hasFlow && active === "workorder" && role === "distribusi" && (
           <WorkOrderForm
+            caseId={complaintId}
             serviceRequestId={serviceRequestId}
             onSaved={(id) => {
               setWorkOrderId(id);
