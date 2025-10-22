@@ -12,49 +12,59 @@ export async function POST(req: Request) {
   if (!(role === "distribusi")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const raw = await req.json();
-  const data = repairReportSchema.parse(raw);
-  const parseDate = (v?: string) => (v ? new Date(v) : null);
-  const created = await prisma.$transaction(async (tx) => {
-    const rr = await tx.repairReport.create({
-      data: {
-        actions: Array.isArray(data.actions) ? (data.actions as any) : [],
-        otherActions: data.otherActions ?? null,
-        notHandledReasons: Array.isArray(data.notHandledReasons)
-          ? (data.notHandledReasons as any)
-          : [],
-        otherNotHandled: data.otherNotHandled ?? null,
-        city: data.city ?? null,
-        cityDate: parseDate(data.cityDate) ?? undefined,
-        executorName: data.executorName ?? null,
-        team: data.team ?? null,
-        authorizedBy: data.authorizedBy ?? null,
-        ...(data.workOrderId ? { workOrder: { connect: { id: data.workOrderId } } } : {}),
-      },
-    });
-    if (data.workOrderId) {
-      const res1 = await (tx as any).complaint.updateMany({
-        where: { workOrderId: data.workOrderId, repairReportId: null },
-        data: { repairReportId: rr.id, updatedAt: new Date() },
-      });
-      if ((res1?.count ?? 0) === 0) {
-        const wo = await tx.workOrder.findUnique({
-          where: { id: data.workOrderId },
-          select: { serviceRequestId: true },
-        });
-        if (wo?.serviceRequestId) {
-          await (tx as any).complaint.updateMany({
-            where: { serviceRequestId: wo.serviceRequestId, repairReportId: null },
-            data: { repairReportId: rr.id, updatedAt: new Date() },
-          });
-        }
+  try {
+    const raw = await req.json();
+    const data = repairReportSchema.parse(raw);
+
+    const created = await prisma.$transaction(async (tx) => {
+      // Validate complaint and SPK linkage
+      const complaint = await tx.complaint.findUnique({ where: { id: data.caseId } });
+      if (!complaint) throw new Error("Kasus tidak ditemukan");
+      if (complaint.workOrderId !== data.spkId) {
+        throw new Error("SPK tidak sesuai dengan kasus");
       }
+
+      // ensure work order exists
+      const wo = await tx.workOrder.findUnique({ where: { id: data.spkId } });
+      if (!wo) throw new Error("SPK tidak ditemukan");
+
+      const rr = await tx.repairReport.create({
+        data: {
+          startTime: new Date(data.startTime),
+          endTime: new Date(data.endTime),
+          result: data.result as any,
+          remarks: data.remarks ?? null,
+          customerConfirmationName: data.customerConfirmationName ?? null,
+          workOrder: { connect: { id: data.spkId } },
+        },
+      });
+
+      // Link to complaint and optionally update status/history
+      await tx.complaint.update({
+        where: { id: complaint.id },
+        data: { repairReportId: rr.id, status: "RR_CREATED" as any, updatedAt: new Date() },
+      });
+      await tx.statusHistory.create({
+        data: {
+          complaintId: complaint.id,
+          status: "RR_CREATED",
+          actorRole: "distribusi",
+          actorId: (token as any)?.sub ?? null,
+          note: null,
+        },
+      });
+
+      return rr;
+    });
+
+    return NextResponse.json(created);
+  } catch (e: any) {
+    if (e?.name === "ZodError") {
+      return NextResponse.json({ error: e.flatten?.() ?? String(e) }, { status: 400 });
     }
-    return rr;
-  });
-  return NextResponse.json({
-    ...created,
-  });
+    const msg = typeof e?.message === "string" ? e.message : "Gagal menyimpan";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 }
 
 export async function GET(req: Request) {
