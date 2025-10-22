@@ -12,37 +12,64 @@ export async function POST(req: Request) {
   if (!(role === "distribusi")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const raw = await req.json();
-  const data = workOrderSchema.parse(raw);
-  const parseDate = (v?: string) => (v ? new Date(v) : null);
-  const created = await prisma.$transaction(async (tx) => {
-    const wo = await tx.workOrder.create({
-      data: {
-        reportDate: parseDate(data.reportDate) ?? undefined,
-        number: data.number ?? null,
-        handledDate: parseDate(data.handledDate) ?? undefined,
-        reporterName: data.reporterName ?? null,
-        handlingTime: data.handlingTime ?? null,
-        disturbanceLocation: data.disturbanceLocation ?? null,
-        disturbanceType: data.disturbanceType ?? null,
-        city: data.city ?? null,
-        cityDate: parseDate(data.cityDate) ?? undefined,
-        executorName: data.executorName ?? null,
-        team: data.team ?? null,
-        ...(data.serviceRequestId
-          ? { serviceRequest: { connect: { id: data.serviceRequestId } } }
-          : {}),
-      },
-    });
-    if (data.serviceRequestId) {
-      await (tx as any).complaint.updateMany({
-        where: { serviceRequestId: data.serviceRequestId, workOrderId: null },
-        data: { workOrderId: wo.id, updatedAt: new Date(), processedAt: new Date() },
+  try {
+    const raw = await req.json();
+    const data = workOrderSchema.parse(raw);
+
+    const created = await prisma.$transaction(async (tx) => {
+      // Validate complaint and PSP linkage
+      const complaint = await tx.complaint.findUnique({ where: { id: data.caseId } });
+      if (!complaint) throw new Error("Kasus tidak ditemukan");
+      if (complaint.serviceRequestId !== data.pspId) {
+        throw new Error("PSP tidak sesuai dengan kasus");
+      }
+
+      const wo = await tx.workOrder.create({
+        data: {
+          number: data.workOrderNumber ?? null,
+          team: data.teamName,
+          technicians: data.technicians,
+          scheduledDate: data.scheduledDate,
+          instructions: data.instructions ?? null,
+          // keep compatibility with existing fields when possible
+          executorName: null,
+          reporterName: null,
+          handlingTime: null,
+          disturbanceLocation: null,
+          disturbanceType: null,
+          city: null,
+          cityDate: null,
+          handledDate: null,
+          reportDate: null,
+          serviceRequest: { connect: { id: data.pspId } },
+        },
       });
+
+      // Attach to complaint and update status + history
+      await tx.complaint.update({
+        where: { id: complaint.id },
+        data: { workOrderId: wo.id, status: "SPK_CREATED" as any, processedAt: new Date() },
+      });
+      await (tx as any).statusHistory.create({
+        data: {
+          complaintId: complaint.id,
+          status: "SPK_CREATED",
+          actorRole: "distribusi",
+          actorId: (token as any)?.sub ?? null,
+          note: null,
+        },
+      });
+
+      return wo;
+    });
+    return NextResponse.json(created);
+  } catch (e: any) {
+    if (e?.name === "ZodError") {
+      return NextResponse.json({ error: e.flatten?.() ?? String(e) }, { status: 400 });
     }
-    return wo;
-  });
-  return NextResponse.json(created);
+    const msg = typeof e?.message === "string" ? e.message : "Gagal menyimpan";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 }
 
 export async function GET(req: Request) {
