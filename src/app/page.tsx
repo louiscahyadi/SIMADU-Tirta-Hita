@@ -207,7 +207,7 @@ function HomePageInner() {
         )}
         {hasFlow && active === "repair" && role === "distribusi" && (
           <RepairReportForm
-            workOrderId={workOrderId}
+            spkId={workOrderId}
             onSaved={(repairId) => {
               // selesai flow
               if (complaintId) {
