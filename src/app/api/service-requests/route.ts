@@ -14,31 +14,50 @@ export async function POST(req: Request) {
   const raw = await req.json();
   const data = serviceRequestSchema.parse(raw);
 
-  const created = await prisma.serviceRequest.create({
-    data: {
-      // kompatibilitas tampilan lama
-      customerName: data.reporterName,
-      address: data.address,
-      phone: data.reporterPhone,
+  const created = await prisma.$transaction(async (tx) => {
+    const sr = await tx.serviceRequest.create({
+      data: {
+        // kompatibilitas tampilan lama
+        customerName: data.reporterName,
+        address: data.address,
+        phone: data.reporterPhone,
 
-      // PSP fields
-      reporterName: data.reporterName,
-      reporterPhone: data.reporterPhone,
-      description: data.description,
-      urgency: data.urgency, // sudah LOW|MEDIUM|HIGH
-      requestDate: data.requestDate,
-      notes: data.notes ?? null,
-    },
+        // PSP fields
+        reporterName: data.reporterName,
+        reporterPhone: data.reporterPhone,
+        description: data.description,
+        urgency: data.urgency, // sudah LOW|MEDIUM|HIGH
+        requestDate: data.requestDate,
+        notes: data.notes ?? null,
+      },
+    });
+
+    if (data.caseId) {
+      // Link complaint to SR, set status, and write history if complaint exists
+      const comp = await tx.complaint.findUnique({ where: { id: data.caseId } });
+      if (comp) {
+        await tx.complaint.update({
+          where: { id: comp.id },
+          data: {
+            serviceRequestId: sr.id,
+            processedAt: new Date(),
+            status: "PSP_CREATED" as any,
+          },
+        });
+        await (tx as any).statusHistory.create({
+          data: {
+            complaintId: comp.id,
+            status: "PSP_CREATED",
+            actorRole: "humas",
+            actorId: (token as any)?.sub ?? null,
+            note: null,
+          },
+        });
+      }
+    }
+
+    return sr;
   });
-
-  if (data.caseId) {
-    await prisma.complaint
-      .update({
-        where: { id: data.caseId },
-        data: { serviceRequestId: created.id, processedAt: new Date() },
-      })
-      .catch(() => {});
-  }
 
   return NextResponse.json(created);
 }
