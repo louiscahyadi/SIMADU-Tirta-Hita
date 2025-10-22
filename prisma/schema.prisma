@@ -15,6 +15,12 @@ enum CaseStatus {
   COMPLETED
 }
 
+enum RepairResult {
+  FIXED
+  MONITORING
+  NOT_FIXED
+}
+
 enum Urgency {
   LOW
   MEDIUM
@@ -104,18 +110,24 @@ model RepairReport {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  actions            Json?    // JSON array of actions
+  // New BAP fields (MVP)
+  actionTaken        String?   @db.Text
+  startTime          DateTime?
+  endTime            DateTime?
+  result             RepairResult?
+  remarks            String?   @db.Text
+  customerConfirmationName String?
+
+  // Deprecated legacy fields (kept for backward compatibility)
+  actions            Json?
   otherActions       String?
-
-  notHandledReasons  Json?    // JSON array of reasons
+  notHandledReasons  Json?
   otherNotHandled    String?
-
   city               String?
   cityDate           DateTime?
-
   executorName       String?
   team               String?
-  authorizedBy       String? // Ka Sub Bag / An.Ka.Bag
+  authorizedBy       String?
 
   // Relations
   workOrderId        String?  @unique
