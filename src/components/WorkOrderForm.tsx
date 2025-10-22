@@ -10,7 +10,7 @@ type FormValues = {
   pspId: string;
   teamName: string;
   technicians: string;
-  scheduledDate: string; // yyyy-mm-dd
+  scheduledDate: string;
   instructions?: string;
   workOrderNumber?: string;
 };
