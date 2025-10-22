@@ -35,6 +35,19 @@ function joinJsonArray(value: any) {
   return "-";
 }
 
+function formatDuration(start?: Date | string | null, end?: Date | string | null) {
+  if (!start || !end) return "-";
+  const s = typeof start === "string" ? new Date(start) : start;
+  const e = typeof end === "string" ? new Date(end) : end;
+  const ms = e.getTime() - s.getTime();
+  if (!isFinite(ms) || ms < 0) return "-";
+  const minutes = Math.floor(ms / 60000);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0) return `${h}j ${m}m`;
+  return `${m}m`;
+}
+
 export default async function RepairDetail({
   params,
   searchParams,
@@ -90,7 +103,7 @@ export default async function RepairDetail({
           { label: "Beranda", href: "/" },
           { label: "Daftar Data", href: "/daftar-data" },
           { label: "Berita Acara Perbaikan", href: "/daftar-data?tab=repair" },
-          { label: `Berita Acara: ${rr.city ?? id}` },
+          { label: `Berita Acara: ${(rr as any).result ?? rr.city ?? id}` },
         ]}
       />
       <div className="flex items-center justify-between">
@@ -106,22 +119,80 @@ export default async function RepairDetail({
         <div>
           <span className="text-gray-600">Tgl Input:</span> {formatDate(rr.createdAt)}
         </div>
-        <div>
-          <span className="text-gray-600">Kota:</span> {rr.city ?? "-"}
+        <div className="grid md:grid-cols-2 gap-2">
+          <div>
+            <span className="text-gray-600">Waktu Mulai:</span> {formatDate((rr as any).startTime)}
+          </div>
+          <div>
+            <span className="text-gray-600">Waktu Selesai:</span> {formatDate((rr as any).endTime)}
+          </div>
         </div>
         <div>
-          <span className="text-gray-600">Tim/Pelaksana:</span> {rr.team ?? rr.executorName ?? "-"}
+          <span className="text-gray-600">Durasi:</span>{" "}
+          {formatDuration((rr as any).startTime, (rr as any).endTime)}
         </div>
         <div>
-          <span className="text-gray-600">Tindakan:</span> {joinJsonArray(rr.actions)}
+          <span className="text-gray-600">Hasil:</span>{" "}
+          {(() => {
+            const res = ((rr as any).result as string | undefined) ?? undefined;
+            if (!res) return "-";
+            const cls =
+              res === "FIXED"
+                ? "bg-green-50 text-green-700"
+                : res === "MONITORING"
+                  ? "bg-amber-50 text-amber-700"
+                  : "bg-red-50 text-red-700"; // NOT_FIXED or others
+            return (
+              <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${cls}`}>
+                {res}
+              </span>
+            );
+          })()}
         </div>
         <div>
-          <span className="text-gray-600">Tidak Ditangani:</span>{" "}
-          {joinJsonArray(rr.notHandledReasons)}
+          <span className="text-gray-600">Tindakan Perbaikan:</span>{" "}
+          {(rr as any).actionTaken?.trim?.() || joinJsonArray((rr as any).actions)}
         </div>
         <div>
-          <span className="text-gray-600">Disahkan Oleh:</span> {rr.authorizedBy ?? "-"}
+          <span className="text-gray-600">Catatan Akhir:</span> {(rr as any).remarks ?? "-"}
         </div>
+        <div>
+          <span className="text-gray-600">Yang Menerima:</span>{" "}
+          {(rr as any).customerConfirmationName ?? "-"}
+        </div>
+
+        {/* Legacy/opsional info for data lama */}
+        {(rr.city || rr.team || rr.executorName || rr.authorizedBy || rr.cityDate) && (
+          <div className="mt-2 pt-2 border-t border-gray-100 grid md:grid-cols-2 gap-2">
+            {rr.city ? (
+              <div>
+                <span className="text-gray-600">Kota:</span> {rr.city}
+              </div>
+            ) : null}
+            {rr.cityDate ? (
+              <div>
+                <span className="text-gray-600">Tgl Kota:</span> {formatDate(rr.cityDate)}
+              </div>
+            ) : null}
+            {rr.team || rr.executorName ? (
+              <div className="md:col-span-2">
+                <span className="text-gray-600">Tim/Pelaksana:</span> {rr.team ?? rr.executorName}
+              </div>
+            ) : null}
+            {rr.authorizedBy ? (
+              <div className="md:col-span-2">
+                <span className="text-gray-600">Disahkan Oleh:</span> {rr.authorizedBy}
+              </div>
+            ) : null}
+            {Array.isArray((rr as any).notHandledReasons) &&
+            (rr as any).notHandledReasons?.length ? (
+              <div className="md:col-span-2">
+                <span className="text-gray-600">Tidak Ditangani:</span>{" "}
+                {joinJsonArray((rr as any).notHandledReasons)}
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
       <div className="card p-4 text-sm">
         <div className="font-medium mb-2">Keterkaitan</div>
