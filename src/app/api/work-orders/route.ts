@@ -23,6 +23,10 @@ export async function POST(req: Request) {
       if (complaint.serviceRequestId !== data.pspId) {
         throw new Error("PSP tidak sesuai dengan kasus");
       }
+      // Only allow creating SPK when current case status is PSP_CREATED
+      if ((complaint as any).status !== "PSP_CREATED") {
+        throw new Error("SPK hanya bisa dibuat ketika status kasus = PSP_CREATED");
+      }
 
       const wo = await tx.workOrder.create({
         data: {
@@ -50,7 +54,7 @@ export async function POST(req: Request) {
         where: { id: complaint.id },
         data: { workOrderId: wo.id, status: "SPK_CREATED" as any, processedAt: new Date() },
       });
-      await (tx as any).statusHistory.create({
+      await tx.statusHistory.create({
         data: {
           complaintId: complaint.id,
           status: "SPK_CREATED",
