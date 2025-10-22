@@ -7,6 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum CaseStatus {
+  REPORTED
+  PSP_CREATED
+  SPK_CREATED
+  RR_CREATED
+  COMPLETED
+}
+
 enum Urgency {
   LOW
   MEDIUM
@@ -77,6 +85,11 @@ model WorkOrder {
   executorName       String?
   team               String?
 
+  // New SPK (MVP) fields
+  technicians        String?   // daftar nama teknisi dipisah koma
+  scheduledDate      DateTime?
+  instructions       String?   @db.Text
+
   // Relations
   serviceRequestId   String?   @unique
   serviceRequest     ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
@@ -126,6 +139,10 @@ model Complaint {
   category         String   // Kategori pengaduan dari daftar pilihan
   processedAt      DateTime?
 
+  // Status tracking
+  status           CaseStatus @default(REPORTED)
+  histories        StatusHistory[]
+
   // Optional linkage to processing chain
   serviceRequestId String? @unique
   workOrderId      String? @unique
@@ -136,4 +153,17 @@ model Complaint {
   repairReport     RepairReport?   @relation(name: "ComplaintToRepairReport", fields: [repairReportId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
+}
+
+model StatusHistory {
+  id           String     @id @default(cuid())
+  createdAt    DateTime   @default(now())
+  complaintId  String
+  complaint    Complaint  @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  status       CaseStatus
+  note         String?    @db.Text
+  actorRole    String
+  actorId      String?
+
+  @@index([complaintId, createdAt])
 }
