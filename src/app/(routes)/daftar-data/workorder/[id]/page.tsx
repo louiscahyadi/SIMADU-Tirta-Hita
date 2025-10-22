@@ -88,16 +88,18 @@ export default async function WorkOrderDetail({
           <span className="text-gray-600">No:</span> {wo.number ?? "-"}
         </div>
         <div>
-          <span className="text-gray-600">Pelapor:</span> {wo.reporterName ?? "-"}
+          <span className="text-gray-600">Tim/Unit:</span> {wo.team ?? "-"}
         </div>
         <div>
-          <span className="text-gray-600">Lokasi:</span> {wo.disturbanceLocation ?? "-"}
+          <span className="text-gray-600">Teknisi:</span>{" "}
+          {((wo as any).technicians as string) ?? "-"}
         </div>
         <div>
-          <span className="text-gray-600">Jenis:</span> {wo.disturbanceType ?? "-"}
+          <span className="text-gray-600">Jadwal:</span> {formatDate((wo as any).scheduledDate)}
         </div>
         <div>
-          <span className="text-gray-600">Tim/Pelaksana:</span> {wo.team ?? wo.executorName ?? "-"}
+          <span className="text-gray-600">Instruksi:</span>{" "}
+          {((wo as any).instructions as string) ?? "-"}
         </div>
       </div>
       <div className="card p-4 text-sm">
