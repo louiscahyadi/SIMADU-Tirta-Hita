@@ -385,7 +385,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
         "disturbanceType",
         "team",
       ],
-      repair: ["createdAt", "city", "team", "authorizedBy"],
+      repair: ["createdAt", "city", "team", "authorizedBy", "result", "startTime", "endTime"],
     } as const;
     const allowed = allowedMap[currentTab];
     const isAllowed = allowed.includes(field);
@@ -580,7 +580,15 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
     totalCount = await prisma.repairReport.count({ where });
     repairs = await prisma.repairReport.findMany({
       where,
-      orderBy: buildOrderBy(["createdAt", "city", "team", "authorizedBy"]),
+      orderBy: buildOrderBy([
+        "createdAt",
+        "city",
+        "team",
+        "authorizedBy",
+        "result",
+        "startTime",
+        "endTime",
+      ]),
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
@@ -1617,7 +1625,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="px-4 py-3 text-left">
-                        {headerSortLink("Tgl Input", "createdAt", "repair")}
+                        {headerSortLink("Dikirim", "createdAt", "repair")}
                       </th>
                       <th className="px-4 py-3 text-left">
                         {headerSortLink("Kota", "city", "repair")}
@@ -1625,9 +1633,16 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                       <th className="px-4 py-3 text-left">
                         {headerSortLink("Tim/Pelaksana", "team", "repair")}
                       </th>
-                      <th className="px-4 py-3 text-left">Tindakan</th>
-                      <th className="px-4 py-3 text-left">Tidak Ditangani</th>
                       <th className="px-4 py-3 text-left">
+                        {headerSortLink("Hasil", "result", "repair")}
+                      </th>
+                      <th className="px-4 py-3 text-left">
+                        {headerSortLink("Durasi", "endTime", "repair")}
+                      </th>
+                      <th className="px-4 py-3 text-left">Tindakan</th>
+                      {/* Legacy kolom berikut ditampilkan untuk data lama */}
+                      <th className="px-4 py-3 text-left hidden md:table-cell">Tidak Ditangani</th>
+                      <th className="px-4 py-3 text-left hidden md:table-cell">
                         {headerSortLink("Disahkan Oleh", "authorizedBy", "repair")}
                       </th>
                       <th className="px-4 py-3 text-left">Relasi</th>
@@ -1643,11 +1658,47 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                         <td className="px-4 py-3 whitespace-nowrap">{formatDate(r.createdAt)}</td>
                         <td className="px-4 py-3">{r.city ?? "-"}</td>
                         <td className="px-4 py-3 font-medium">{r.team ?? r.executorName ?? "-"}</td>
-                        <td className="px-4 py-3 align-top">{joinJsonArray(r.actions)}</td>
-                        <td className="px-4 py-3 align-top">
-                          {joinJsonArray(r.notHandledReasons)}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {(() => {
+                            const res = ((r as any).result as string | undefined) ?? undefined;
+                            if (!res) return "-";
+                            const cls =
+                              res === "FIXED"
+                                ? "bg-green-50 text-green-700"
+                                : res === "MONITORING"
+                                  ? "bg-amber-50 text-amber-700"
+                                  : "bg-red-50 text-red-700"; // NOT_FIXED or others
+                            return (
+                              <span
+                                className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${cls}`}
+                              >
+                                {res}
+                              </span>
+                            );
+                          })()}
                         </td>
-                        <td className="px-4 py-3">{r.authorizedBy ?? "-"}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {(() => {
+                            const start = (r as any).startTime as Date | string | undefined;
+                            const end = (r as any).endTime as Date | string | undefined;
+                            if (!start || !end) return "-";
+                            const s = typeof start === "string" ? new Date(start) : start;
+                            const e = typeof end === "string" ? new Date(end) : end;
+                            const diff = e.getTime() - s.getTime();
+                            if (!isFinite(diff) || diff < 0) return "-";
+                            const minutes = Math.floor(diff / 60000);
+                            const h = Math.floor(minutes / 60);
+                            const m = minutes % 60;
+                            return h > 0 ? `${h}j ${m}m` : `${m}m`;
+                          })()}
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          {(r as any).actionTaken?.trim?.() || joinJsonArray(r.actions as any)}
+                        </td>
+                        <td className="px-4 py-3 align-top hidden md:table-cell">
+                          {joinJsonArray((r as any).notHandledReasons)}
+                        </td>
+                        <td className="px-4 py-3 hidden md:table-cell">{r.authorizedBy ?? "-"}</td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {(() => {
                             const woId = r.workOrderId as string | undefined;
