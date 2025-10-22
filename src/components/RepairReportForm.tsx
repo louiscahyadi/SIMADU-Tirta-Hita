@@ -1,160 +1,158 @@
 "use client";
 
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 
 import { useToast } from "@/components/ToastProvider";
 
-const actionOptions = [
-  "Ganti Pipa",
-  "Ganti Siku",
-  "Ganti Socket",
-  "Ganti Double Nipple",
-  "Ganti Verloop",
-  "Ganti Water Muor",
-  "Ganti Stop Kran",
-  "Ganti Lockable",
-  "Ganti Valve Socket",
-  "Ganti Male Adaptor",
-  "Ganti Ventil",
-  "Ganti Manometer",
-  "Ganti Giboult Joint",
-  "Ganti Karet Giboult Joint",
-  "Ganti Boch",
-  "Ganti Tee Verloop",
-  "Ganti Tee Stuck",
-  "Ganti Tapping Saddle",
-  "Kencangkan Water Muor",
-  "Kencangkan Copling",
-  "Kencangkan Tapping Saddle",
-  "Kencangkan Giboult Joint",
-  "Kencangkan As Valve",
-] as const;
-
-const reasonOptions = [
-  "Alamat tidak jelas/lengkap",
-  "Alamat bocor tidak ditemukan",
-  "Rumah kosong tidak dihuni",
-  "Rumah kosong tapi dihuni",
-  "Nama tidak dikenal",
-  "Air got/Limbah/Mata air",
-] as const;
-
 type FormValues = {
-  actions: string[];
-  otherActions?: string;
-  notHandledReasons: string[];
-  otherNotHandled?: string;
-  city?: string;
-  cityDate?: string;
-  executorName?: string;
-  team?: string;
-  authorizedBy?: string;
-  workOrderId?: string;
+  caseId: string;
+  spkId: string;
+  actionTaken: string;
+  startTime: string;
+  endTime: string;
+  result: "FIXED" | "MONITORING" | "NOT_FIXED";
+  remarks?: string;
+  customerConfirmationName?: string;
 };
 
 export default function RepairReportForm({
-  workOrderId,
+  caseId,
+  spkId,
   onSaved,
 }: {
-  workOrderId?: string;
+  caseId?: string;
+  spkId?: string;
   onSaved?: (id: string) => void;
 }) {
   const { push } = useToast();
+  const nowLocal = useMemo(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+  }, []);
   const form = useForm<FormValues>({
     defaultValues: {
-      actions: [],
-      notHandledReasons: [],
-      city: "Singaraja",
-      workOrderId,
+      caseId: caseId ?? "",
+      spkId: spkId ?? "",
+      actionTaken: "",
+      startTime: nowLocal,
+      endTime: nowLocal,
+      result: "FIXED",
+      remarks: "",
+      customerConfirmationName: "",
     },
   });
 
   const onSubmit = async (values: FormValues) => {
+    if (!values.caseId || !values.spkId) {
+      push({ message: "Data kasus/SPK tidak valid", type: "error" });
+      return;
+    }
     const res = await fetch("/api/repair-reports", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...values, workOrderId }),
+      body: JSON.stringify(values),
     });
-    if (!res.ok) push({ message: "Gagal menyimpan", type: "error" });
-    else {
+    if (!res.ok) {
+      let msg = "Gagal menyimpan";
+      try {
+        const j = await res.json();
+        if (j?.error) msg = typeof j.error === "string" ? j.error : msg;
+      } catch {}
+      push({ message: msg, type: "error" });
+    } else {
       const json = await res.json();
       push({ message: "Berita acara tersimpan", type: "success" });
       onSaved?.(json.id);
+      form.reset({
+        caseId: caseId ?? "",
+        spkId: spkId ?? "",
+        actionTaken: "",
+        startTime: nowLocal,
+        endTime: nowLocal,
+        result: "FIXED",
+        remarks: "",
+        customerConfirmationName: "",
+      });
     }
-    form.reset({
-      actions: [],
-      notHandledReasons: [],
-      city: "Singaraja",
-      workOrderId,
-    });
   };
 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = form;
+
+  const start = watch("startTime");
+
   return (
-    <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-      <fieldset>
-        <legend className="label">Jenis Perbaikan/Penanganan</legend>
-        <div className="grid md:grid-cols-3 gap-y-2">
-          {actionOptions.map((a) => (
-            <label key={a} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" className="checkbox" value={a} {...form.register("actions")} />
-              {a}
-            </label>
-          ))}
-        </div>
-        <div className="mt-2">
-          <label className="label">Lain-lain</label>
-          <input className="input" {...form.register("otherActions")} />
-        </div>
-      </fieldset>
+    <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      {/* Hidden IDs */}
+      <input type="hidden" value={caseId ?? ""} {...register("caseId", { required: true })} />
+      <input type="hidden" value={spkId ?? ""} {...register("spkId", { required: true })} />
 
-      <fieldset>
-        <legend className="label">Alasan tidak dilakukan penanganan</legend>
-        <div className="grid md:grid-cols-3 gap-y-2">
-          {reasonOptions.map((r) => (
-            <label key={r} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="checkbox"
-                value={r}
-                {...form.register("notHandledReasons")}
-              />
-              {r}
-            </label>
-          ))}
-        </div>
-        <div className="mt-2">
-          <label className="label">Lain-lain</label>
-          <input className="input" {...form.register("otherNotHandled")} />
-        </div>
-      </fieldset>
-
-      <div className="grid md:grid-cols-4 gap-4">
-        <div>
-          <label className="label">Kota</label>
-          <input className="input" defaultValue="Singaraja" {...form.register("city")} />
-        </div>
-        <div>
-          <label className="label">Tanggal</label>
-          <input type="date" className="input" {...form.register("cityDate")} />
-        </div>
-        <div>
-          <label className="label">Pelaksana</label>
-          <input className="input" {...form.register("executorName")} />
-        </div>
-        <div>
-          <label className="label">Regu</label>
-          <input className="input" {...form.register("team")} />
-        </div>
+      <div>
+        <label className="label">Tindakan Perbaikan</label>
+        <textarea
+          className="input min-h-[120px]"
+          placeholder="Uraikan tindakan perbaikan yang dilakukan"
+          {...register("actionTaken", { required: true, minLength: 10, maxLength: 4000 })}
+        />
+        {errors.actionTaken && <div className="text-xs text-red-600">Wajib 10–4000 karakter</div>}
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="label">Pejabat Mengetahui</label>
-          <input className="input" {...form.register("authorizedBy")} />
+          <label className="label">Waktu Mulai</label>
+          <input
+            type="datetime-local"
+            className="input"
+            {...register("startTime", { required: true })}
+          />
+          {errors.startTime && <div className="text-xs text-red-600">Wajib diisi</div>}
+        </div>
+        <div>
+          <label className="label">Waktu Selesai</label>
+          <input
+            type="datetime-local"
+            className="input"
+            min={start || undefined}
+            {...register("endTime", { required: true })}
+          />
+          {errors.endTime && <div className="text-xs text-red-600">Wajib diisi</div>}
         </div>
       </div>
 
-      <input type="hidden" value={workOrderId ?? ""} {...form.register("workOrderId")} />
+      <div className="grid md:grid-cols-3 gap-4">
+        <div>
+          <label className="label">Hasil</label>
+          <select className="input" {...register("result", { required: true })}>
+            <option value="FIXED">FIXED</option>
+            <option value="MONITORING">MONITORING</option>
+            <option value="NOT_FIXED">NOT_FIXED</option>
+          </select>
+        </div>
+        <div className="md:col-span-2">
+          <label className="label">Catatan Akhir (opsional)</label>
+          <input className="input" {...register("remarks", { maxLength: 2000 })} />
+          {errors.remarks && <div className="text-xs text-red-600">Maksimal 2000 karakter</div>}
+        </div>
+      </div>
+
+      <div>
+        <label className="label">Nama Pihak yang Menerima (opsional)</label>
+        <input
+          className="input"
+          placeholder="Nama pihak yang menerima"
+          {...register("customerConfirmationName", { minLength: 2, maxLength: 100 })}
+        />
+        {errors.customerConfirmationName && (
+          <div className="text-xs text-red-600">2–100 karakter</div>
+        )}
+      </div>
+
       <div className="pt-2">
         <button type="submit" className="btn">
           Simpan Berita Acara
