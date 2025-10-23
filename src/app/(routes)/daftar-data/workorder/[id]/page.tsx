@@ -3,6 +3,7 @@ import Link from "next/link";
 import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PrintButton from "@/components/PrintButton";
+import StatusHistoryPanel from "@/components/StatusHistoryPanel";
 import { prisma } from "@/lib/prisma";
 import { entityAbbr, entityLabel } from "@/lib/uiLabels";
 
@@ -53,7 +54,7 @@ export default async function WorkOrderDetail({
   });
   const cFromWo = await (prisma as any).complaint.findFirst({
     where: { workOrderId: id },
-    select: { id: true },
+    select: { id: true, status: true, histories: { orderBy: { createdAt: "asc" } } },
   });
 
   return (
@@ -132,6 +133,12 @@ export default async function WorkOrderDetail({
           ) : null}
         </div>
       </div>
+      {cFromWo ? (
+        <StatusHistoryPanel
+          items={(cFromWo as any).histories}
+          currentStatus={(cFromWo as any).status}
+        />
+      ) : null}
     </div>
   );
 }
