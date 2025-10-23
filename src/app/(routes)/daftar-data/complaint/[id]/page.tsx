@@ -3,6 +3,7 @@ import Link from "next/link";
 import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PrintButton from "@/components/PrintButton";
+import StatusHistoryPanel from "@/components/StatusHistoryPanel";
 import { prisma } from "@/lib/prisma";
 
 function formatDate(d?: Date | string | null) {
@@ -27,6 +28,7 @@ export default async function ComplaintDetail({
 }) {
   const c = await (prisma as any).complaint.findUnique({
     where: { id: params.id },
+    include: { histories: { orderBy: { createdAt: "asc" } } },
   });
   if (!c) {
     return (
@@ -128,6 +130,7 @@ export default async function ComplaintDetail({
           )}
         </div>
       </div>
+      <StatusHistoryPanel items={(c as any).histories} currentStatus={(c as any).status} />
     </div>
   );
 }
