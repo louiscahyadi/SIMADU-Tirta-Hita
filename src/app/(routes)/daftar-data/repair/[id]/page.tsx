@@ -3,6 +3,7 @@ import Link from "next/link";
 import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PrintButton from "@/components/PrintButton";
+import StatusHistoryPanel from "@/components/StatusHistoryPanel";
 import { prisma } from "@/lib/prisma";
 import { entityAbbr, entityLabel } from "@/lib/uiLabels";
 
@@ -88,7 +89,7 @@ export default async function RepairDetail({
     : null;
   const cFromRr = await (prisma as any).complaint.findFirst({
     where: { repairReportId: id },
-    select: { id: true },
+    select: { id: true, status: true, histories: { orderBy: { createdAt: "asc" } } },
   });
 
   return (
@@ -224,6 +225,12 @@ export default async function RepairDetail({
           ) : null}
         </div>
       </div>
+      {cFromRr ? (
+        <StatusHistoryPanel
+          items={(cFromRr as any).histories}
+          currentStatus={(cFromRr as any).status}
+        />
+      ) : null}
     </div>
   );
 }
