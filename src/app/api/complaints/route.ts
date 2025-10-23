@@ -19,18 +19,31 @@ export async function POST(req: NextRequest) {
     }
     const raw = await req.json();
     const data = complaintCreateSchema.parse(raw);
-    const created = await prisma.complaint.create({
-      data: {
-        customerName: data.customerName,
-        address: data.address,
-        mapsLink: data.mapsLink,
-        connectionNumber: data.connectionNumber,
-        phone: data.phone,
-        complaintText: data.complaintText,
-        category: data.category,
-        processedAt: data.processedAt ? new Date(data.processedAt) : undefined,
-      },
-      select: { id: true },
+    const created = await prisma.$transaction(async (tx) => {
+      const comp = await tx.complaint.create({
+        data: {
+          customerName: data.customerName,
+          address: data.address,
+          mapsLink: data.mapsLink,
+          connectionNumber: data.connectionNumber,
+          phone: data.phone,
+          complaintText: data.complaintText,
+          category: data.category,
+          processedAt: data.processedAt ? new Date(data.processedAt) : undefined,
+        },
+        select: { id: true },
+      });
+      // Write initial status history (REPORTED)
+      await tx.statusHistory.create({
+        data: {
+          complaintId: comp.id,
+          status: "REPORTED" as any,
+          actorRole: "humas",
+          actorId: (token as any)?.sub ?? null,
+          note: "Kasus dibuat",
+        },
+      });
+      return comp;
     });
     return NextResponse.json(created, { status: 201 });
   } catch (e: any) {
