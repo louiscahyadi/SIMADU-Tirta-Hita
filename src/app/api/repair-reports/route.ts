@@ -23,6 +23,14 @@ export async function POST(req: Request) {
       if (complaint.workOrderId !== data.spkId) {
         throw new Error("SPK tidak sesuai dengan kasus");
       }
+      // Only allow creating BAP when current case status is SPK_CREATED
+      if ((complaint as any).status !== "SPK_CREATED") {
+        throw new Error("BAP hanya bisa dibuat ketika status kasus = SPK_CREATED");
+      }
+      // Guard: one BAP per Case
+      if (complaint.repairReportId) {
+        throw new Error("Sudah ada BAP untuk kasus ini");
+      }
 
       // ensure work order exists
       const wo = await tx.workOrder.findUnique({ where: { id: data.spkId } });
@@ -30,6 +38,7 @@ export async function POST(req: Request) {
 
       const rr = await tx.repairReport.create({
         data: {
+          actionTaken: data.actionTaken,
           startTime: new Date(data.startTime),
           endTime: new Date(data.endTime),
           result: data.result as any,
@@ -39,18 +48,23 @@ export async function POST(req: Request) {
         },
       });
 
-      // Link to complaint and optionally update status/history
+      // Link to complaint and update status/history
+      const nextStatus =
+        data.result === "MONITORING" ? ("MONITORING" as any) : ("COMPLETED" as any);
       await tx.complaint.update({
         where: { id: complaint.id },
-        data: { repairReportId: rr.id, status: "RR_CREATED" as any, updatedAt: new Date() },
+        data: { repairReportId: rr.id, status: nextStatus, updatedAt: new Date() },
       });
       await tx.statusHistory.create({
         data: {
           complaintId: complaint.id,
-          status: "RR_CREATED",
+          status: data.result === "MONITORING" ? ("MONITORING" as any) : ("COMPLETED" as any),
           actorRole: "distribusi",
           actorId: (token as any)?.sub ?? null,
-          note: null,
+          note:
+            data.result === "MONITORING"
+              ? "BAP dikirim, hasil = MONITORING"
+              : "BAP dikirim, hasil = " + data.result,
         },
       });
 
