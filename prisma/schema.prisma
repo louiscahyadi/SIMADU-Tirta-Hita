@@ -13,6 +13,7 @@ enum CaseStatus {
   SPK_CREATED
   RR_CREATED
   COMPLETED
+  MONITORING
 }
 
 enum RepairResult {
