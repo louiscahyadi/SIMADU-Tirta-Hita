@@ -130,7 +130,7 @@ export default async function RingkasanPage() {
         <div className="space-y-2">
           <div className="font-medium">Aksi Cepat (Distribusi)</div>
           <div className="flex flex-wrap gap-2">
-            <Link className="btn-outline" href="/distribusi/status">
+            <Link className="btn-outline" href="/distribusi/status#workorder">
               Lihat SPK dan BA
             </Link>
           </div>
@@ -169,8 +169,16 @@ export default async function RingkasanPage() {
           value={srCount}
           href="/daftar-data?tab=service"
         />
-        <Card title={entityLabel("workOrder")} value={woCount} href="/distribusi/status" />
-        <Card title={entityLabel("repairReport")} value={rrCount} href="/distribusi/status" />
+        <Card
+          title={entityLabel("workOrder")}
+          value={woCount}
+          href="/distribusi/status#workorder"
+        />
+        <Card
+          title={entityLabel("repairReport")}
+          value={rrCount}
+          href="/distribusi/status#repair"
+        />
       </div>
 
       <Actions />
@@ -257,7 +265,7 @@ export default async function RingkasanPage() {
               <h3 className="text-lg font-semibold">
                 Permintaan Service tanpa Surat Perintah Kerja (5 terbaru)
               </h3>
-              <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
+              <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status#psp">
                 Lihat semua
               </Link>
             </div>
@@ -314,7 +322,10 @@ export default async function RingkasanPage() {
               <h3 className="text-lg font-semibold">
                 Surat Perintah Kerja tanpa Berita Acara (5 terbaru)
               </h3>
-              <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
+              <Link
+                className="text-blue-700 hover:underline text-sm"
+                href="/distribusi/status#workorder"
+              >
                 Lihat semua
               </Link>
             </div>
