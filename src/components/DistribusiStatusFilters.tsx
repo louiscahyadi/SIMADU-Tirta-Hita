@@ -9,6 +9,7 @@ type Props = {
   initialTo?: string;
   initialWSize?: number;
   initialRSize?: number;
+  initialPSize?: number;
 };
 
 const STORAGE_KEY = "distribusiStatusFilters";
@@ -19,6 +20,7 @@ export default function DistribusiStatusFilters({
   initialTo = "",
   initialWSize = 10,
   initialRSize = 10,
+  initialPSize = 10,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -38,12 +40,13 @@ export default function DistribusiStatusFilters({
   const [to, setTo] = useState<string>(initialTo || saved?.to || "");
   const [wSize, setWSize] = useState<number>(Number(initialWSize || saved?.wSize || 10));
   const [rSize, setRSize] = useState<number>(Number(initialRSize || saved?.rSize || 10));
+  const [pSize, setPSize] = useState<number>(Number(initialPSize || saved?.pSize || 10));
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ q, from, to, wSize, rSize }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ q, from, to, wSize, rSize, pSize }));
     } catch {}
-  }, [q, from, to, wSize, rSize]);
+  }, [q, from, to, wSize, rSize, pSize]);
 
   const buildQuery = (overrides?: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams(Array.from(sp.entries()));
@@ -56,9 +59,11 @@ export default function DistribusiStatusFilters({
     setOrDelete("to", to);
     setOrDelete("wSize", wSize);
     setOrDelete("rSize", rSize);
+    setOrDelete("pSize", pSize);
     // reset pages on filter change
     params.set("wPage", "1");
     params.set("rPage", "1");
+    params.set("pPage", "1");
     if (overrides) {
       for (const [k, v] of Object.entries(overrides)) setOrDelete(k, v as any);
     }
@@ -67,7 +72,8 @@ export default function DistribusiStatusFilters({
 
   const onApply = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push(`${pathname}${buildQuery()}`);
+    // Quick tab jump: scroll to PSP section after apply
+    router.push(`${pathname}${buildQuery()}#psp`);
   };
 
   const onReset = () => {
@@ -76,6 +82,7 @@ export default function DistribusiStatusFilters({
     setTo("");
     setWSize(10);
     setRSize(10);
+    setPSize(10);
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {}
@@ -87,7 +94,7 @@ export default function DistribusiStatusFilters({
     const today = new Date().toISOString().slice(0, 10);
     setFrom(today);
     setTo(today);
-    router.push(`${pathname}${buildQuery({ from: today, to: today })}`);
+    router.push(`${pathname}${buildQuery({ from: today, to: today })}#psp`);
   };
   const presetThisWeek = () => {
     const now = new Date();
@@ -99,7 +106,7 @@ export default function DistribusiStatusFilters({
     const toW = now.toISOString().slice(0, 10);
     setFrom(fromW);
     setTo(toW);
-    router.push(`${pathname}${buildQuery({ from: fromW, to: toW })}`);
+    router.push(`${pathname}${buildQuery({ from: fromW, to: toW })}#psp`);
   };
   const presetThisMonth = () => {
     const now = new Date();
@@ -107,7 +114,7 @@ export default function DistribusiStatusFilters({
     const toM = now.toISOString().slice(0, 10);
     setFrom(first);
     setTo(toM);
-    router.push(`${pathname}${buildQuery({ from: first, to: toM })}`);
+    router.push(`${pathname}${buildQuery({ from: first, to: toM })}#psp`);
   };
 
   return (
@@ -147,6 +154,16 @@ export default function DistribusiStatusFilters({
       <div className="flex flex-col">
         <label className="text-sm text-gray-600">BA per halaman</label>
         <select value={rSize} onChange={(e) => setRSize(Number(e.target.value))} className="input">
+          {[5, 10, 20, 50].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex flex-col">
+        <label className="text-sm text-gray-600">PSP per halaman</label>
+        <select value={pSize} onChange={(e) => setPSize(Number(e.target.value))} className="input">
           {[5, 10, 20, 50].map((n) => (
             <option key={n} value={n}>
               {n}
