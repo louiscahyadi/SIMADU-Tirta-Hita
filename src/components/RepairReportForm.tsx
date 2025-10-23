@@ -29,7 +29,7 @@ export default function RepairReportForm({
   const nowLocal = useMemo(() => {
     const d = new Date();
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+    return d.toISOString().slice(0, 16);
   }, []);
   const form = useForm<FormValues>({
     defaultValues: {
