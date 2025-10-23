@@ -27,6 +27,13 @@ export async function POST(req: Request) {
       if ((complaint as any).status !== "PSP_CREATED") {
         throw new Error("SPK hanya bisa dibuat ketika status kasus = PSP_CREATED");
       }
+      // Guard: one SPK per Case
+      if (complaint.workOrderId) {
+        throw new Error("Sudah ada SPK untuk kasus ini");
+      }
+      // Also ensure PSP exists
+      const sr = await tx.serviceRequest.findUnique({ where: { id: data.pspId } });
+      if (!sr) throw new Error("PSP tidak ditemukan");
 
       const wo = await tx.workOrder.create({
         data: {
