@@ -3,6 +3,7 @@ import Link from "next/link";
 import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PrintButton from "@/components/PrintButton";
+import StatusHistoryPanel from "@/components/StatusHistoryPanel";
 import { prisma } from "@/lib/prisma";
 import { entityAbbr, entityLabel } from "@/lib/uiLabels";
 
@@ -62,6 +63,10 @@ export default async function ServiceDetail({
         where: { workOrderId: wo.id },
       })
     : null;
+  const complaint = await (prisma as any).complaint.findFirst({
+    where: { serviceRequestId: id },
+    select: { id: true, status: true, histories: { orderBy: { createdAt: "asc" } } },
+  });
 
   return (
     <div className="space-y-4">
@@ -176,6 +181,12 @@ export default async function ServiceDetail({
           )}
         </div>
       </div>
+      {complaint ? (
+        <StatusHistoryPanel
+          items={(complaint as any).histories}
+          currentStatus={(complaint as any).status}
+        />
+      ) : null}
     </div>
   );
 }
