@@ -82,6 +82,23 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
         }
       : {}),
   };
+  // PSP queue (ServiceRequest) – only items that are ready for Distribusi (linked complaint status PSP_CREATED) and belum punya SPK
+  const srWhere: any = {
+    ...(dateRange ? { createdAt: dateRange } : {}),
+    complaint: { is: { status: "PSP_CREATED" as any } },
+    workOrder: { is: null },
+    ...(q
+      ? {
+          OR: [
+            { reporterName: { contains: q, mode: "insensitive" } },
+            { customerName: { contains: q, mode: "insensitive" } },
+            { address: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
+            { reporterPhone: { contains: q, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
   // Pagination params
   const wSizeParam = parseInt(getParam(searchParams, "wSize") || "10", 10);
   const wSize = Number.isFinite(wSizeParam) && wSizeParam > 0 ? Math.min(wSizeParam, 100) : 10;
@@ -92,14 +109,20 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
   const rSize = Number.isFinite(rSizeParam) && rSizeParam > 0 ? Math.min(rSizeParam, 100) : 10;
   const rPageParam = parseInt(getParam(searchParams, "rPage") || "1", 10);
   const rPage = Number.isFinite(rPageParam) && rPageParam > 0 ? rPageParam : 1;
+  // Pagination for PSP queue
+  const pSizeParam = parseInt(getParam(searchParams, "pSize") || "10", 10);
+  const pSize = Number.isFinite(pSizeParam) && pSizeParam > 0 ? Math.min(pSizeParam, 100) : 10;
+  const pPageParam = parseInt(getParam(searchParams, "pPage") || "1", 10);
+  const pPage = Number.isFinite(pPageParam) && pPageParam > 0 ? pPageParam : 1;
 
   // Totals for pagination and KPI
-  const [wTotal, rTotal, spkProses, spkSelesai, baTotal] = await Promise.all([
+  const [wTotal, rTotal, spkProses, spkSelesai, baTotal, pTotal] = await Promise.all([
     prisma.workOrder.count({ where: woWhere }),
     prisma.repairReport.count({ where: rrWhere }),
     prisma.workOrder.count({ where: { ...woWhere, repairReport: { is: null } } }),
     prisma.workOrder.count({ where: { ...woWhere, repairReport: { isNot: null } } }),
     prisma.repairReport.count({ where: rrWhere }),
+    prisma.serviceRequest.count({ where: srWhere }),
   ]);
 
   const workorders = await prisma.workOrder.findMany({
@@ -113,6 +136,13 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
     orderBy: { createdAt: "desc" },
     skip: (rPage - 1) * rSize,
     take: rSize,
+  });
+  const psps = await prisma.serviceRequest.findMany({
+    where: srWhere,
+    orderBy: { createdAt: "desc" },
+    skip: (pPage - 1) * pSize,
+    take: pSize,
+    include: { complaint: { select: { id: true, status: true } } },
   });
 
   // Build a set of WO IDs that already have a Repair Report
@@ -138,10 +168,10 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Status DISTRIBUSI</h2>
         <div className="flex gap-2">
-          <Link className="btn-outline btn-sm" href="/distribusi/status">
+          <Link className="btn-outline btn-sm" href="/distribusi/status#workorder">
             Lihat SPK
           </Link>
-          <Link className="btn-outline btn-sm" href="/distribusi/status">
+          <Link className="btn-outline btn-sm" href="/distribusi/status#repair">
             Lihat Berita Acara
           </Link>
         </div>
@@ -154,10 +184,109 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
         initialTo={toStr || ""}
         initialWSize={wSize}
         initialRSize={rSize}
+        initialPSize={pSize}
       />
 
+      {/* Antrian PSP */}
+      <div id="psp" className="card p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-medium">Antrian PSP</h3>
+          <div className="text-sm text-gray-600">Total: {pTotal}</div>
+        </div>
+        <ul className="divide-y">
+          {psps.map((s) => {
+            const sr: any = s as any;
+            const compId = (s as any).complaint?.id as string | undefined;
+            return (
+              <li key={s.id} className="py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">
+                      {sr.reporterName ?? s.customerName ?? "-"}
+                    </div>
+                    <div className="text-xs text-gray-600 truncate">{s.address}</div>
+                    <div className="mt-1 flex items-center gap-1 text-xs">
+                      <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">
+                        {entityAbbr("serviceRequest")}
+                      </span>
+                      {sr.urgency ? (
+                        <span
+                          className={`rounded-full px-2 py-0.5 ${
+                            sr.urgency === "HIGH"
+                              ? "bg-red-50 text-red-700"
+                              : sr.urgency === "MEDIUM"
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-green-50 text-green-700"
+                          }`}
+                        >
+                          {sr.urgency}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-gray-500 whitespace-nowrap">
+                      {formatDate((sr.requestDate as Date | undefined) ?? s.createdAt)}
+                    </span>
+                    <Link className="btn-outline btn-sm" href={`/daftar-data/service/${s.id}`}>
+                      Detail
+                    </Link>
+                    {compId ? (
+                      <Link
+                        className="btn-outline btn-sm"
+                        href={`/?flow=workorder&serviceRequestId=${encodeURIComponent(s.id)}&complaintId=${encodeURIComponent(compId)}`}
+                        title="Buat SPK dari PSP ini"
+                      >
+                        Buat SPK
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-gray-400">Tanpa Kasus</span>
+                    )}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+          {psps.length === 0 && (
+            <li className="py-6 text-center text-gray-500">Tidak ada antrian PSP.</li>
+          )}
+        </ul>
+        {/* Pagination for PSP */}
+        {(() => {
+          const totalPages = Math.max(1, Math.ceil(pTotal / pSize));
+          const prev = new URLSearchParams();
+          for (const [k, v] of Object.entries(searchParams ?? {}))
+            if (v != null) prev.set(k, Array.isArray(v) ? v[0]! : v);
+          prev.set("pPage", String(Math.max(1, pPage - 1)));
+          prev.set("pSize", String(pSize));
+          const next = new URLSearchParams(prev);
+          next.set("pPage", String(Math.min(totalPages, pPage + 1)));
+          return (
+            <div className="pt-3 flex items-center justify-between text-sm text-gray-600">
+              <div>
+                Hal. {pPage} / {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  className={`btn-outline btn-sm ${pPage <= 1 ? "pointer-events-none opacity-50" : ""}`}
+                  href={`?${prev.toString()}#psp`}
+                >
+                  Sebelumnya
+                </Link>
+                <Link
+                  className={`btn-outline btn-sm ${pPage >= totalPages ? "pointer-events-none opacity-50" : ""}`}
+                  href={`?${next.toString()}#psp`}
+                >
+                  Berikutnya
+                </Link>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="card p-4">
+        <div id="workorder" className="card p-4">
           {/* KPI untuk SPK/BA (menggunakan filter saat ini) */}
           <div className="grid grid-cols-4 gap-2 mb-3 text-sm">
             <div className="card p-2">
@@ -181,7 +310,7 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
                   return (
                     <Link
                       className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700 text-xs"
-                      href={`/distribusi/status?${sp.toString()}`}
+                      href={`/distribusi/status?${sp.toString()}#workorder`}
                       title="Lihat di Status Distribusi"
                     >
                       Lihat
@@ -197,7 +326,10 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
           </div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium">SPK Terbaru</h3>
-            <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
+            <Link
+              className="text-blue-700 hover:underline text-sm"
+              href="/distribusi/status#workorder"
+            >
               Lihat semua
             </Link>
           </div>
@@ -258,13 +390,13 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
                 <div className="flex items-center gap-2">
                   <Link
                     className={`btn-outline btn-sm ${wPage <= 1 ? "pointer-events-none opacity-50" : ""}`}
-                    href={`?${prev.toString()}`}
+                    href={`?${prev.toString()}#workorder`}
                   >
                     Sebelumnya
                   </Link>
                   <Link
                     className={`btn-outline btn-sm ${wPage >= totalPages ? "pointer-events-none opacity-50" : ""}`}
-                    href={`?${next.toString()}`}
+                    href={`?${next.toString()}#workorder`}
                   >
                     Berikutnya
                   </Link>
@@ -273,10 +405,13 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
             );
           })()}
         </div>
-        <div className="card p-4">
+        <div id="repair" className="card p-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium">Berita Acara Terbaru</h3>
-            <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
+            <Link
+              className="text-blue-700 hover:underline text-sm"
+              href="/distribusi/status#repair"
+            >
               Lihat semua
             </Link>
           </div>
@@ -319,13 +454,13 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
                 <div className="flex items-center gap-2">
                   <Link
                     className={`btn-outline btn-sm ${rPage <= 1 ? "pointer-events-none opacity-50" : ""}`}
-                    href={`?${prev.toString()}`}
+                    href={`?${prev.toString()}#repair`}
                   >
                     Sebelumnya
                   </Link>
                   <Link
                     className={`btn-outline btn-sm ${rPage >= totalPages ? "pointer-events-none opacity-50" : ""}`}
-                    href={`?${next.toString()}`}
+                    href={`?${next.toString()}#repair`}
                   >
                     Berikutnya
                   </Link>
