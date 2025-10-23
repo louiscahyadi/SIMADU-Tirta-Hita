@@ -120,10 +120,10 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
           <Link className="btn-outline btn-sm" href="/distribusi/status">
             Lihat Status
           </Link>
-          <Link className="btn-outline btn-sm" href="/distribusi/status">
+          <Link className="btn-outline btn-sm" href="/distribusi/status#workorder">
             Lihat SPK
           </Link>
-          <Link className="btn-outline btn-sm" href="/distribusi/status">
+          <Link className="btn-outline btn-sm" href="/distribusi/status#repair">
             Lihat Berita Acara
           </Link>
         </div>
@@ -237,7 +237,7 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
         <div className="card p-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium">Perlu SPK</h3>
-            <Link className="text-blue-700 hover:underline text-sm" href="/distribusi">
+            <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status#psp">
               Lihat semua
             </Link>
           </div>
@@ -271,7 +271,10 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
         <div className="card p-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium">Perlu Berita Acara</h3>
-            <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
+            <Link
+              className="text-blue-700 hover:underline text-sm"
+              href="/distribusi/status#workorder"
+            >
               Lihat semua
             </Link>
           </div>
@@ -305,7 +308,10 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
         <div className="card p-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium">SPK Terbaru</h3>
-            <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
+            <Link
+              className="text-blue-700 hover:underline text-sm"
+              href="/distribusi/status#workorder"
+            >
               Lihat semua
             </Link>
           </div>
@@ -336,7 +342,10 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
         <div className="card p-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium">Berita Acara Terbaru</h3>
-            <Link className="text-blue-700 hover:underline text-sm" href="/distribusi/status">
+            <Link
+              className="text-blue-700 hover:underline text-sm"
+              href="/distribusi/status#repair"
+            >
               Lihat semua
             </Link>
           </div>
