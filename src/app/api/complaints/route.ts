@@ -11,6 +11,12 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
+    // Only HUMAS can create cases
+    const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+    const role = (token as any)?.role as string | undefined;
+    if (role !== "humas") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const raw = await req.json();
     const data = complaintCreateSchema.parse(raw);
     const created = await prisma.complaint.create({
