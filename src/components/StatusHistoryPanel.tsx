@@ -148,7 +148,7 @@ export default function StatusHistoryPanel({
               const meta = statusMeta[it.status];
               const isLast = idx === list.length - 1;
               return (
-                <li key={it.id} className="relative mb-4 ml-4">
+                <li key={it.id} className="group relative mb-4 ml-4">
                   {/* colored connector segment to next item */}
                   {!isLast ? (
                     <span
@@ -159,16 +159,51 @@ export default function StatusHistoryPanel({
 
                   {/* status dot with icon */}
                   <span
-                    className={`absolute -left-2 top-1 flex h-5 w-5 items-center justify-center rounded-full ${meta.dotBg} text-white ring-2 ${meta.dotRing} shadow`}
+                    className={`absolute -left-2 top-1 flex h-5 w-5 items-center justify-center rounded-full ${meta.dotBg} text-white ring-2 ${meta.dotRing} shadow transition-transform duration-200 ease-out hover:scale-105 focus:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2`}
+                    tabIndex={0}
+                    aria-label={`Status ${it.status} pada ${formatDate(it.createdAt)}${it.actorRole ? ", oleh " + it.actorRole : ""}`}
                   >
                     {meta.icon({ className: "h-3 w-3" })}
                   </span>
+
+                  {/* tooltip for icon */}
+                  <div className="pointer-events-none absolute left-6 top-0 z-10 hidden min-w-[220px] max-w-[320px] rounded-md border border-gray-200 bg-white p-2 text-xs text-gray-700 shadow-lg group-hover:block group-focus-within:block">
+                    <div className="mb-1 flex items-center gap-2">
+                      <span
+                        className={`inline-flex h-4 w-4 items-center justify-center rounded-full ${meta.dotBg} text-white ring-2 ${meta.dotRing}`}
+                      >
+                        {meta.icon({ className: "h-2.5 w-2.5" })}
+                      </span>
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] ${meta.badge}`}>
+                        {it.status}
+                      </span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <div>
+                        <span className="text-gray-500">Tanggal:</span> {formatDate(it.createdAt)}
+                      </div>
+                      {it.actorRole ? (
+                        <div>
+                          <span className="text-gray-500">Oleh:</span> {it.actorRole}
+                        </div>
+                      ) : null}
+                      {it.note ? (
+                        <div className="text-gray-600">
+                          <span className="text-gray-500">Catatan:</span>{" "}
+                          {String(it.note).length > 140
+                            ? String(it.note).slice(0, 140) + "…"
+                            : it.note}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
 
                   <div className="flex flex-wrap items-center gap-2">
                     <span
                       className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${statusBadgeCls(
                         it.status,
-                      )}`}
+                      )} transition-transform duration-200 ease-out hover:scale-[1.03]`}
+                      title={`Status: ${it.status}\nTanggal: ${formatDate(it.createdAt)}${it.actorRole ? "\nOleh: " + it.actorRole : ""}${it.note ? "\nCatatan: " + (String(it.note).length > 100 ? String(it.note).slice(0, 100) + "…" : it.note) : ""}`}
                     >
                       {it.status}
                     </span>
