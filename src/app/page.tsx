@@ -36,6 +36,7 @@ function HomePageInner() {
         reporterName: sp.get("customerName") || undefined,
         address: sp.get("address") || undefined,
         reporterPhone: sp.get("phone") || undefined,
+        serviceNumber: sp.get("connectionNumber") || undefined,
       });
       const compId = sp.get("complaintId") || undefined;
       if (compId) setComplaintId(compId);
@@ -143,20 +144,6 @@ function HomePageInner() {
               </a>
               <a className="btn-outline btn-sm" href="/login/distribusi" title="Masuk DISTRIBUSI">
                 Masuk DISTRIBUSI
-              </a>
-              <a
-                className="btn-outline btn-sm"
-                href="/daftar-data?tab=complaint"
-                title="Daftar Pengaduan"
-              >
-                Buka Daftar Pengaduan
-              </a>
-              <a
-                className="btn-outline btn-sm"
-                href="/daftar-data?tab=service"
-                title="Daftar Permintaan Service"
-              >
-                Buka Daftar Permintaan Service
               </a>
               <a className="btn-outline btn-sm" href="/humas/status" title="Status HUMAS">
                 Status HUMAS
