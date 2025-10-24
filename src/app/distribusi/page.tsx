@@ -3,11 +3,9 @@ import { getServerSession } from "next-auth";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PrintButton from "@/components/PrintButton";
-import RepairReportForm from "@/components/RepairReportForm";
-import WorkOrderForm from "@/components/WorkOrderForm";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { entityLabel } from "@/lib/uiLabels";
+// import { entityLabel } from "@/lib/uiLabels";
 
 export const dynamic = "force-dynamic";
 
@@ -87,28 +85,56 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
   };
 
   // KPI counters (matching Distribusi Status) with filters
-  const [spkProses, spkSelesai, spkTotal, baTotal] = await Promise.all([
-    prisma.workOrder.count({ where: { ...woWhereBase, repairReport: { is: null } } }),
-    prisma.workOrder.count({ where: { ...woWhereBase, repairReport: { isNot: null } } }),
-    prisma.workOrder.count({ where: woWhereBase }),
-    prisma.repairReport.count({ where: rrWhereBase }),
-  ]);
+  let spkProses = 0;
+  let spkSelesai = 0;
+  let spkTotal = 0;
+  let baTotal = 0;
+  let latestWO: any[] = [];
+  let latestRR: any[] = [];
+  let needWO: any[] = [];
+  let needRR: any[] = [];
 
-  const latestWO = await prisma.workOrder.findMany({ orderBy: { createdAt: "desc" }, take: 5 });
-  const latestRR = await prisma.repairReport.findMany({ orderBy: { createdAt: "desc" }, take: 5 });
+  try {
+    [spkProses, spkSelesai, spkTotal, baTotal] = await Promise.all([
+      prisma.workOrder.count({ where: { ...woWhereBase, repairReport: { is: null } } }),
+      prisma.workOrder.count({ where: { ...woWhereBase, repairReport: { isNot: null } } }),
+      prisma.workOrder.count({ where: woWhereBase }),
+      prisma.repairReport.count({ where: rrWhereBase }),
+    ]);
 
-  // Items needing SPK: ServiceRequests with no linked WorkOrder yet
-  const needWO = await prisma.serviceRequest.findMany({
-    where: { workOrder: { is: null } },
-    orderBy: { createdAt: "asc" },
-    take: 5,
-  });
-  // Items needing BA: WorkOrders with no linked RepairReport yet
-  const needRR = await prisma.workOrder.findMany({
-    where: { repairReport: { is: null } },
-    orderBy: { createdAt: "asc" },
-    take: 5,
-  });
+    latestWO = await prisma.workOrder.findMany({ orderBy: { createdAt: "desc" }, take: 5 });
+    latestRR = await prisma.repairReport.findMany({ orderBy: { createdAt: "desc" }, take: 5 });
+
+    // Items needing SPK: ServiceRequests with no linked WorkOrder yet
+    needWO = await prisma.serviceRequest.findMany({
+      where: { workOrder: { is: null } },
+      orderBy: { createdAt: "asc" },
+      take: 5,
+    });
+    // Items needing BA: WorkOrders with no linked RepairReport yet
+    needRR = await prisma.workOrder.findMany({
+      where: { repairReport: { is: null } },
+      orderBy: { createdAt: "asc" },
+      take: 5,
+    });
+  } catch (e: any) {
+    // If DB is unreachable (Prisma can't connect), show a friendly message instead of a runtime crash
+    // Log error for server-side debugging
+    // eslint-disable-next-line no-console
+    console.error("Distribusi dashboard DB error:", e?.message ?? e);
+    return (
+      <div className="space-y-3">
+        <h2 className="text-xl font-semibold">DISTRIBUSI</h2>
+        <p className="text-red-600">
+          Tidak dapat menghubungi server database. Silakan pastikan database berjalan dan
+          konfigurasi `DATABASE_URL` sudah benar. (Detail: {String(e?.message ?? e)})
+        </p>
+        <p className="text-sm text-gray-600">
+          Tips: jalankan database lokal atau docker-compose lalu coba lagi.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -222,16 +248,7 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
         );
       })()}
 
-      <div className="grid xl:grid-cols-2 gap-6">
-        <div className="card p-4 space-y-4">
-          <h3 className="font-medium">Form {entityLabel("workOrder")}</h3>
-          <WorkOrderForm />
-        </div>
-        <div className="card p-4 space-y-4">
-          <h3 className="font-medium">Form {entityLabel("repairReport")}</h3>
-          <RepairReportForm />
-        </div>
-      </div>
+      {/* Form input dihilangkan dari halaman utama Distribusi sesuai permintaan */}
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="card p-4">
