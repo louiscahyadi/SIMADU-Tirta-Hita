@@ -27,13 +27,18 @@ export default async function WorkOrderDetail({
   searchParams,
 }: PageProps & { searchParams?: Record<string, string | string[] | undefined> }) {
   const { id } = params;
+  const scope = (() => {
+    const v = searchParams?.["scope"];
+    return Array.isArray(v) ? v[0] : v;
+  })()?.toLowerCase?.();
+  const listBase = scope === "humas" ? "/humas/daftar-data" : "/daftar-data";
   const wo = await prisma.workOrder.findUnique({ where: { id } });
   if (!wo) {
     return (
       <div className="space-y-3">
         <h2 className="text-xl font-semibold">Detail Surat Perintah Kerja</h2>
         <p className="text-red-600">Data tidak ditemukan.</p>
-        <Link className="text-blue-700 hover:underline" href="/daftar-data?tab=workorder">
+        <Link className="text-blue-700 hover:underline" href={`${listBase}?tab=workorder`}>
           ← Kembali ke daftar
         </Link>
       </div>
@@ -67,8 +72,10 @@ export default async function WorkOrderDetail({
       <Breadcrumbs
         items={[
           { label: "Beranda", href: "/" },
-          { label: "Daftar Data", href: "/daftar-data" },
-          { label: "Surat Perintah Kerja", href: "/daftar-data?tab=workorder" },
+          scope === "humas"
+            ? { label: "Daftar Data (HUMAS)", href: "/humas/daftar-data" }
+            : { label: "Daftar Data", href: "/daftar-data" },
+          { label: "Surat Perintah Kerja", href: `${listBase}?tab=workorder` },
           { label: `Surat Perintah Kerja: ${wo.number ?? id}` },
         ]}
       />
@@ -76,7 +83,10 @@ export default async function WorkOrderDetail({
         <h2 className="text-xl font-semibold">Detail Surat Perintah Kerja</h2>
         <div className="flex items-center gap-2">
           <PrintButton />
-          <Link className="text-sm text-blue-700 hover:underline" href="/daftar-data?tab=workorder">
+          <Link
+            className="text-sm text-blue-700 hover:underline"
+            href={`${listBase}?tab=workorder`}
+          >
             ← Kembali
           </Link>
         </div>
