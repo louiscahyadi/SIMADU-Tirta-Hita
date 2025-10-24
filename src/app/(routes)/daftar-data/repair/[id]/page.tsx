@@ -54,13 +54,18 @@ export default async function RepairDetail({
   searchParams,
 }: PageProps & { searchParams?: Record<string, string | string[] | undefined> }) {
   const { id } = params;
+  const scope = (() => {
+    const v = searchParams?.["scope"];
+    return Array.isArray(v) ? v[0] : v;
+  })()?.toLowerCase?.();
+  const listBase = scope === "humas" ? "/humas/daftar-data" : "/daftar-data";
   const rr = await prisma.repairReport.findUnique({ where: { id } });
   if (!rr) {
     return (
       <div className="space-y-3">
         <h2 className="text-xl font-semibold">Detail Berita Acara Perbaikan</h2>
         <p className="text-red-600">Data tidak ditemukan.</p>
-        <Link className="text-blue-700 hover:underline" href="/daftar-data?tab=repair">
+        <Link className="text-blue-700 hover:underline" href={`${listBase}?tab=repair`}>
           ← Kembali ke daftar
         </Link>
       </div>
@@ -102,8 +107,10 @@ export default async function RepairDetail({
       <Breadcrumbs
         items={[
           { label: "Beranda", href: "/" },
-          { label: "Daftar Data", href: "/daftar-data" },
-          { label: "Berita Acara Perbaikan", href: "/daftar-data?tab=repair" },
+          scope === "humas"
+            ? { label: "Daftar Data (HUMAS)", href: "/humas/daftar-data" }
+            : { label: "Daftar Data", href: "/daftar-data" },
+          { label: "Berita Acara Perbaikan", href: `${listBase}?tab=repair` },
           { label: `Berita Acara: ${(rr as any).result ?? rr.city ?? id}` },
         ]}
       />
@@ -111,7 +118,7 @@ export default async function RepairDetail({
         <h2 className="text-xl font-semibold">Detail Berita Acara Perbaikan</h2>
         <div className="flex items-center gap-2">
           <PrintButton />
-          <Link className="text-sm text-blue-700 hover:underline" href="/daftar-data?tab=repair">
+          <Link className="text-sm text-blue-700 hover:underline" href={`${listBase}?tab=repair`}>
             ← Kembali
           </Link>
         </div>
