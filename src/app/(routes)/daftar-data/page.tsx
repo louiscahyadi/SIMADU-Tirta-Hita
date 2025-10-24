@@ -17,7 +17,8 @@ type PageProps = {
 // Tabs and helpers
 type TabId = "complaint" | "service" | "workorder" | "repair";
 
-const tabs: Array<{ id: TabId; label: string }> = [
+// Master tabs list (full). We may filter this per scope (e.g., HUMAS only shows complaint+service)
+const TABS_ALL: Array<{ id: TabId; label: string }> = [
   { id: "complaint", label: entityLabel("complaint") },
   { id: "service", label: entityLabel("serviceRequest") },
   { id: "workorder", label: entityLabel("workOrder") },
@@ -61,7 +62,17 @@ function formatDate(d?: Date | string | null) {
   }
 }
 
-function TabLink({ id, active, sp }: { id: TabId; active: boolean; sp: URLSearchParams }) {
+function TabLink({
+  id,
+  label,
+  active,
+  sp,
+}: {
+  id: TabId;
+  label: string;
+  active: boolean;
+  sp: URLSearchParams;
+}) {
   const href = new URLSearchParams(sp);
   href.set("tab", id);
   return (
@@ -71,7 +82,7 @@ function TabLink({ id, active, sp }: { id: TabId; active: boolean; sp: URLSearch
       }`}
       href={`?${href.toString()}`}
     >
-      {tabs.find((t) => t.id === id)?.label}
+      {label}
     </Link>
   );
 }
@@ -83,6 +94,7 @@ function FilterBar({ sp }: { sp: URLSearchParams }) {
   const tab = sp.get("tab") ?? "service";
   const pageSize = sp.get("pageSize") ?? "10";
   const status = sp.get("status") ?? ""; // complaint status filter
+  const scope = sp.get("scope") ?? "";
   // Simplified filter for complaint tab per UI reference
   if (tab === "complaint") {
     const exportSp = new URLSearchParams(sp);
@@ -99,6 +111,7 @@ function FilterBar({ sp }: { sp: URLSearchParams }) {
         </div>
         <form method="get" className="space-y-3">
           <input type="hidden" name="tab" value={tab} />
+          {scope ? <input type="hidden" name="scope" value={scope} /> : null}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex flex-col">
               <label className="text-sm text-gray-600">Kata kunci</label>
@@ -131,9 +144,20 @@ function FilterBar({ sp }: { sp: URLSearchParams }) {
             <button type="submit" className="btn">
               Terapkan Filter
             </button>
-            <Link className="btn-outline" href={`?tab=${tab}`} title="Reset semua filter">
-              Reset
-            </Link>
+            {(() => {
+              const reset = new URLSearchParams();
+              reset.set("tab", tab);
+              if (scope) reset.set("scope", scope);
+              return (
+                <Link
+                  className="btn-outline"
+                  href={`?${reset.toString()}`}
+                  title="Reset semua filter"
+                >
+                  Reset
+                </Link>
+              );
+            })()}
             {/* Ekspor dihapus */}
           </div>
         </form>
@@ -199,6 +223,7 @@ function FilterBar({ sp }: { sp: URLSearchParams }) {
   return (
     <form method="get" className="flex flex-wrap items-end gap-3">
       <input type="hidden" name="tab" value={tab} />
+      {scope ? <input type="hidden" name="scope" value={scope} /> : null}
       <div className="flex flex-col">
         <label className="text-sm text-gray-600">Kata kunci</label>
         <input
@@ -312,9 +337,20 @@ function FilterBar({ sp }: { sp: URLSearchParams }) {
         <button type="submit" className="btn btn-sm">
           Terapkan Filter
         </button>
-        <Link className="btn-outline btn-sm" href={`?tab=${tab}`} title="Reset semua filter">
-          Reset
-        </Link>
+        {(() => {
+          const reset = new URLSearchParams();
+          reset.set("tab", tab);
+          if (scope) reset.set("scope", scope);
+          return (
+            <Link
+              className="btn-outline btn-sm"
+              href={`?${reset.toString()}`}
+              title="Reset semua filter"
+            >
+              Reset
+            </Link>
+          );
+        })()}
         <PrintButton />
         {/* Ekspor PDF/CSV dihapus */}
       </div>
@@ -331,7 +367,16 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
     else if (v != null) sp.set(k, v);
   }
 
-  const active = (getParam(searchParams, "tab") as TabId) || "service";
+  // Scope-aware tabs: if scope=humas, hide workorder+repair to focus on HUMAS workflow only
+  const scope = (getParam(searchParams, "scope") ?? "").toLowerCase();
+  const tabs =
+    scope === "humas"
+      ? TABS_ALL.filter((t) => t.id === "complaint" || t.id === "service")
+      : TABS_ALL;
+
+  // Resolve the active tab, constrained to the available tabs for this scope
+  let active = (getParam(searchParams, "tab") as TabId) || (tabs[0]?.id ?? "service");
+  if (!tabs.find((t) => t.id === active)) active = tabs[0]?.id ?? "service";
   const q = (getParam(searchParams, "q") ?? "").trim();
   const from = parseDateInput(getParam(searchParams, "from"));
   const to = parseDateInput(getParam(searchParams, "to"));
@@ -613,13 +658,18 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const showingFrom = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
   const showingTo = totalCount === 0 ? 0 : Math.min(page * pageSize, totalCount);
+  // Helper to preserve HUMAS scope in internal links
+  const withScope = (href: string) =>
+    scope === "humas" ? `${href}${href.includes("?") ? "&" : "?"}scope=humas` : href;
 
   return (
     <div className="space-y-4">
       <Breadcrumbs
         items={[
           { label: "Beranda", href: "/" },
-          { label: "Daftar Data", href: "/daftar-data" },
+          scope === "humas"
+            ? { label: "Daftar Data (HUMAS)", href: "/humas/daftar-data" }
+            : { label: "Daftar Data", href: "/daftar-data" },
           { label: tabs.find((t) => t.id === active)?.label || "" },
         ]}
       />
@@ -630,7 +680,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
 
       <nav className="flex items-center gap-2 rounded-xl bg-gray-100 p-1">
         {tabs.map((t) => (
-          <TabLink key={t.id} id={t.id} active={active === t.id} sp={sp} />
+          <TabLink key={t.id} id={t.id as TabId} label={t.label} active={active === t.id} sp={sp} />
         ))}
       </nav>
 
@@ -968,7 +1018,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                             return (
                               <div className="flex items-center gap-2">
                                 {href ? (
-                                  <Link className="btn-outline btn-sm" href={href}>
+                                  <Link className="btn-outline btn-sm" href={withScope(href)}>
                                     Aksi
                                   </Link>
                                 ) : (
@@ -976,7 +1026,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 )}
                                 <Link
                                   className="btn-outline btn-sm"
-                                  href={`/daftar-data/complaint/${c.id}?print=1`}
+                                  href={withScope(`/daftar-data/complaint/${c.id}?print=1`)}
                                   title="Cetak PDF"
                                 >
                                   Cetak
@@ -1018,12 +1068,25 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                             </svg>
                             <div>Tidak ada data. Coba ubah filter atau reset.</div>
                             <div className="flex items-center gap-2">
-                              <Link className="btn-outline btn-sm" href={`?tab=complaint`}>
+                              <Link
+                                className="btn-outline btn-sm"
+                                href={`?${(() => {
+                                  const qs = new URLSearchParams();
+                                  qs.set("tab", "complaint");
+                                  if (scope) qs.set("scope", scope);
+                                  return qs.toString();
+                                })()}`}
+                              >
                                 Reset
                               </Link>
                               <Link
                                 className="btn-outline btn-sm"
-                                href={`?tab=complaint`}
+                                href={`?${(() => {
+                                  const qs = new URLSearchParams();
+                                  qs.set("tab", "complaint");
+                                  if (scope) qs.set("scope", scope);
+                                  return qs.toString();
+                                })()}`}
                                 title="Mulai proses dari daftar pengaduan"
                               >
                                 Mulai dari Pengaduan
@@ -1098,8 +1161,8 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                       <th className="px-4 py-3 text-left min-w-[14rem]">
                         {headerSortLink("Alamat", "address", "service")}
                       </th>
-                      <th className="px-4 py-3 text-left w-28">
-                        {headerSortLink("Urgensi", "urgency", "service")}
+                      <th className="px-4 py-3 text-left w-32">
+                        {headerSortLink("No. SL", "serviceNumber", "service")}
                       </th>
                       <th className="px-4 py-3 text-left">
                         {headerSortLink("Petugas", "handlerName", "service")}
@@ -1123,25 +1186,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                           {(s as any).reporterName ?? s.customerName}
                         </td>
                         <td className="px-4 py-3 align-top min-w-[14rem]">{s.address}</td>
-                        <td className="px-4 py-3 font-medium w-28">
-                          {(() => {
-                            const u = ((s as any).urgency as string | undefined) ?? undefined;
-                            if (!u) return "-";
-                            const cls =
-                              u === "HIGH"
-                                ? "bg-red-50 text-red-700"
-                                : u === "MEDIUM"
-                                  ? "bg-amber-50 text-amber-700"
-                                  : "bg-green-50 text-green-700"; // LOW
-                            return (
-                              <span
-                                className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${cls}`}
-                              >
-                                {u}
-                              </span>
-                            );
-                          })()}
-                        </td>
+                        <td className="px-4 py-3 font-medium w-32">{s.serviceNumber ?? "-"}</td>
                         <td className="px-4 py-3">{s.handlerName ?? s.receivedBy ?? "-"}</td>
                         <td className="px-4 py-3 align-top">
                           <div className="text-gray-700">{joinJsonArray(s.reasons)}</div>
@@ -1157,7 +1202,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 <span className="relative group">
                                   <Link
                                     className="rounded bg-blue-50 px-2 py-0.5 text-blue-700 hover:underline"
-                                    href={`/daftar-data/workorder/${woId}`}
+                                    href={withScope(`/daftar-data/workorder/${woId}`)}
                                     title={`Lihat ${entityLabel("workOrder")}`}
                                     aria-label={`Lihat ${entityLabel("workOrder")}`}
                                   >
@@ -1177,7 +1222,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                         <span className="relative group">
                                           <Link
                                             className="rounded bg-green-50 px-2 py-0.5 text-green-700 hover:underline"
-                                            href={`/daftar-data/repair/${rrId}`}
+                                            href={withScope(`/daftar-data/repair/${rrId}`)}
                                             title={`Lihat ${entityLabel("repairReport")}`}
                                             aria-label={`Lihat ${entityLabel("repairReport")}`}
                                           >
@@ -1217,7 +1262,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   <span className="text-gray-400">-</span>
                                   <Link
                                     className="btn-outline btn-sm"
-                                    href={`/daftar-data/service/${s.id}?print=1`}
+                                    href={withScope(`/daftar-data/service/${s.id}?print=1`)}
                                     title="Cetak PDF"
                                   >
                                     Cetak
@@ -1244,7 +1289,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   <span className="text-gray-400">-</span>
                                   <Link
                                     className="btn-outline btn-sm"
-                                    href={`/daftar-data/service/${s.id}?print=1`}
+                                    href={withScope(`/daftar-data/service/${s.id}?print=1`)}
                                     title="Cetak PDF"
                                   >
                                     Cetak
@@ -1257,7 +1302,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 <span className="text-gray-400">-</span>
                                 <Link
                                   className="btn-outline btn-sm"
-                                  href={`/daftar-data/service/${s.id}?print=1`}
+                                  href={withScope(`/daftar-data/service/${s.id}?print=1`)}
                                   title="Cetak PDF"
                                 >
                                   Cetak
@@ -1269,7 +1314,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                         <td className="px-4 py-3 whitespace-nowrap">
                           <Link
                             className="btn-outline btn-sm inline-flex items-center gap-1"
-                            href={`/daftar-data/service/${s.id}`}
+                            href={withScope(`/daftar-data/service/${s.id}`)}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -1312,12 +1357,25 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                             </svg>
                             <div>Belum ada {entityLabel("serviceRequest")}.</div>
                             <div className="flex items-center gap-2">
-                              <Link className="btn-outline btn-sm" href={`?tab=service`}>
+                              <Link
+                                className="btn-outline btn-sm"
+                                href={`?${(() => {
+                                  const qs = new URLSearchParams();
+                                  qs.set("tab", "service");
+                                  if (scope) qs.set("scope", scope);
+                                  return qs.toString();
+                                })()}`}
+                              >
                                 Reset
                               </Link>
                               <Link
                                 className="btn-outline btn-sm"
-                                href={`?tab=complaint`}
+                                href={`?${(() => {
+                                  const qs = new URLSearchParams();
+                                  qs.set("tab", "complaint");
+                                  if (scope) qs.set("scope", scope);
+                                  return qs.toString();
+                                })()}`}
                                 title="Mulai proses dari daftar pengaduan"
                               >
                                 Mulai dari Pengaduan
@@ -1432,7 +1490,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                       return (
                                         <Link
                                           className="rounded bg-rose-50 px-2 py-0.5 text-rose-700 hover:underline"
-                                          href={`/daftar-data/complaint/${cid}`}
+                                          href={withScope(`/daftar-data/complaint/${cid}`)}
                                           title={`ID ${entityLabel("complaint")}: ${cid}`}
                                         >
                                           {entityLabel("complaint")}
@@ -1446,7 +1504,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                       return srId ? (
                                         <Link
                                           className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700 hover:underline"
-                                          href={`/daftar-data/service/${srId}`}
+                                          href={withScope(`/daftar-data/service/${srId}`)}
                                           title={`Lihat ${entityLabel("serviceRequest")}`}
                                           aria-label={`Lihat ${entityLabel("serviceRequest")}`}
                                         >
@@ -1458,7 +1516,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 {hasRr ? (
                                   <Link
                                     className="rounded bg-green-50 px-2 py-0.5 text-green-700 hover:underline"
-                                    href={`/daftar-data/repair/${woToRr.get(w.id)}`}
+                                    href={withScope(`/daftar-data/repair/${woToRr.get(w.id)}`)}
                                     title={`Lihat ${entityLabel("repairReport")}`}
                                     aria-label={`Lihat ${entityLabel("repairReport")}`}
                                   >
@@ -1486,7 +1544,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                   <span className="text-gray-400">-</span>
                                   <Link
                                     className="btn-outline btn-sm"
-                                    href={`/daftar-data/workorder/${w.id}?print=1`}
+                                    href={withScope(`/daftar-data/workorder/${w.id}?print=1`)}
                                     title="Cetak PDF"
                                   >
                                     Cetak
@@ -1499,7 +1557,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 <span className="text-gray-400">-</span>
                                 <Link
                                   className="btn-outline btn-sm"
-                                  href={`/daftar-data/workorder/${w.id}?print=1`}
+                                  href={withScope(`/daftar-data/workorder/${w.id}?print=1`)}
                                   title="Cetak PDF"
                                 >
                                   Cetak
@@ -1511,7 +1569,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                         <td className="px-4 py-3 whitespace-nowrap">
                           <Link
                             className="btn-outline btn-sm inline-flex items-center gap-1"
-                            href={`/daftar-data/workorder/${w.id}`}
+                            href={withScope(`/daftar-data/workorder/${w.id}`)}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -1554,12 +1612,25 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                             </svg>
                             <div>Belum ada {entityLabel("workOrder")}.</div>
                             <div className="flex items-center gap-2">
-                              <Link className="btn-outline btn-sm" href={`?tab=workorder`}>
+                              <Link
+                                className="btn-outline btn-sm"
+                                href={`?${(() => {
+                                  const qs = new URLSearchParams();
+                                  qs.set("tab", "workorder");
+                                  if (scope) qs.set("scope", scope);
+                                  return qs.toString();
+                                })()}`}
+                              >
                                 Reset
                               </Link>
                               <Link
                                 className="btn-outline btn-sm"
-                                href={`?tab=complaint`}
+                                href={`?${(() => {
+                                  const qs = new URLSearchParams();
+                                  qs.set("tab", "complaint");
+                                  if (scope) qs.set("scope", scope);
+                                  return qs.toString();
+                                })()}`}
                                 title="Mulai proses dari daftar pengaduan"
                               >
                                 Mulai dari Pengaduan
@@ -1718,7 +1789,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                       return (
                                         <Link
                                           className="rounded bg-rose-50 px-2 py-0.5 text-rose-700 hover:underline"
-                                          href={`/daftar-data/complaint/${cid}`}
+                                          href={withScope(`/daftar-data/complaint/${cid}`)}
                                           title={`ID ${entityLabel("complaint")}: ${cid}`}
                                         >
                                           {entityLabel("complaint")}
@@ -1729,7 +1800,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 {hasWo ? (
                                   <Link
                                     className="rounded bg-blue-50 px-2 py-0.5 text-blue-700 hover:underline"
-                                    href={`/daftar-data/workorder/${woId}`}
+                                    href={withScope(`/daftar-data/workorder/${woId}`)}
                                     title={`Lihat ${entityLabel("workOrder")}`}
                                   >
                                     {entityLabel("workOrder")}
@@ -1738,7 +1809,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 {hasSr ? (
                                   <Link
                                     className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700 hover:underline"
-                                    href={`/daftar-data/service/${woToSr.get(woId!)}`}
+                                    href={withScope(`/daftar-data/service/${woToSr.get(woId!)}`)}
                                     title={`Lihat ${entityLabel("serviceRequest")}`}
                                   >
                                     {entityLabel("serviceRequest")}
@@ -1751,7 +1822,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                         <td className="px-4 py-3 whitespace-nowrap">
                           <Link
                             className="btn-outline btn-sm inline-flex items-center gap-1"
-                            href={`/daftar-data/repair/${r.id}`}
+                            href={withScope(`/daftar-data/repair/${r.id}`)}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -1772,7 +1843,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                           </Link>
                           <Link
                             className="btn-outline btn-sm ml-2"
-                            href={`/daftar-data/repair/${r.id}?print=1`}
+                            href={withScope(`/daftar-data/repair/${r.id}?print=1`)}
                             title="Cetak PDF"
                           >
                             Cetak
@@ -1803,13 +1874,23 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                             <div className="flex items-center gap-2">
                               <Link
                                 className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                                href={`?tab=repair`}
+                                href={`?${(() => {
+                                  const qs = new URLSearchParams();
+                                  qs.set("tab", "repair");
+                                  if (scope) qs.set("scope", scope);
+                                  return qs.toString();
+                                })()}`}
                               >
                                 Reset
                               </Link>
                               <Link
                                 className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                                href={`?tab=complaint`}
+                                href={`?${(() => {
+                                  const qs = new URLSearchParams();
+                                  qs.set("tab", "complaint");
+                                  if (scope) qs.set("scope", scope);
+                                  return qs.toString();
+                                })()}`}
                                 title="Mulai proses dari daftar pengaduan"
                               >
                                 Mulai dari Pengaduan
