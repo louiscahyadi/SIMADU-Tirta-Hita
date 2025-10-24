@@ -23,6 +23,13 @@ export const workOrderSchema = z
     scheduledDate: z.coerce.date(),
     instructions: z.string().trim().max(2000).optional().or(z.literal("")),
     workOrderNumber: z.string().trim().max(100).optional(),
+    // Tambahan field SPK sesuai kebutuhan UI Distribusi
+    reportDate: z.coerce.date().optional(), // Lap. Hari / Tanggal
+    reporterName: z.string().trim().min(2).max(100).optional(),
+    disturbanceLocation: z.string().trim().min(2).max(255).optional(),
+    handledDate: z.coerce.date().optional(), // Hari / Tanggal ditangani
+    handlingTime: z.string().trim().max(100).optional(), // Waktu Penanganan
+    disturbanceType: z.string().trim().max(100).optional(),
   })
   .superRefine((v, ctx) => {
     // scheduledDate must be today or in the future
