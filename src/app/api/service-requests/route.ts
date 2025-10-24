@@ -32,12 +32,18 @@ export async function POST(req: Request) {
         // kompatibilitas tampilan lama
         customerName: data.reporterName,
         address: data.address,
+        serviceNumber: (data as any).serviceNumber ?? null,
         phone: data.reporterPhone,
 
         // PSP fields
         reporterName: data.reporterName,
         reporterPhone: data.reporterPhone,
-        description: data.description,
+        description: (data as any).description ?? null,
+        receivedAt: (data as any).receivedAt ?? null,
+        receivedBy: (data as any).receivedBy ?? null,
+        reasons: (data as any).reasons ? (data as any).reasons : undefined,
+        otherReason: (data as any).otherReason ?? null,
+        serviceCostBy: (data as any).serviceCostBy ?? null,
         urgency: data.urgency, // sudah LOW|MEDIUM|HIGH
         requestDate: data.requestDate,
         notes: data.notes ?? null,
@@ -90,6 +96,7 @@ export async function PATCH(req: Request) {
     const updateSchema = z
       .object({
         id: z.string().min(1),
+        serviceNumber: z.string().trim().max(50).optional(),
         reporterName: z.string().trim().min(2).max(100).optional(),
         reporterPhone: z
           .string()
@@ -99,7 +106,12 @@ export async function PATCH(req: Request) {
           .regex(/^[+\d ]+$/)
           .optional(),
         address: z.string().trim().min(5).max(200).optional(),
-        description: z.string().trim().min(10).max(2000).optional(),
+        receivedAt: z.coerce.date().optional(),
+        receivedBy: z.string().trim().min(2).max(100).optional(),
+        reasons: z.array(z.string().trim()).optional(),
+        otherReason: z.string().trim().max(200).optional(),
+        serviceCostBy: z.enum(["PERUMDA AM", "Langganan"]).optional(),
+        description: z.string().trim().max(2000).optional(),
         urgency: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
         requestDate: z.coerce.date().optional(),
         notes: z.string().trim().max(2000).optional(),
@@ -119,10 +131,16 @@ export async function PATCH(req: Request) {
       const next = await tx.serviceRequest.update({
         where: { id: data.id },
         data: {
+          serviceNumber: (data as any).serviceNumber ?? undefined,
           reporterName: data.reporterName ?? undefined,
           reporterPhone: data.reporterPhone ?? undefined,
           address: data.address ?? undefined,
-          description: data.description ?? undefined,
+          receivedAt: (data as any).receivedAt ?? undefined,
+          receivedBy: (data as any).receivedBy ?? undefined,
+          reasons: (data as any).reasons ?? undefined,
+          otherReason: (data as any).otherReason ?? undefined,
+          serviceCostBy: (data as any).serviceCostBy ?? undefined,
+          description: (data as any).description ?? undefined,
           urgency: (data.urgency as any) ?? undefined,
           requestDate: data.requestDate ?? undefined,
           notes: data.notes === undefined ? undefined : data.notes || null,
@@ -145,6 +163,24 @@ export async function GET(req: Request) {
   const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const url = new URL(req.url);
+  // Support fetching single item by id for prefilling SPK fields
+  const byId = url.searchParams.get("id");
+  if (byId) {
+    const sr = await prisma.serviceRequest.findUnique({ where: { id: byId } });
+    if (!sr) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    // related complaint to prefill SPK
+    const comp = await prisma.complaint.findFirst({
+      where: { serviceRequestId: byId },
+      select: { id: true, category: true, customerName: true, address: true },
+    });
+    return NextResponse.json({
+      ...sr,
+      _complaintCategory: comp?.category ?? null,
+      _complaintId: comp?.id ?? null,
+      _complaintCustomerName: comp?.customerName ?? null,
+      _complaintAddress: comp?.address ?? null,
+    });
+  }
   const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
   if (!hasPage) {
     const list = await prisma.serviceRequest.findMany({ orderBy: { createdAt: "desc" } });
