@@ -210,7 +210,7 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
       />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Status HUMAS</h2>
-        <Link className="btn-outline btn-sm" href="/daftar-data?tab=service">
+        <Link className="btn-outline btn-sm" href="/humas/daftar-data?tab=service">
           Lihat Daftar Data
         </Link>
       </div>
@@ -346,7 +346,7 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
             <h3 className="font-medium">Pengaduan Terbaru</h3>
             <Link
               className="text-blue-700 hover:underline text-sm"
-              href="/daftar-data?tab=complaint"
+              href="/humas/daftar-data?tab=complaint"
             >
               Lihat semua
             </Link>
@@ -441,7 +441,10 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
         <div className="card p-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium">{entityLabel("serviceRequest")} Terakhir</h3>
-            <Link className="text-blue-700 hover:underline text-sm" href="/daftar-data?tab=service">
+            <Link
+              className="text-blue-700 hover:underline text-sm"
+              href="/humas/daftar-data?tab=service"
+            >
               Lihat semua
             </Link>
           </div>
@@ -466,7 +469,10 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
                     <span className="text-xs text-gray-500 whitespace-nowrap">
                       {formatDate(s.createdAt)}
                     </span>
-                    <Link className="btn-outline btn-sm" href={`/daftar-data/service/${s.id}`}>
+                    <Link
+                      className="btn-outline btn-sm"
+                      href={`/daftar-data/service/${s.id}?scope=humas`}
+                    >
                       Detail
                     </Link>
                   </div>
