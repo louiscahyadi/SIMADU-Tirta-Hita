@@ -26,6 +26,11 @@ export default async function ComplaintDetail({
   params: { id: string };
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
+  const scope = (() => {
+    const v = searchParams?.["scope"];
+    return Array.isArray(v) ? v[0] : v;
+  })()?.toLowerCase?.();
+  const listBase = scope === "humas" ? "/humas/daftar-data" : "/daftar-data";
   const c = await (prisma as any).complaint.findUnique({
     where: { id: params.id },
     include: { histories: { orderBy: { createdAt: "asc" } } },
@@ -35,7 +40,7 @@ export default async function ComplaintDetail({
       <div className="space-y-3">
         <h2 className="text-xl font-semibold">Detail Pengaduan</h2>
         <p className="text-red-600">Data tidak ditemukan.</p>
-        <Link className="text-blue-700 hover:underline" href="/daftar-data?tab=complaint">
+        <Link className="text-blue-700 hover:underline" href={`${listBase}?tab=complaint`}>
           ← Kembali
         </Link>
       </div>
@@ -52,8 +57,10 @@ export default async function ComplaintDetail({
       <Breadcrumbs
         items={[
           { label: "Beranda", href: "/" },
-          { label: "Daftar Data", href: "/daftar-data" },
-          { label: "Pengaduan Pelanggan", href: "/daftar-data?tab=complaint" },
+          scope === "humas"
+            ? { label: "Daftar Data (HUMAS)", href: "/humas/daftar-data" }
+            : { label: "Daftar Data", href: "/daftar-data" },
+          { label: "Pengaduan Pelanggan", href: `${listBase}?tab=complaint` },
           { label: `Pengaduan: ${c.customerName ?? params.id}` },
         ]}
       />
@@ -61,7 +68,10 @@ export default async function ComplaintDetail({
         <h2 className="text-xl font-semibold">Detail Pengaduan</h2>
         <div className="flex items-center gap-2">
           <PrintButton />
-          <Link className="text-sm text-blue-700 hover:underline" href="/daftar-data?tab=complaint">
+          <Link
+            className="text-sm text-blue-700 hover:underline"
+            href={`${listBase}?tab=complaint`}
+          >
             ← Kembali
           </Link>
         </div>
