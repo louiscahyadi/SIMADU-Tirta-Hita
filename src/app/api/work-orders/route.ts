@@ -38,20 +38,20 @@ export async function POST(req: Request) {
       const wo = await tx.workOrder.create({
         data: {
           number: data.workOrderNumber ?? null,
+          reportDate: (data as any).reportDate ?? null,
           team: data.teamName,
           technicians: data.technicians,
           scheduledDate: data.scheduledDate,
           instructions: data.instructions ?? null,
+          handledDate: (data as any).handledDate ?? null,
+          reporterName: (data as any).reporterName ?? null,
+          handlingTime: (data as any).handlingTime ?? null,
+          disturbanceLocation: (data as any).disturbanceLocation ?? null,
+          disturbanceType: (data as any).disturbanceType ?? null,
           // keep compatibility with existing fields when possible
           executorName: null,
-          reporterName: null,
-          handlingTime: null,
-          disturbanceLocation: null,
-          disturbanceType: null,
           city: null,
           cityDate: null,
-          handledDate: null,
-          reportDate: null,
           serviceRequest: { connect: { id: data.pspId } },
         },
       });
