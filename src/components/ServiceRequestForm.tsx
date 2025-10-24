@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -11,12 +11,26 @@ const phoneRegex = /^[+\d ]+$/;
 
 const uiSchema = z.object({
   caseId: z.string().optional(),
+  serviceNumber: z.string().trim().max(50).optional(),
   reporterName: z.string().min(2).max(100),
   reporterPhone: z.string().min(8).max(20).regex(phoneRegex, {
     message: "Hanya boleh +, spasi, dan angka",
   }),
   address: z.string().min(5).max(200),
-  description: z.string().min(10).max(2000),
+  // Diterima: Hari/Tanggal, Jam, Petugas Jaga
+  receivedDate: z.string().optional(), // yyyy-mm-dd
+  receivedTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, { message: "Format jam HH:MM" })
+    .optional(),
+  receivedBy: z.string().min(2).max(100).optional(),
+  // Alasan Permintaan Service
+  reasons: z.array(z.string()).optional(),
+  otherReason: z.string().max(200).optional(),
+  // Biaya service ditanggung oleh
+  serviceCostBy: z.enum(["PERUMDA AM", "Langganan"]).optional(),
+  // Opsional deskripsi tambahan
+  description: z.string().max(2000).optional(),
   urgency: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
   requestDate: z.string().min(1), // yyyy-mm-dd
   notes: z.string().max(2000).optional(),
@@ -39,9 +53,16 @@ export default function ServiceRequestForm({
     resolver: zodResolver(uiSchema),
     defaultValues: {
       caseId: caseId || initialData?.caseId,
+      serviceNumber: (initialData as any)?.serviceNumber || "",
       reporterName: initialData?.reporterName || "",
       reporterPhone: initialData?.reporterPhone || "",
       address: initialData?.address || "",
+      receivedDate: "",
+      receivedTime: "",
+      receivedBy: "",
+      reasons: [],
+      otherReason: "",
+      serviceCostBy: undefined,
       description: initialData?.description || "",
       urgency: initialData?.urgency || "MEDIUM",
       requestDate: initialData?.requestDate || today,
@@ -50,8 +71,26 @@ export default function ServiceRequestForm({
   });
 
   const onSubmit = async (values: UiInput) => {
-    const payload = {
-      ...values,
+    // Compose receivedAt from date+time if provided
+    const receivedAt =
+      values.receivedDate && values.receivedTime
+        ? new Date(`${values.receivedDate}T${values.receivedTime}:00`)
+        : undefined;
+    const payload: any = {
+      caseId: values.caseId || undefined,
+      serviceNumber: values.serviceNumber?.trim() || undefined,
+      reporterName: values.reporterName,
+      reporterPhone: values.reporterPhone,
+      address: values.address,
+      receivedAt,
+      receivedBy: values.receivedBy?.trim() || undefined,
+      reasons: (values.reasons || []).filter(Boolean),
+      otherReason: values.otherReason?.trim() || undefined,
+      serviceCostBy: values.serviceCostBy,
+      description: values.description?.trim() || undefined,
+      // default
+      urgency: (values as any).urgency ?? "MEDIUM",
+      requestDate: values.requestDate,
       // normalize
       notes: values.notes?.trim() ? values.notes : undefined,
     };
@@ -69,9 +108,16 @@ export default function ServiceRequestForm({
     onSaved?.(json.id);
     form.reset({
       caseId: caseId || "",
+      serviceNumber: "",
       reporterName: "",
       reporterPhone: "",
       address: "",
+      receivedDate: "",
+      receivedTime: "",
+      receivedBy: "",
+      reasons: [],
+      otherReason: "",
+      serviceCostBy: undefined,
       description: "",
       urgency: "MEDIUM",
       requestDate: today,
@@ -79,8 +125,23 @@ export default function ServiceRequestForm({
     });
   };
 
-  const { register, handleSubmit, formState } = form;
+  const { register, handleSubmit, formState, setValue } = form;
   const { errors } = formState;
+  // When initialData/caseId comes in after mount (e.g., from query params), populate fields
+  useEffect(() => {
+    if (caseId) setValue("caseId", caseId);
+    if (initialData) {
+      if (typeof (initialData as any).serviceNumber !== "undefined")
+        setValue("serviceNumber", ((initialData as any).serviceNumber as any) || "");
+      if (typeof initialData.reporterName !== "undefined")
+        setValue("reporterName", initialData.reporterName || "");
+      if (typeof initialData.reporterPhone !== "undefined")
+        setValue("reporterPhone", initialData.reporterPhone || "");
+      if (typeof initialData.address !== "undefined")
+        setValue("address", initialData.address || "");
+    }
+  }, [caseId, initialData, setValue]);
+  const locked = !!caseId; // when coming from a complaint, prefilled fields are locked
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
@@ -88,9 +149,29 @@ export default function ServiceRequestForm({
       {caseId ? <input type="hidden" {...register("caseId")} value={caseId} /> : null}
 
       <div className="grid md:grid-cols-2 gap-4">
+        <div className="md:col-span-2">
+          <label className="label">No. Pelanggan (No. SL)</label>
+          <input
+            className={`input ${locked ? "bg-gray-50 text-gray-700 cursor-not-allowed" : ""}`}
+            {...register("serviceNumber")}
+            placeholder="Contoh: 01-234567"
+            readOnly={locked}
+            aria-readonly={locked}
+            title={locked ? "Otomatis dari pengaduan" : undefined}
+          />
+          {errors.serviceNumber && (
+            <div className="text-xs text-red-600">{errors.serviceNumber.message as string}</div>
+          )}
+        </div>
         <div>
-          <label className="label">Nama Pelapor</label>
-          <input className="input" {...register("reporterName")} />
+          <label className="label">Nama Pelanggan</label>
+          <input
+            className={`input ${locked ? "bg-gray-50 text-gray-700 cursor-not-allowed" : ""}`}
+            {...register("reporterName")}
+            readOnly={locked}
+            aria-readonly={locked}
+            title={locked ? "Otomatis dari pengaduan" : undefined}
+          />
           {errors.reporterName && (
             <div className="text-xs text-red-600">{errors.reporterName.message as string}</div>
           )}
@@ -98,9 +179,12 @@ export default function ServiceRequestForm({
         <div>
           <label className="label">No. Kontak</label>
           <input
-            className="input"
+            className={`input ${locked ? "bg-gray-50 text-gray-700 cursor-not-allowed" : ""}`}
             placeholder="contoh: +62 812 3456 7890"
             {...register("reporterPhone")}
+            readOnly={locked}
+            aria-readonly={locked}
+            title={locked ? "Otomatis dari pengaduan" : undefined}
           />
           {errors.reporterPhone && (
             <div className="text-xs text-red-600">{errors.reporterPhone.message as string}</div>
@@ -108,29 +192,88 @@ export default function ServiceRequestForm({
         </div>
         <div className="md:col-span-2">
           <label className="label">Alamat/Lokasi</label>
-          <input className="input" {...register("address")} />
+          <input
+            className={`input ${locked ? "bg-gray-50 text-gray-700 cursor-not-allowed" : ""}`}
+            {...register("address")}
+            readOnly={locked}
+            aria-readonly={locked}
+            title={locked ? "Otomatis dari pengaduan" : undefined}
+          />
           {errors.address && (
             <div className="text-xs text-red-600">{errors.address.message as string}</div>
           )}
         </div>
-        <div className="md:col-span-2">
-          <label className="label">Deskripsi/Keluhan</label>
-          <textarea className="input min-h-[120px]" {...register("description")} />
-          {errors.description && (
-            <div className="text-xs text-red-600">{errors.description.message as string}</div>
+        {/* Diterima */}
+        <div>
+          <label className="label">Diterima - Hari / Tanggal</label>
+          <input type="date" className="input" {...register("receivedDate")} />
+        </div>
+        <div>
+          <label className="label">Diterima - Jam</label>
+          <input type="time" className="input" {...register("receivedTime")} />
+          {errors.receivedTime && (
+            <div className="text-xs text-red-600">{errors.receivedTime.message as string}</div>
           )}
         </div>
         <div>
-          <label className="label">Urgensi</label>
-          <select className="input" {...register("urgency")} defaultValue="MEDIUM">
-            <option value="LOW">LOW</option>
-            <option value="MEDIUM">MEDIUM</option>
-            <option value="HIGH">HIGH</option>
-          </select>
-          {errors.urgency && (
-            <div className="text-xs text-red-600">{errors.urgency.message as string}</div>
-          )}
+          <label className="label">Petugas Jaga</label>
+          <input className="input" {...register("receivedBy")} />
         </div>
+
+        {/* Alasan Permintaan Service */}
+        <div className="md:col-span-2">
+          <label className="label">Alasan Permintaan Service</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+            {[
+              "WM. Mati",
+              "WM. Kabur",
+              "Pipa Bocor",
+              "Kaca WM. Pecah",
+              "Tidak ada air",
+              "Bocor sesudah WM.",
+              "Bocor sebelum WM.",
+              "WM. tertanam",
+              "WM. dibawah bangunan",
+              "WM. diluar tembok batas",
+              "WM. ditempat sempit",
+              "WM. tertanam bahan bangunan",
+              "Lokasi WM. rendah",
+              "Pemakaian tinggi",
+              "Air kecil",
+            ].map((label) => (
+              <label key={label} className="inline-flex items-center gap-2">
+                <input type="checkbox" value={label} {...register("reasons")} />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="md:col-span-2">
+          <label className="label">Lain-lain</label>
+          <input className="input" {...register("otherReason")} />
+        </div>
+
+        {/* Biaya */}
+        <div className="md:col-span-2">
+          <label className="label">Biaya service ditanggung oleh</label>
+          <div className="flex items-center gap-4 text-sm">
+            <label className="inline-flex items-center gap-2">
+              <input type="radio" value="PERUMDA AM" {...register("serviceCostBy")} />
+              <span>PERUMDA A.M.</span>
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input type="radio" value="Langganan" {...register("serviceCostBy")} />
+              <span>Langganan</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Opsional deskripsi tambahan */}
+        <div className="md:col-span-2">
+          <label className="label">Keterangan Tambahan (opsional)</label>
+          <textarea className="input min-h-[100px]" {...register("description")} />
+        </div>
+        {/* Urgensi dihapus dari UI */}
         <div>
           <label className="label">Tanggal Permintaan</label>
           <input type="date" className="input" {...register("requestDate")} />
