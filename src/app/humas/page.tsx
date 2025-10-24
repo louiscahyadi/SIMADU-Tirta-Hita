@@ -124,7 +124,7 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
           <Link className="btn-outline btn-sm" href="/humas/status">
             Lihat Status
           </Link>
-          <Link className="btn-outline btn-sm" href="/daftar-data?tab=service">
+          <Link className="btn-outline btn-sm" href="/humas/daftar-data?tab=service">
             Lihat semua data
           </Link>
         </div>
@@ -236,7 +236,7 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
               <h3 className="font-medium">Pengaduan Masuk (Belum diproses)</h3>
               <Link
                 className="text-blue-700 hover:underline text-sm"
-                href="/daftar-data?tab=complaint"
+                href="/humas/daftar-data?tab=complaint"
               >
                 Lihat semua
               </Link>
@@ -262,7 +262,10 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
                       <span className="text-xs text-gray-500 whitespace-nowrap">
                         {formatDate(c.createdAt)}
                       </span>
-                      <Link className="btn-outline btn-sm" href={`/daftar-data/complaint/${c.id}`}>
+                      <Link
+                        className="btn-outline btn-sm"
+                        href={`/daftar-data/complaint/${c.id}?scope=humas`}
+                      >
                         Detail
                       </Link>
                       <Link className="btn-outline btn-sm" href={`/${"?" + params.toString()}`}>
@@ -282,7 +285,7 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
               <h3 className="font-medium">{entityLabel("serviceRequest")} Terakhir</h3>
               <Link
                 className="text-blue-700 hover:underline text-sm"
-                href="/daftar-data?tab=service"
+                href="/humas/daftar-data?tab=service"
               >
                 Lihat semua
               </Link>
@@ -295,7 +298,10 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
                     <div className="text-xs text-gray-600 truncate">{s.address}</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Link className="btn-outline btn-sm" href={`/daftar-data/service/${s.id}`}>
+                    <Link
+                      className="btn-outline btn-sm"
+                      href={`/daftar-data/service/${s.id}?scope=humas`}
+                    >
                       Detail
                     </Link>
                   </div>
