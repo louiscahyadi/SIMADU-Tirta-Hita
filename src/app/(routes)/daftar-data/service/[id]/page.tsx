@@ -41,13 +41,18 @@ export default async function ServiceDetail({
   searchParams,
 }: PageProps & { searchParams?: Record<string, string | string[] | undefined> }) {
   const { id } = params;
+  const scope = (() => {
+    const v = searchParams?.["scope"];
+    return Array.isArray(v) ? v[0] : v;
+  })()?.toLowerCase?.();
+  const listBase = scope === "humas" ? "/humas/daftar-data" : "/daftar-data";
   const service = await prisma.serviceRequest.findUnique({ where: { id } });
   if (!service) {
     return (
       <div className="space-y-3">
         <h2 className="text-xl font-semibold">Detail Permintaan Service</h2>
         <p className="text-red-600">Data tidak ditemukan.</p>
-        <Link className="text-blue-700 hover:underline" href="/daftar-data?tab=service">
+        <Link className="text-blue-700 hover:underline" href={`${listBase}?tab=service`}>
           ← Kembali ke daftar
         </Link>
       </div>
@@ -78,8 +83,10 @@ export default async function ServiceDetail({
       <Breadcrumbs
         items={[
           { label: "Beranda", href: "/" },
-          { label: "Daftar Data", href: "/daftar-data" },
-          { label: "Permintaan Service", href: "/daftar-data?tab=service" },
+          scope === "humas"
+            ? { label: "Daftar Data (HUMAS)", href: "/humas/daftar-data" }
+            : { label: "Daftar Data", href: "/daftar-data" },
+          { label: "Permintaan Service", href: `${listBase}?tab=service` },
           {
             label: `Permintaan Service: ${
               (service as any).reporterName ?? service.customerName ?? id
@@ -91,7 +98,7 @@ export default async function ServiceDetail({
         <h2 className="text-xl font-semibold">Detail Permintaan Service</h2>
         <div className="flex items-center gap-2">
           <PrintButton />
-          <Link className="text-sm text-blue-700 hover:underline" href="/daftar-data?tab=service">
+          <Link className="text-sm text-blue-700 hover:underline" href={`${listBase}?tab=service`}>
             ← Kembali
           </Link>
         </div>
@@ -103,7 +110,25 @@ export default async function ServiceDetail({
           {formatDate((service as any).requestDate ?? service.createdAt)}
         </div>
         <div>
-          <span className="text-gray-600">Nama Pelapor:</span>{" "}
+          <span className="text-gray-600">Diterima:</span>{" "}
+          {(() => {
+            const ra = (service as any).receivedAt as Date | string | undefined;
+            if (!ra) return "-";
+            return formatDate(ra);
+          })()}
+          {((service as any).receivedBy as string | undefined)?.trim?.() ? (
+            <span className="ml-2 text-gray-600">
+              {" "}
+              | Petugas Jaga: {(service as any).receivedBy}
+            </span>
+          ) : null}
+        </div>
+        <div>
+          <span className="text-gray-600">No. Pelanggan (No. SL):</span>{" "}
+          {service.serviceNumber ?? "-"}
+        </div>
+        <div>
+          <span className="text-gray-600">Nama Pelanggan:</span>{" "}
           {(service as any).reporterName ?? service.customerName}
         </div>
         <div>
@@ -114,26 +139,19 @@ export default async function ServiceDetail({
           <span className="text-gray-600">Alamat/Lokasi:</span> {service.address}
         </div>
         <div>
-          <span className="text-gray-600">Urgensi:</span>{" "}
-          {(() => {
-            const u = ((service as any).urgency as string | undefined) ?? undefined;
-            if (!u) return "-";
-            const cls =
-              u === "HIGH"
-                ? "bg-red-50 text-red-700"
-                : u === "MEDIUM"
-                  ? "bg-amber-50 text-amber-700"
-                  : "bg-green-50 text-green-700"; // LOW
-            return (
-              <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${cls}`}>
-                {u}
-              </span>
-            );
-          })()}
+          <span className="text-gray-600">Alasan:</span> {joinJsonArray((service as any).reasons)}
         </div>
         <div>
-          <span className="text-gray-600">Deskripsi/Keluhan:</span>{" "}
-          {(service as any).description ?? "-"}
+          <span className="text-gray-600">Lain-lain:</span>{" "}
+          {((service as any).otherReason as string | undefined)?.trim?.() || "-"}
+        </div>
+        <div>
+          <span className="text-gray-600">Biaya ditanggung oleh:</span>{" "}
+          {((service as any).serviceCostBy as string | undefined) ?? "-"}
+        </div>
+        <div>
+          <span className="text-gray-600">Keterangan Tambahan:</span>{" "}
+          {((service as any).description as string | undefined) ?? "-"}
         </div>
         <div>
           <span className="text-gray-600">Catatan Tambahan:</span> {(service as any).notes ?? "-"}
@@ -146,12 +164,7 @@ export default async function ServiceDetail({
         <div>
           <span className="text-gray-600">Tgl Input:</span> {formatDate(service.createdAt)}
         </div>
-        <div>
-          <span className="text-gray-600">No. SL:</span> {service.serviceNumber ?? "-"}
-        </div>
-        <div>
-          <span className="text-gray-600">Alasan (opsional):</span> {joinJsonArray(service.reasons)}
-        </div>
+        {/* No. SL, Alasan sudah ditampilkan di bagian utama */}
         <div>
           <span className="text-gray-600">Tindakan (opsional):</span> {service.actionTaken ?? "-"}
         </div>
