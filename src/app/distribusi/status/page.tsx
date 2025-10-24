@@ -209,19 +209,7 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
                       <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">
                         {entityAbbr("serviceRequest")}
                       </span>
-                      {sr.urgency ? (
-                        <span
-                          className={`rounded-full px-2 py-0.5 ${
-                            sr.urgency === "HIGH"
-                              ? "bg-red-50 text-red-700"
-                              : sr.urgency === "MEDIUM"
-                                ? "bg-amber-50 text-amber-700"
-                                : "bg-green-50 text-green-700"
-                          }`}
-                        >
-                          {sr.urgency}
-                        </span>
-                      ) : null}
+                      {/* Urgensi dihapus dari tampilan antrian PSP */}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
