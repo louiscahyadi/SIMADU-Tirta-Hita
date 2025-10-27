@@ -96,7 +96,7 @@ export async function GET(req: Request) {
             }
           : {}),
     };
-    const rows = await (prisma as any).complaint.findMany({
+    const rows = await prisma.complaint.findMany({
       where,
       orderBy: buildOrderBy(["createdAt", "customerName", "category"]),
     });
