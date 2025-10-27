@@ -39,21 +39,13 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Public pages
-  const publicPaths = [
-    "/",
-    "/pengaduan",
-    "/login",
-    "/login/humas",
-    "/login/distribusi",
-    "/api/auth",
-  ];
+  // Public pages (internal app: keep minimal)
+  const publicPaths = ["/", "/login", "/login/humas", "/login/distribusi", "/api/auth"];
   const isPublic =
     publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/")) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
-    pathname.startsWith("/assets") ||
-    (pathname.startsWith("/api/complaints") && req.method === "POST");
+    pathname.startsWith("/assets");
   if (isPublic) {
     const resp = NextResponse.next();
     return applySecurityHeaders(req, resp, isApi);
@@ -68,6 +60,12 @@ export async function middleware(req: NextRequest) {
   // - DISTRIBUSI: cannot access Daftar Data listing; may access only detail pages under
   //   /daftar-data/(service|workorder|repair)/[id] for viewing/printing, plus Distribusi pages/APIs
   if (role) {
+    // If already logged in and trying to access generic /login, route to role dashboard
+    if (pathname === "/login" || pathname.startsWith("/login/")) {
+      const to = role === "humas" ? "/humas" : role === "distribusi" ? "/distribusi" : "/";
+      const redirect = NextResponse.redirect(new URL(to, req.url));
+      return applySecurityHeaders(req, redirect, isApi);
+    }
     const p = pathname;
     const allowHumas =
       role === "humas" &&
@@ -97,13 +95,6 @@ export async function middleware(req: NextRequest) {
     const to = role === "humas" ? "/humas" : role === "distribusi" ? "/distribusi" : "/";
     const redirectHome = NextResponse.redirect(new URL(to, req.url));
     return applySecurityHeaders(req, redirectHome, isApi);
-    // If already logged in and trying to access generic /login, route to role dashboard
-    if (p === "/login") {
-      const to =
-        role === "humas" ? "/humas" : role === "distribusi" ? "/distribusi" : "/daftar-data";
-      const redirect = NextResponse.redirect(new URL(to, req.url));
-      return applySecurityHeaders(req, redirect, isApi);
-    }
   }
 
   // If not authenticated, redirect to /login
