@@ -84,20 +84,25 @@ Navigasi ke halaman ini tersedia di header.
 - Jika berpindah dari SQLite ke MySQL, data lama tidak otomatis ikut; gunakan migrasi atau seed ulang sesuai kebutuhan.
 - Skema field diadaptasi dari gambar formulir yang Anda lampirkan; jika ada penyesuaian nama kolom atau isian, kabari saya untuk update cepat.
 
-## Otentikasi Admin (NextAuth)
+## Otentikasi (NextAuth) – Internal Only
 
-Halaman internal (misalnya `/daftar-data`) dilindungi oleh autentikasi NextAuth (Credentials provider, role admin).
+Seluruh halaman aplikasi ini ditujukan untuk penggunaan internal divisi HUMAS/DISTRIBUSI. Akses
+dibatasi menggunakan NextAuth (Credentials provider) dengan 2 role: `humas` dan `distribusi`.
 
-1. Buat konfigurasi environment:
+1. Buat konfigurasi environment minimal:
 
 - `NEXTAUTH_URL=http://localhost:3000`
 - `NEXTAUTH_SECRET=some-long-random-string`
-- `ADMIN_USERNAME=admin`
-- `ADMIN_PASSWORD=admin123`
+- `HUMAS_USERNAME=humas`
+- `HUMAS_PASSWORD=humas123`
+- `DISTRIBUSI_USERNAME=distribusi`
+- `DISTRIBUSI_PASSWORD=distribusi123`
 
-2. Buka `/login` dan masuk menggunakan kredensial di atas (ubah via env sesuai kebutuhan). Setelah login, halaman internal dapat diakses.
+2. Buka `/login` dan pilih divisi untuk masuk. Setelah login, halaman internal dapat diakses sesuai
+   role. Pengguna HUMAS dapat membuat PSP dan mengelola data terkait; pengguna DISTRIBUSI
+   membuat SPK dan BAP.
 
 Catatan:
 
-- Halaman publik seperti `/pengaduan` tetap terbuka untuk pelanggan.
-- Endpoint publik `POST /api/complaints` tetap diperbolehkan.
+- Endpoint `POST /api/complaints` tidak dibuka untuk publik. Jika dibutuhkan kanal pengaduan
+  publik, implementasi terpisah harus mempertimbangkan validasi, rate limiting, dan anti-spam.
