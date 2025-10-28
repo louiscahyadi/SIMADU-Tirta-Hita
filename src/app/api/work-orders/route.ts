@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
@@ -7,9 +7,9 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { workOrderSchema } from "@/lib/schemas/workOrder";
 
-export async function POST(req: Request) {
-  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-  const role = (token as any)?.role as string | undefined;
+export async function POST(req: NextRequest) {
+  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  const role = token?.role;
   if (!(role === "distribusi")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       // Attach to complaint and update status + history via helper
       await ComplaintFlow.markSPKCreated(tx, complaint.id, wo.id, {
         actorRole: "distribusi",
-        actorId: (token as any)?.sub ?? null,
+        actorId: token?.sub ?? null,
         note: null,
       });
 
@@ -76,8 +76,8 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
-  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+export async function GET(req: NextRequest) {
+  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const url = new URL(req.url);
   const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
