@@ -10,8 +10,8 @@ export default function HeaderAuth() {
     return <span className="text-gray-400 text-sm">Memuat…</span>;
   }
 
-  const user = session?.user as any;
-  const role = user?.role as string | undefined;
+  const user = session?.user;
+  const role = user?.role;
 
   return (
     <div className="flex items-center gap-3">
