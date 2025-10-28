@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
@@ -10,9 +10,9 @@ const bodySchema = z.object({
   note: z.string().max(2000).optional().or(z.literal("")),
 });
 
-export async function POST(req: Request) {
-  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-  const role = (token as any)?.role as string | undefined;
+export async function POST(req: NextRequest) {
+  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  const role = token?.role;
   if (!(role === "distribusi")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
           complaintId: complaint.id,
           status: "PSP_CREATED",
           actorRole: "distribusi",
-          actorId: (token as any)?.sub ?? null,
+          actorId: token?.sub ?? null,
           note: data.note ? `NEEDS_REVISION: ${data.note}` : "NEEDS_REVISION",
         },
       });
