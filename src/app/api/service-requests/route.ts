@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
@@ -7,9 +7,9 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { serviceRequestSchema } from "@/lib/schemas/serviceRequest";
 
-export async function POST(req: Request) {
-  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-  const role = (token as any)?.role as string | undefined;
+export async function POST(req: NextRequest) {
+  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  const role = token?.role;
   if (role !== "humas") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const raw = await req.json();
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       if (comp) {
         await ComplaintFlow.markPSPCreated(tx, comp.id, sr.id, {
           actorRole: "humas",
-          actorId: (token as any)?.sub ?? null,
+          actorId: token?.sub ?? null,
           note: null,
         });
       }
@@ -69,9 +69,9 @@ export async function POST(req: Request) {
   return NextResponse.json(created);
 }
 
-export async function PATCH(req: Request) {
-  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-  const role = (token as any)?.role as string | undefined;
+export async function PATCH(req: NextRequest) {
+  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  const role = token?.role;
   if (role !== "humas") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
@@ -147,9 +147,9 @@ export async function PATCH(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   // Ensure request is authenticated
-  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const url = new URL(req.url);
   // Support fetching single item by id for prefilling SPK fields
