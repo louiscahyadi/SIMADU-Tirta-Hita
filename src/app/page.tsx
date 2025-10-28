@@ -12,8 +12,8 @@ type SearchParams = Record<string, string | string[] | undefined>;
 const asString = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : (v ?? undefined));
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
-  const session = await getServerSession(authOptions as any);
-  const role = (session as any)?.user?.role as string | undefined;
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
 
   // Normalize query params to strings
   const qp = {
