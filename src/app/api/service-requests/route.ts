@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
+import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { serviceRequestSchema } from "@/lib/schemas/serviceRequest";
@@ -51,25 +52,13 @@ export async function POST(req: Request) {
     });
 
     if (data.caseId) {
-      // Link complaint to SR, set status, and write history if complaint exists
+      // Link complaint to SR and update status/history via helper
       const comp = await tx.complaint.findUnique({ where: { id: data.caseId } });
       if (comp) {
-        await tx.complaint.update({
-          where: { id: comp.id },
-          data: {
-            serviceRequestId: sr.id,
-            processedAt: new Date(),
-            status: "PSP_CREATED" as any,
-          },
-        });
-        await tx.statusHistory.create({
-          data: {
-            complaintId: comp.id,
-            status: "PSP_CREATED",
-            actorRole: "humas",
-            actorId: (token as any)?.sub ?? null,
-            note: null,
-          },
+        await ComplaintFlow.markPSPCreated(tx, comp.id, sr.id, {
+          actorRole: "humas",
+          actorId: (token as any)?.sub ?? null,
+          note: null,
         });
       }
     }
