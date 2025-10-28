@@ -14,6 +14,11 @@ export async function middleware(req: NextRequest) {
   // Simple in-memory rate limiter (best-effort). For production, prefer Redis or edge KV.
   const RATE_LIMIT = 60; // requests
   const WINDOW_MS = 60_000; // 1 minute
+
+  // Special rate limit for public complaint endpoint
+  const PUBLIC_COMPLAINT_LIMIT = 10; // requests
+  const PUBLIC_COMPLAINT_WINDOW_MS = 300_000; // 5 minutes
+
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     // @ts-ignore - NextRequest may expose ip in some runtimes
@@ -23,6 +28,25 @@ export async function middleware(req: NextRequest) {
   const now = Date.now();
   // @ts-ignore - attach a global store for dev/server runtime
   const store = ((globalThis as any).__RL_STORE__ ||= new Map<string, number[]>());
+
+  // Special rate limiting for public complaint submissions
+  if (pathname === "/api/complaints" && req.method === "POST") {
+    const publicKey = `public_complaint_${ip}`;
+    const arr: number[] = store.get(publicKey) || [];
+    const recent = arr.filter((t) => now - t < PUBLIC_COMPLAINT_WINDOW_MS);
+    recent.push(now);
+    store.set(publicKey, recent);
+    if (recent.length > PUBLIC_COMPLAINT_LIMIT) {
+      return new NextResponse("Terlalu banyak pengaduan. Silakan coba lagi dalam 5 menit.", {
+        status: 429,
+        headers: {
+          "Retry-After": "300",
+        },
+      });
+    }
+  }
+
+  // General API rate limiting
   if (isApi) {
     const key = `${ip}`;
     const arr: number[] = store.get(key) || [];
@@ -40,9 +64,19 @@ export async function middleware(req: NextRequest) {
   }
 
   // Public pages (internal app: keep minimal)
-  const publicPaths = ["/", "/login", "/login/humas", "/login/distribusi", "/api/auth"];
+  // Allow public complaint page and POST to complaints API
+  const publicPaths = [
+    "/",
+    "/login",
+    "/login/humas",
+    "/login/distribusi",
+    "/pengaduan",
+    "/api/auth",
+  ];
   const isPublic =
     publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/")) ||
+    // Allow POST to /api/complaints for public submissions
+    (pathname === "/api/complaints" && req.method === "POST") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/assets");
