@@ -27,8 +27,8 @@ function getParam(sp: PageProps["searchParams"], key: string) {
 }
 
 export default async function DistribusiStatusPage({ searchParams }: PageProps) {
-  const session = await getServerSession(authOptions as any);
-  const role = (session as any)?.user?.role as string | undefined;
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
   if (role !== "distribusi") {
     return (
       <div className="space-y-3">
