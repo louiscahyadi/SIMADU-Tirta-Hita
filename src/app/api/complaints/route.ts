@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+import { verifyCaseConsistency } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -115,25 +116,42 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "id wajib" }, { status: 400 });
     }
 
+    // Disallow manual mutation of linkage fields from this endpoint to avoid inconsistencies.
+    if (
+      Object.prototype.hasOwnProperty.call(parsed, "serviceRequestId") ||
+      Object.prototype.hasOwnProperty.call(parsed, "workOrderId") ||
+      Object.prototype.hasOwnProperty.call(parsed, "repairReportId")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Tidak bisa mengubah linkage (PSP/SPK/BAP) langsung dari endpoint ini. Gunakan endpoint pembuatan PSP/SPK/BAP agar konsisten.",
+        },
+        { status: 400 },
+      );
+    }
+
     const updateData: any = {};
-    if ("serviceRequestId" in parsed) updateData.serviceRequestId = parsed.serviceRequestId ?? null;
-    if ("workOrderId" in parsed) updateData.workOrderId = parsed.workOrderId ?? null;
-    if ("repairReportId" in parsed) updateData.repairReportId = parsed.repairReportId ?? null;
     if ("processedAt" in parsed) {
       updateData.processedAt =
         parsed.processedAt === null ? null : new Date(parsed.processedAt as string);
     }
 
-    const updated = await prisma.complaint.update({
-      where: { id: parsed.id },
-      data: updateData,
-      select: {
-        id: true,
-        processedAt: true,
-        serviceRequestId: true,
-        workOrderId: true,
-        repairReportId: true,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const next = await tx.complaint.update({
+        where: { id: parsed.id! },
+        data: updateData,
+        select: {
+          id: true,
+          processedAt: true,
+          serviceRequestId: true,
+          workOrderId: true,
+          repairReportId: true,
+        },
+      });
+      // Optional: verify consistency after update (no fix here; just report if inconsistent)
+      await verifyCaseConsistency(tx, next.id, { fix: false });
+      return next;
     });
     return NextResponse.json(updated);
   } catch (e) {
