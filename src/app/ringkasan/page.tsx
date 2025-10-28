@@ -9,8 +9,8 @@ import { entityLabel } from "@/lib/uiLabels";
 export const dynamic = "force-dynamic";
 
 export default async function RingkasanPage() {
-  const session = await getServerSession(authOptions as any);
-  const role = (session as any)?.user?.role as string | undefined;
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
 
   // Fetch some quick counts
   const [complaintsNew, complaintsProcessed, srCount, woCount, rrCount] = await Promise.all([
