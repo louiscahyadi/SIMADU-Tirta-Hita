@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
+import { assertCanCreateSR } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -17,16 +18,7 @@ export async function POST(req: NextRequest) {
 
   const created = await prisma.$transaction(async (tx) => {
     if (data.caseId) {
-      // Validate the case exists and is in the correct state, and ensure only one PSP per case
-      const comp = await tx.complaint.findUnique({ where: { id: data.caseId } });
-      if (!comp) throw new Error("Kasus tidak ditemukan");
-      // Only allow PSP creation when status is 'REPORTED' (maps to NEW)
-      if ((comp as any).status !== "REPORTED") {
-        throw new Error("PSP hanya bisa dibuat ketika status kasus = NEW");
-      }
-      if (comp.serviceRequestId) {
-        throw new Error("Sudah ada PSP untuk kasus ini");
-      }
+      await assertCanCreateSR(tx, data.caseId);
     }
     const sr = await tx.serviceRequest.create({
       data: {
@@ -53,14 +45,11 @@ export async function POST(req: NextRequest) {
 
     if (data.caseId) {
       // Link complaint to SR and update status/history via helper
-      const comp = await tx.complaint.findUnique({ where: { id: data.caseId } });
-      if (comp) {
-        await ComplaintFlow.markPSPCreated(tx, comp.id, sr.id, {
-          actorRole: "humas",
-          actorId: token?.sub ?? null,
-          note: null,
-        });
-      }
+      await ComplaintFlow.markPSPCreated(tx, data.caseId, sr.id, {
+        actorRole: "humas",
+        actorId: token?.sub ?? null,
+        note: null,
+      });
     }
 
     return sr;
