@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
+import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { repairReportSchema } from "@/lib/schemas/repairReport";
@@ -48,25 +49,29 @@ export async function POST(req: Request) {
         },
       });
 
-      // Link to complaint and update status/history
-      const nextStatus =
-        data.result === "MONITORING" ? ("MONITORING" as any) : ("COMPLETED" as any);
-      await tx.complaint.update({
-        where: { id: complaint.id },
-        data: { repairReportId: rr.id, status: nextStatus, updatedAt: new Date() },
+      // Two-step status tracking:
+      // 1) RR_CREATED when BAP is created
+      await ComplaintFlow.markRRCreated(tx, complaint.id, rr.id, {
+        actorRole: "distribusi",
+        actorId: (token as any)?.sub ?? null,
+        note: "BAP dibuat",
       });
-      await tx.statusHistory.create({
-        data: {
-          complaintId: complaint.id,
-          status: data.result === "MONITORING" ? ("MONITORING" as any) : ("COMPLETED" as any),
+
+      // 2) Final status based on result (COMPLETED or MONITORING)
+      if (data.result === "MONITORING") {
+        await ComplaintFlow.markMonitoring(tx, complaint.id, {
           actorRole: "distribusi",
           actorId: (token as any)?.sub ?? null,
-          note:
-            data.result === "MONITORING"
-              ? "BAP dikirim, hasil = MONITORING"
-              : "BAP dikirim, hasil = " + data.result,
-        },
-      });
+          note: "BAP dikirim, hasil = MONITORING",
+        });
+      } else {
+        // Default to COMPLETED for FIXED and any other terminal result except MONITORING
+        await ComplaintFlow.markCompleted(tx, complaint.id, {
+          actorRole: "distribusi",
+          actorId: (token as any)?.sub ?? null,
+          note: `BAP dikirim, hasil = ${data.result}`,
+        });
+      }
 
       return rr;
     });
