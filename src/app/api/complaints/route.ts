@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import {
@@ -11,14 +12,16 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
-    // Only HUMAS can create cases
+    // Allow both public submissions and HUMAS staff
     const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
     const role = (token as any)?.role as string | undefined;
-    if (role !== "humas") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const isHumas = role === "humas";
+    const isPublic = !token; // No token means public submission
+
+    // Parse and validate the request body
     const raw = await req.json();
     const data = complaintCreateSchema.parse(raw);
+
     const created = await prisma.$transaction(async (tx) => {
       const comp = await tx.complaint.create({
         data: {
@@ -34,14 +37,10 @@ export async function POST(req: NextRequest) {
         select: { id: true },
       });
       // Write initial status history (REPORTED)
-      await tx.statusHistory.create({
-        data: {
-          complaintId: comp.id,
-          status: "REPORTED" as any,
-          actorRole: "humas",
-          actorId: (token as any)?.sub ?? null,
-          note: "Kasus dibuat",
-        },
+      await ComplaintFlow.markReported(tx, comp.id, {
+        actorRole: isPublic ? "public" : "humas",
+        actorId: isPublic ? null : ((token as any)?.sub ?? null),
+        note: isPublic ? "Pengaduan dari publik" : "Kasus dibuat",
       });
       return comp;
     });
