@@ -359,8 +359,8 @@ function FilterBar({ sp }: { sp: URLSearchParams }) {
 }
 
 export default async function DaftarDataPage({ searchParams }: PageProps) {
-  const session = await getServerSession(authOptions as any);
-  const role = (session as any)?.user?.role as string | undefined;
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(searchParams ?? {})) {
     if (Array.isArray(v)) sp.set(k, v[0]!);
