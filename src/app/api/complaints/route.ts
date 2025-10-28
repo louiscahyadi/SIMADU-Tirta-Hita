@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   try {
     // Allow both public submissions and HUMAS staff
     const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-    const role = (token as any)?.role as string | undefined;
+    const role = token?.role;
     const isHumas = role === "humas";
     const isPublic = !token; // No token means public submission
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       // Write initial status history (REPORTED)
       await ComplaintFlow.markReported(tx, comp.id, {
         actorRole: isPublic ? "public" : "humas",
-        actorId: isPublic ? null : ((token as any)?.sub ?? null),
+        actorId: isPublic ? null : (token?.sub ?? null),
         note: isPublic ? "Pengaduan dari publik" : "Kasus dibuat",
       });
       return comp;
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-    const role = (token as any)?.role as string | undefined;
+    const role = token?.role;
     if (!(role === "humas" || role === "distribusi")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
