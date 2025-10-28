@@ -28,8 +28,8 @@ function getParam(sp: PageProps["searchParams"], key: string) {
 }
 
 export default async function HumasDashboard({ searchParams }: PageProps) {
-  const session = await getServerSession(authOptions as any);
-  const role = (session as any)?.user?.role as string | undefined;
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
 
   // Quick guard message (middleware also protects)
   if (!(role === "humas")) {
