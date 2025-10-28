@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
+import { assertCanCreateWO } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -18,23 +19,7 @@ export async function POST(req: NextRequest) {
     const data = workOrderSchema.parse(raw);
 
     const created = await prisma.$transaction(async (tx) => {
-      // Validate complaint and PSP linkage
-      const complaint = await tx.complaint.findUnique({ where: { id: data.caseId } });
-      if (!complaint) throw new Error("Kasus tidak ditemukan");
-      if (complaint.serviceRequestId !== data.pspId) {
-        throw new Error("PSP tidak sesuai dengan kasus");
-      }
-      // Only allow creating SPK when current case status is PSP_CREATED
-      if ((complaint as any).status !== "PSP_CREATED") {
-        throw new Error("SPK hanya bisa dibuat ketika status kasus = PSP_CREATED");
-      }
-      // Guard: one SPK per Case
-      if (complaint.workOrderId) {
-        throw new Error("Sudah ada SPK untuk kasus ini");
-      }
-      // Also ensure PSP exists
-      const sr = await tx.serviceRequest.findUnique({ where: { id: data.pspId } });
-      if (!sr) throw new Error("PSP tidak ditemukan");
+      await assertCanCreateWO(tx, data.caseId, data.pspId);
 
       const wo = await tx.workOrder.create({
         data: {
@@ -58,7 +43,7 @@ export async function POST(req: NextRequest) {
       });
 
       // Attach to complaint and update status + history via helper
-      await ComplaintFlow.markSPKCreated(tx, complaint.id, wo.id, {
+      await ComplaintFlow.markSPKCreated(tx, data.caseId, wo.id, {
         actorRole: "distribusi",
         actorId: token?.sub ?? null,
         note: null,
