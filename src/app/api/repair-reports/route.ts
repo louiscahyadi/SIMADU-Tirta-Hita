@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
@@ -7,9 +7,9 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { repairReportSchema } from "@/lib/schemas/repairReport";
 
-export async function POST(req: Request) {
-  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-  const role = (token as any)?.role as string | undefined;
+export async function POST(req: NextRequest) {
+  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+  const role = token?.role;
   if (!(role === "distribusi")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       // 1) RR_CREATED when BAP is created
       await ComplaintFlow.markRRCreated(tx, complaint.id, rr.id, {
         actorRole: "distribusi",
-        actorId: (token as any)?.sub ?? null,
+        actorId: token?.sub ?? null,
         note: "BAP dibuat",
       });
 
@@ -61,14 +61,14 @@ export async function POST(req: Request) {
       if (data.result === "MONITORING") {
         await ComplaintFlow.markMonitoring(tx, complaint.id, {
           actorRole: "distribusi",
-          actorId: (token as any)?.sub ?? null,
+          actorId: token?.sub ?? null,
           note: "BAP dikirim, hasil = MONITORING",
         });
       } else {
         // Default to COMPLETED for FIXED and any other terminal result except MONITORING
         await ComplaintFlow.markCompleted(tx, complaint.id, {
           actorRole: "distribusi",
-          actorId: (token as any)?.sub ?? null,
+          actorId: token?.sub ?? null,
           note: `BAP dikirim, hasil = ${data.result}`,
         });
       }
@@ -86,8 +86,8 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
-  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+export async function GET(req: NextRequest) {
+  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const url = new URL(req.url);
   const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
