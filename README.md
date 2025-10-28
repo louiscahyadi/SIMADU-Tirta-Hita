@@ -105,6 +105,27 @@ Navigasi ke halaman ini tersedia di header.
 - Jika berpindah dari SQLite ke MySQL, data lama tidak otomatis ikut; gunakan migrasi atau seed ulang sesuai kebutuhan.
 - Skema field diadaptasi dari gambar formulir yang Anda lampirkan; jika ada penyesuaian nama kolom atau isian, kabari saya untuk update cepat.
 
+## Konsistensi Relasi Kasus (PSP → SPK → BAP)
+
+Untuk menjaga performa query dan kesederhanaan tracking, aplikasi ini mempertahankan dua sumber keterkaitan (Option C):
+
+- Linkage di tabel `Complaint` (kolom `serviceRequestId`, `workOrderId`, `repairReportId`) – memudahkan lookup cepat dari satu kasus.
+- Relasi ter-normalisasi antar dokumen: `ServiceRequest` → `WorkOrder` (via `serviceRequestId`) → `RepairReport` (via `workOrderId`).
+
+Penulisan data selalu dilakukan dalam transaksi dan melalui helper sehingga keduanya tetap konsisten. Endpoint `PATCH /api/complaints` tidak mengizinkan perubahan linkage manual; linkage diubah secara otomatis ketika membuat PSP/SPK/BAP.
+
+Alat bantu verifikasi:
+
+```pwsh
+# Cek konsistensi linkage vs rantai SR→WO→RR
+node scripts/verify-case-links.js
+
+# Perbaiki otomatis linkage yang mismatch
+node scripts/verify-case-links.js --fix
+```
+
+Catatan: Indeks `@@index([status, createdAt])` ditambahkan untuk mempercepat daftar kasus per status.
+
 ## Otentikasi (NextAuth) – Internal Only
 
 Seluruh halaman aplikasi ini ditujukan untuk penggunaan internal divisi HUMAS/DISTRIBUSI. Akses
