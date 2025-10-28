@@ -87,7 +87,7 @@ export async function middleware(req: NextRequest) {
 
   // Protect other routes: require a valid NextAuth token with allowed roles
   const token = await getToken({ req, secret: env.NEXTAUTH_SECRET });
-  const role = (token as any)?.role as string | undefined;
+  const role = token?.role;
 
   // Role-based route-level guard (coarse):
   // - HUMAS: can access Daftar Data (list & details) + HUMAS pages + related APIs
