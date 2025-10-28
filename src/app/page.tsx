@@ -160,15 +160,6 @@ function HomePageInner() {
             caseId={complaintId}
             onSaved={(id) => {
               setServiceRequestId(id);
-              const complaintId = sp.get("complaintId");
-              if (complaintId) {
-                // Best-effort mark complaint processed (fire-and-forget)
-                fetch(`/api/complaints?id=${encodeURIComponent(complaintId)}`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ serviceRequestId: id }),
-                }).catch(() => {});
-              }
               // HUMAS stop here and let DISTRIBUSI continue via dashboard/daftar-data
               if (role === "humas") return;
               setActive("workorder");
@@ -181,13 +172,6 @@ function HomePageInner() {
             serviceRequestId={serviceRequestId}
             onSaved={(id) => {
               setWorkOrderId(id);
-              if (complaintId) {
-                fetch(`/api/complaints?id=${encodeURIComponent(complaintId)}`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ workOrderId: id }),
-                }).catch(() => {});
-              }
               setActive("repair");
             }}
           />
@@ -197,13 +181,6 @@ function HomePageInner() {
             spkId={workOrderId}
             onSaved={(repairId) => {
               // selesai flow
-              if (complaintId) {
-                fetch(`/api/complaints?id=${encodeURIComponent(complaintId)}`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ repairReportId: repairId }),
-                }).catch(() => {});
-              }
               setActive("service");
               setServiceRequestId(undefined);
               setWorkOrderId(undefined);
