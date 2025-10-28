@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
+import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { workOrderSchema } from "@/lib/schemas/workOrder";
@@ -56,19 +57,11 @@ export async function POST(req: Request) {
         },
       });
 
-      // Attach to complaint and update status + history
-      await tx.complaint.update({
-        where: { id: complaint.id },
-        data: { workOrderId: wo.id, status: "SPK_CREATED" as any, processedAt: new Date() },
-      });
-      await tx.statusHistory.create({
-        data: {
-          complaintId: complaint.id,
-          status: "SPK_CREATED",
-          actorRole: "distribusi",
-          actorId: (token as any)?.sub ?? null,
-          note: null,
-        },
+      // Attach to complaint and update status + history via helper
+      await ComplaintFlow.markSPKCreated(tx, complaint.id, wo.id, {
+        actorRole: "distribusi",
+        actorId: (token as any)?.sub ?? null,
+        note: null,
       });
 
       return wo;
