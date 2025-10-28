@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 import { env } from "@/lib/env";
@@ -29,8 +29,8 @@ function toCsv(rows: any[], headers: string[], selector: (r: any, h: string) => 
   return lines.join("\r\n");
 }
 
-export async function GET(req: Request) {
-  const token = await getToken({ req: req as any, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+export async function GET(req: NextRequest) {
+  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const url = new URL(req.url);
   const sp = url.searchParams;
