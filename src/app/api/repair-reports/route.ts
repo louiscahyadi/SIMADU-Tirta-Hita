@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
+import { assertCanCreateRR } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -18,24 +19,7 @@ export async function POST(req: NextRequest) {
     const data = repairReportSchema.parse(raw);
 
     const created = await prisma.$transaction(async (tx) => {
-      // Validate complaint and SPK linkage
-      const complaint = await tx.complaint.findUnique({ where: { id: data.caseId } });
-      if (!complaint) throw new Error("Kasus tidak ditemukan");
-      if (complaint.workOrderId !== data.spkId) {
-        throw new Error("SPK tidak sesuai dengan kasus");
-      }
-      // Only allow creating BAP when current case status is SPK_CREATED
-      if ((complaint as any).status !== "SPK_CREATED") {
-        throw new Error("BAP hanya bisa dibuat ketika status kasus = SPK_CREATED");
-      }
-      // Guard: one BAP per Case
-      if (complaint.repairReportId) {
-        throw new Error("Sudah ada BAP untuk kasus ini");
-      }
-
-      // ensure work order exists
-      const wo = await tx.workOrder.findUnique({ where: { id: data.spkId } });
-      if (!wo) throw new Error("SPK tidak ditemukan");
+      await assertCanCreateRR(tx, data.caseId, data.spkId);
 
       const rr = await tx.repairReport.create({
         data: {
@@ -51,7 +35,7 @@ export async function POST(req: NextRequest) {
 
       // Two-step status tracking:
       // 1) RR_CREATED when BAP is created
-      await ComplaintFlow.markRRCreated(tx, complaint.id, rr.id, {
+      await ComplaintFlow.markRRCreated(tx, data.caseId, rr.id, {
         actorRole: "distribusi",
         actorId: token?.sub ?? null,
         note: "BAP dibuat",
@@ -59,14 +43,14 @@ export async function POST(req: NextRequest) {
 
       // 2) Final status based on result (COMPLETED or MONITORING)
       if (data.result === "MONITORING") {
-        await ComplaintFlow.markMonitoring(tx, complaint.id, {
+        await ComplaintFlow.markMonitoring(tx, data.caseId, {
           actorRole: "distribusi",
           actorId: token?.sub ?? null,
           note: "BAP dikirim, hasil = MONITORING",
         });
       } else {
         // Default to COMPLETED for FIXED and any other terminal result except MONITORING
-        await ComplaintFlow.markCompleted(tx, complaint.id, {
+        await ComplaintFlow.markCompleted(tx, data.caseId, {
           actorRole: "distribusi",
           actorId: token?.sub ?? null,
           note: `BAP dikirim, hasil = ${data.result}`,
