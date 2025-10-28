@@ -166,6 +166,7 @@ model Complaint {
   repairReport     RepairReport?   @relation(name: "ComplaintToRepairReport", fields: [repairReportId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
+  @@index([status, createdAt])
 }
 
 model StatusHistory {
