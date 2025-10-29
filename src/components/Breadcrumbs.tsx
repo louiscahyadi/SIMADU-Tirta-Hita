@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 type Crumb = {
@@ -19,9 +21,7 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
                   {item.label}
                 </Link>
               ) : (
-                <span
-                  className={isLast ? "font-medium text-gray-800" : undefined}
-                >
+                <span className={isLast ? "font-medium text-gray-800" : undefined}>
                   {item.label}
                 </span>
               )}
