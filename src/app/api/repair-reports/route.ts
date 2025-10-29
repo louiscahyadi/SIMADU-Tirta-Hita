@@ -5,6 +5,7 @@ import { z } from "zod";
 import { assertCanCreateRR, verifyCaseConsistency } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
+import { AppError, errorResponse, handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { repairReportSchema } from "@/lib/schemas/repairReport";
 
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   const role = token?.role;
   if (!(role === "distribusi")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return errorResponse(AppError.forbidden(role ?? null, "distribusi"));
   }
   try {
     const raw = await req.json();
@@ -66,35 +67,38 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(created);
   } catch (e: any) {
     if (e?.name === "ZodError") {
-      return NextResponse.json({ error: e.flatten?.() ?? String(e) }, { status: 400 });
+      return errorResponse(AppError.validation(e.flatten?.() ?? undefined));
     }
-    const msg = typeof e?.message === "string" ? e.message : "Gagal menyimpan";
-    return NextResponse.json({ error: msg }, { status: 400 });
+    return handleApiError(e);
   }
 }
 
 export async function GET(req: NextRequest) {
-  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const url = new URL(req.url);
-  const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
-  if (!hasPage) {
-    const list = await prisma.repairReport.findMany({ orderBy: { createdAt: "desc" } });
-    return NextResponse.json(list);
+  try {
+    const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+    if (!token) return errorResponse(AppError.unauthorized());
+    const url = new URL(req.url);
+    const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
+    if (!hasPage) {
+      const list = await prisma.repairReport.findMany({ orderBy: { createdAt: "desc" } });
+      return NextResponse.json(list);
+    }
+    const page = z.coerce.number().int().positive().default(1).parse(url.searchParams.get("page"));
+    const pageSize = z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(100)
+      .default(10)
+      .parse(url.searchParams.get("pageSize"));
+    const total = await prisma.repairReport.count();
+    const list = await prisma.repairReport.findMany({
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+    return NextResponse.json({ total, items: list });
+  } catch (e) {
+    return handleApiError(e);
   }
-  const page = z.coerce.number().int().positive().default(1).parse(url.searchParams.get("page"));
-  const pageSize = z.coerce
-    .number()
-    .int()
-    .positive()
-    .max(100)
-    .default(10)
-    .parse(url.searchParams.get("pageSize"));
-  const total = await prisma.repairReport.count();
-  const list = await prisma.repairReport.findMany({
-    orderBy: { createdAt: "desc" },
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-  });
-  return NextResponse.json({ total, items: list });
 }
