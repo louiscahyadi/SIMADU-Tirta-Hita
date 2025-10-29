@@ -3,6 +3,7 @@ import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
 import { env } from "@/lib/env";
+import { AppError, errorResponse, handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 
 const bodySchema = z.object({
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   const role = token?.role;
   if (!(role === "distribusi")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return errorResponse(AppError.forbidden(role ?? null, "distribusi"));
   }
 
   try {
@@ -48,9 +49,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(updated);
   } catch (e: any) {
     if (e?.name === "ZodError") {
-      return NextResponse.json({ error: e.flatten?.() ?? String(e) }, { status: 400 });
+      return errorResponse(AppError.validation(e.flatten?.() ?? undefined));
     }
-    const msg = typeof e?.message === "string" ? e.message : "Gagal memproses";
-    return NextResponse.json({ error: msg }, { status: 400 });
+    return handleApiError(e);
   }
 }
