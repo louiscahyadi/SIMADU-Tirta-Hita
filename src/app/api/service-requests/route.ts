@@ -5,13 +5,14 @@ import { z } from "zod";
 import { assertCanCreateSR, verifyCaseConsistency } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
+import { AppError, ErrorCode, errorResponse, handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { serviceRequestSchema } from "@/lib/schemas/serviceRequest";
 
 export async function POST(req: NextRequest) {
   const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   const role = token?.role;
-  if (role !== "humas") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (role !== "humas") return errorResponse(AppError.forbidden(role ?? null, "humas"));
 
   const raw = await req.json();
   const data = serviceRequestSchema.parse(raw);
@@ -63,13 +64,17 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
   const role = token?.role;
-  if (role !== "humas") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (role !== "humas") return errorResponse(AppError.forbidden(role ?? null, "humas"));
 
   try {
     const raw = await req.json();
     const url = new URL(req.url);
     const id = (raw?.id as string | undefined) ?? (url.searchParams.get("id") || undefined);
-    if (!id) return NextResponse.json({ error: "id wajib" }, { status: 400 });
+    if (!id)
+      return errorResponse(ErrorCode.VALIDATION_ERROR, "Parameter 'id' wajib.", {
+        status: 400,
+        details: { fieldErrors: { id: ["id wajib"] } },
+      });
 
     // Allow partial updates of PSP fields only if SPK belum dibuat
     const { z } = await import("zod");
@@ -132,55 +137,59 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json(updated);
   } catch (e: any) {
     if (e?.name === "ZodError") {
-      return NextResponse.json({ error: e.flatten?.() ?? String(e) }, { status: 400 });
+      return errorResponse(AppError.validation(e.flatten?.() ?? undefined));
     }
-    return NextResponse.json({ error: e?.message || "Gagal menyimpan" }, { status: 400 });
+    return handleApiError(e);
   }
 }
 
 export async function GET(req: NextRequest) {
   // Ensure request is authenticated
-  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const url = new URL(req.url);
-  // Support fetching single item by id for prefilling SPK fields
-  const byId = url.searchParams.get("id");
-  if (byId) {
-    const sr = await prisma.serviceRequest.findUnique({ where: { id: byId } });
-    if (!sr) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    // related complaint to prefill SPK
-    const comp = await prisma.complaint.findFirst({
-      where: { serviceRequestId: byId },
-      select: { id: true, category: true, customerName: true, address: true },
-    });
-    return NextResponse.json({
-      ...sr,
-      _complaintCategory: comp?.category ?? null,
-      _complaintId: comp?.id ?? null,
-      _complaintCustomerName: comp?.customerName ?? null,
-      _complaintAddress: comp?.address ?? null,
-    });
-  }
-  const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
-  if (!hasPage) {
-    const list = await prisma.serviceRequest.findMany({ orderBy: { createdAt: "desc" } });
-    return NextResponse.json(list);
-  }
+  try {
+    const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+    if (!token) return errorResponse(AppError.unauthorized());
+    const url = new URL(req.url);
+    // Support fetching single item by id for prefilling SPK fields
+    const byId = url.searchParams.get("id");
+    if (byId) {
+      const sr = await prisma.serviceRequest.findUnique({ where: { id: byId } });
+      if (!sr) return errorResponse(AppError.notFound());
+      // related complaint to prefill SPK
+      const comp = await prisma.complaint.findFirst({
+        where: { serviceRequestId: byId },
+        select: { id: true, category: true, customerName: true, address: true },
+      });
+      return NextResponse.json({
+        ...sr,
+        _complaintCategory: comp?.category ?? null,
+        _complaintId: comp?.id ?? null,
+        _complaintCustomerName: comp?.customerName ?? null,
+        _complaintAddress: comp?.address ?? null,
+      });
+    }
+    const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
+    if (!hasPage) {
+      const list = await prisma.serviceRequest.findMany({ orderBy: { createdAt: "desc" } });
+      return NextResponse.json(list);
+    }
 
-  const page = z.coerce.number().int().positive().default(1).parse(url.searchParams.get("page"));
-  const pageSize = z.coerce
-    .number()
-    .int()
-    .positive()
-    .max(100)
-    .default(10)
-    .parse(url.searchParams.get("pageSize"));
+    const page = z.coerce.number().int().positive().default(1).parse(url.searchParams.get("page"));
+    const pageSize = z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(100)
+      .default(10)
+      .parse(url.searchParams.get("pageSize"));
 
-  const total = await prisma.serviceRequest.count();
-  const list = await prisma.serviceRequest.findMany({
-    orderBy: { createdAt: "desc" },
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-  });
-  return NextResponse.json({ total, items: list });
+    const total = await prisma.serviceRequest.count();
+    const list = await prisma.serviceRequest.findMany({
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+    return NextResponse.json({ total, items: list });
+  } catch (e) {
+    return handleApiError(e);
+  }
 }
