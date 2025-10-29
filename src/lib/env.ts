@@ -13,17 +13,35 @@ const RAW = {
 };
 
 const isProd = RAW.NODE_ENV === "production";
+// During `next build`, NODE_ENV is set to production even for local dev builds.
+// Allow safe dev defaults when building to avoid failing at import-time schema parsing.
+const isBuild =
+  process.env.npm_lifecycle_event === "build" || process.env.SKIP_ENV_VALIDATION === "1";
 
 // Apply safe dev defaults only in non-production
+const devDefault = {
+  NEXTAUTH_URL: "http://localhost:3000",
+  NEXTAUTH_SECRET: "dev_secret_please_override_1234567890",
+  HUMAS_USERNAME: "humas",
+  HUMAS_PASSWORD: "humas123",
+  DISTRIBUSI_USERNAME: "distribusi",
+  DISTRIBUSI_PASSWORD: "distribusi123",
+} as const;
+
 const withDefaults = {
   ...RAW,
-  NEXTAUTH_URL: RAW.NEXTAUTH_URL || (!isProd ? "http://localhost:3000" : undefined),
+  // Use dev defaults if not production OR during build phase
+  NEXTAUTH_URL: RAW.NEXTAUTH_URL || (!isProd || isBuild ? devDefault.NEXTAUTH_URL : undefined),
   NEXTAUTH_SECRET:
-    RAW.NEXTAUTH_SECRET || (!isProd ? "dev_secret_please_override_1234567890" : undefined),
-  HUMAS_USERNAME: RAW.HUMAS_USERNAME || (!isProd ? "humas" : undefined),
-  HUMAS_PASSWORD: RAW.HUMAS_PASSWORD || (!isProd ? "humas123" : undefined),
-  DISTRIBUSI_USERNAME: RAW.DISTRIBUSI_USERNAME || (!isProd ? "distribusi" : undefined),
-  DISTRIBUSI_PASSWORD: RAW.DISTRIBUSI_PASSWORD || (!isProd ? "distribusi123" : undefined),
+    RAW.NEXTAUTH_SECRET || (!isProd || isBuild ? devDefault.NEXTAUTH_SECRET : undefined),
+  HUMAS_USERNAME:
+    RAW.HUMAS_USERNAME || (!isProd || isBuild ? devDefault.HUMAS_USERNAME : undefined),
+  HUMAS_PASSWORD:
+    RAW.HUMAS_PASSWORD || (!isProd || isBuild ? devDefault.HUMAS_PASSWORD : undefined),
+  DISTRIBUSI_USERNAME:
+    RAW.DISTRIBUSI_USERNAME || (!isProd || isBuild ? devDefault.DISTRIBUSI_USERNAME : undefined),
+  DISTRIBUSI_PASSWORD:
+    RAW.DISTRIBUSI_PASSWORD || (!isProd || isBuild ? devDefault.DISTRIBUSI_PASSWORD : undefined),
 };
 
 const EnvSchema = z.object({
