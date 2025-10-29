@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { useToast } from "@/components/ToastProvider";
+import { parseErrorResponse } from "@/lib/errors";
 
 const categories = [
   "pipa bocor",
@@ -50,6 +52,7 @@ type FormValues = {
 export default function PublicComplaintPage() {
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const form = useForm<FormValues>({});
+  const { push } = useToast();
 
   // Normalize phone: remove spaces and dashes, convert +62 to 0
   const normalizePhone = (raw?: string | null) => {
@@ -82,7 +85,12 @@ export default function PublicComplaintPage() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      alert("Gagal mengirim pengaduan. Mohon lengkapi data.");
+      try {
+        const parsed = await parseErrorResponse(res);
+        push({ message: parsed.message, type: "error" });
+      } catch {
+        push({ message: "Gagal mengirim pengaduan. Mohon lengkapi data.", type: "error" });
+      }
       return;
     }
     const json = await res.json();
