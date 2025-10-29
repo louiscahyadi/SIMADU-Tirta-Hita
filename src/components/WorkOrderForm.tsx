@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 
 import { useToast } from "@/components/ToastProvider";
+import { parseErrorResponse } from "@/lib/errors";
 
 type FormValues = {
   caseId: string;
@@ -79,22 +80,17 @@ export default function WorkOrderForm({
     if (!res.ok) {
       let msg = "Gagal menyimpan";
       try {
-        const j = await res.json();
-        // Tangani ZodError -> tampilkan pesan field spesifik
-        if (j?.error) {
-          if (typeof j.error === "string") {
-            msg = j.error;
-          } else if (j.error.fieldErrors) {
-            const fieldErrors = j.error.fieldErrors as Record<string, string[]>;
-            const firstField = Object.keys(fieldErrors)[0];
-            const firstMsg = firstField ? fieldErrors[firstField]?.[0] : undefined;
-            for (const [k, arr] of Object.entries(fieldErrors)) {
-              const m = arr?.[0];
-              if (m) setError(k as keyof FormValues, { type: "server", message: m });
-            }
-            if (firstMsg) msg = firstMsg;
+        const parsed = await parseErrorResponse(res);
+        const fieldErrors = parsed.details?.fieldErrors as
+          | Record<string, string[] | undefined>
+          | undefined;
+        if (fieldErrors) {
+          for (const [k, arr] of Object.entries(fieldErrors)) {
+            const m = arr?.[0];
+            if (m) setError(k as keyof FormValues, { type: "server", message: m });
           }
         }
+        msg = parsed.message || msg;
       } catch {}
       push({ message: msg, type: "error" });
     } else {
