@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 
 import { useToast } from "@/components/ToastProvider";
+import { parseErrorResponse } from "@/lib/errors";
 
 type FormValues = {
   caseId: string;
@@ -57,8 +58,8 @@ export default function RepairReportForm({
     if (!res.ok) {
       let msg = "Gagal menyimpan";
       try {
-        const j = await res.json();
-        if (j?.error) msg = typeof j.error === "string" ? j.error : msg;
+        const parsed = await parseErrorResponse(res);
+        msg = parsed.message || msg;
       } catch {}
       push({ message: msg, type: "error" });
     } else {
