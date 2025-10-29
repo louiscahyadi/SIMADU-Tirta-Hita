@@ -114,6 +114,24 @@ Untuk menjaga performa query dan kesederhanaan tracking, aplikasi ini mempertaha
 
 Penulisan data selalu dilakukan dalam transaksi dan melalui helper sehingga keduanya tetap konsisten. Endpoint `PATCH /api/complaints` tidak mengizinkan perubahan linkage manual; linkage diubah secara otomatis ketika membuat PSP/SPK/BAP.
 
+Selain itu, database MySQL dilengkapi trigger untuk menyelaraskan linkage secara otomatis ketika entitas dibuat/diubah:
+
+- Setelah WorkOrder dibuat/diubah, `Complaint.workOrderId` akan diisi sesuai `WorkOrder.id` berdasarkan `serviceRequestId` yang sama.
+- Setelah RepairReport dibuat/diubah, `Complaint.repairReportId` akan diisi sesuai `RepairReport.id` berdasarkan `workOrderId` yang sama.
+
+Cara menerapkan migrasi trigger (butuh MySQL dan `DATABASE_URL` valid):
+
+```pwsh
+# Terapkan migrasi Prisma (menjalankan file SQL di prisma/migrations)
+# Jika Anda biasa memakai db push, pastikan menggunakan migrate agar SQL trigger dieksekusi
+npx prisma migrate deploy
+
+# Opsional (dev): membuat migration baru & menerapkannya otomatis
+# npx prisma migrate dev --name consistency_triggers
+```
+
+Catatan: Pada migrasi, linkage akan dibackfill terlebih dahulu dari rantai SR→WO→RR yang ada untuk menghindari mismatch awal.
+
 Alat bantu verifikasi:
 
 ```pwsh
@@ -123,6 +141,8 @@ node scripts/verify-case-links.js
 # Perbaiki otomatis linkage yang mismatch
 node scripts/verify-case-links.js --fix
 ```
+
+Di sisi aplikasi, setiap pembuatan PSP/SPK/BAP mengeksekusi pemeriksaan konsistensi tambahan dan auto-fix linkage dalam transaksi.
 
 Catatan: Indeks `@@index([status, createdAt])` ditambahkan untuk mempercepat daftar kasus per status.
 
