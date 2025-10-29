@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
-import { assertCanCreateWO } from "@/lib/caseLinks";
+import { assertCanCreateWO, verifyCaseConsistency } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
         actorId: token?.sub ?? null,
         note: null,
       });
+
+      // Ensure complaint link fields match the SR→WO→RR chain
+      await verifyCaseConsistency(tx, data.caseId, { fix: true });
 
       return wo;
     });
