@@ -4,6 +4,7 @@ import { getToken } from "next-auth/jwt";
 import { verifyCaseConsistency } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
+import { AppError, ErrorCode, errorResponse, handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import {
   complaintCreateSchema,
@@ -56,15 +57,17 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(created, { status: 201 });
   } catch (e: any) {
-    if (e?.name === "ZodError") return NextResponse.json({ error: e.flatten() }, { status: 400 });
-    return NextResponse.json({ error: "Gagal menyimpan" }, { status: 500 });
+    if (e?.name === "ZodError") {
+      return errorResponse(AppError.validation(e.flatten?.() ?? undefined));
+    }
+    return handleApiError(e);
   }
 }
 
 export async function GET(req: NextRequest) {
   // Require an authenticated session/token; don't rely solely on middleware
   const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token) return errorResponse(AppError.unauthorized());
   const { searchParams } = new URL(req.url);
   const query = complaintQuerySchema.parse({
     q: searchParams.get("q") || undefined,
@@ -114,7 +117,7 @@ export async function PATCH(req: NextRequest) {
     const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
     const role = token?.role;
     if (!(role === "humas" || role === "distribusi")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return errorResponse(AppError.forbidden(role ?? null, ["humas", "distribusi"]));
     }
     const { searchParams } = new URL(req.url);
     const idFromQuery = searchParams.get("id") || undefined;
@@ -122,7 +125,10 @@ export async function PATCH(req: NextRequest) {
     const parsed = complaintUpdateSchema.parse({ ...raw, id: raw?.id ?? idFromQuery });
 
     if (!parsed.id) {
-      return NextResponse.json({ error: "id wajib" }, { status: 400 });
+      return errorResponse(ErrorCode.VALIDATION_ERROR, "Parameter 'id' wajib.", {
+        status: 400,
+        details: { fieldErrors: { id: ["id wajib"] } },
+      });
     }
 
     // Disallow manual mutation of linkage fields from this endpoint to avoid inconsistencies.
@@ -131,11 +137,9 @@ export async function PATCH(req: NextRequest) {
       Object.prototype.hasOwnProperty.call(parsed, "workOrderId") ||
       Object.prototype.hasOwnProperty.call(parsed, "repairReportId")
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "Tidak bisa mengubah linkage (PSP/SPK/BAP) langsung dari endpoint ini. Gunakan endpoint pembuatan PSP/SPK/BAP agar konsisten.",
-        },
+      return errorResponse(
+        ErrorCode.VALIDATION_ERROR,
+        "Tidak bisa mengubah linkage (PSP/SPK/BAP) langsung dari endpoint ini. Gunakan endpoint pembuatan PSP/SPK/BAP agar konsisten.",
         { status: 400 },
       );
     }
@@ -165,8 +169,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json(updated);
   } catch (e) {
     if ((e as any)?.name === "ZodError") {
-      return NextResponse.json({ error: (e as any).flatten?.() ?? String(e) }, { status: 400 });
+      return errorResponse(AppError.validation((e as any).flatten?.() ?? undefined));
     }
-    return NextResponse.json({ error: "Gagal update" }, { status: 500 });
+    return handleApiError(e);
   }
 }
