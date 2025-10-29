@@ -23,6 +23,15 @@ export async function POST(req: NextRequest) {
     const raw = await req.json();
     const data = complaintCreateSchema.parse(raw);
 
+    // Normalize phone: remove spaces/dashes and convert +62 to 0 before saving
+    const normalizePhone = (rawPhone?: string | null) => {
+      if (!rawPhone) return undefined;
+      let v = String(rawPhone).replace(/[ \-]/g, "");
+      if (v.startsWith("+62")) v = "0" + v.slice(3);
+      return v.length ? v : undefined;
+    };
+    const normalizedPhone = normalizePhone(data.phone);
+
     const created = await prisma.$transaction(async (tx) => {
       const comp = await tx.complaint.create({
         data: {
@@ -30,7 +39,7 @@ export async function POST(req: NextRequest) {
           address: data.address,
           mapsLink: data.mapsLink,
           connectionNumber: data.connectionNumber,
-          phone: data.phone,
+          phone: normalizedPhone,
           complaintText: data.complaintText,
           category: data.category,
           processedAt: data.processedAt ? new Date(data.processedAt) : undefined,
