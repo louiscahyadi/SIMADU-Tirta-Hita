@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { useToast } from "@/components/ToastProvider";
+import { parseErrorResponse } from "@/lib/errors";
 
 const phoneRegex = /^[+\d ]+$/;
 
@@ -100,7 +101,22 @@ export default function ServiceRequestForm({
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      push({ message: "Gagal menyimpan", type: "error" });
+      try {
+        const parsed = await parseErrorResponse(res);
+        // Map validation errors to fields when available
+        const fields = parsed.details?.fieldErrors as
+          | Record<string, string[] | undefined>
+          | undefined;
+        if (fields) {
+          for (const [k, arr] of Object.entries(fields)) {
+            const m = arr?.[0];
+            if (m) (form as any).setError?.(k, { type: "server", message: m });
+          }
+        }
+        push({ message: parsed.message, type: "error" });
+      } catch {
+        push({ message: "Gagal menyimpan", type: "error" });
+      }
       return;
     }
     const json = await res.json();
