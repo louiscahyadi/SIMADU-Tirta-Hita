@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { z } from "zod";
 
-import { assertCanCreateRR } from "@/lib/caseLinks";
+import { assertCanCreateRR, verifyCaseConsistency } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
@@ -56,6 +56,9 @@ export async function POST(req: NextRequest) {
           note: `BAP dikirim, hasil = ${data.result}`,
         });
       }
+
+      // Ensure complaint link fields match the SR→WO→RR chain
+      await verifyCaseConsistency(tx, data.caseId, { fix: true });
 
       return rr;
     });
