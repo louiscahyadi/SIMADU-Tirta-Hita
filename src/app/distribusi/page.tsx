@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 // import { entityLabel } from "@/lib/uiLabels";
 
@@ -120,8 +121,10 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
   } catch (e: any) {
     // If DB is unreachable (Prisma can't connect), show a friendly message instead of a runtime crash
     // Log error for server-side debugging
-    // eslint-disable-next-line no-console
-    console.error("Distribusi dashboard DB error:", e?.message ?? e);
+    logger.error(
+      e instanceof Error ? e : new Error(String(e?.message ?? e)),
+      "Distribusi dashboard DB error",
+    );
     return (
       <div className="space-y-3">
         <h2 className="text-xl font-semibold">DISTRIBUSI</h2>
