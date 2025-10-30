@@ -71,6 +71,11 @@ model ServiceRequest {
   complaint          Complaint? @relation(name: "ComplaintToServiceRequest")
 
   @@index([createdAt])
+  @@index([customerName])
+  @@index([serviceNumber])
+  @@index([reporterName])
+  @@index([requestDate])
+  @@index([urgency])
 }
 
 model WorkOrder {
@@ -104,6 +109,10 @@ model WorkOrder {
   complaint          Complaint? @relation(name: "ComplaintToWorkOrder")
 
   @@index([createdAt])
+  @@index([number])
+  @@index([disturbanceLocation])
+  @@index([team])
+  @@index([scheduledDate])
 }
 
 model RepairReport {
@@ -136,6 +145,9 @@ model RepairReport {
   complaint          Complaint? @relation(name: "ComplaintToRepairReport")
 
   @@index([createdAt])
+  @@index([result])
+  @@index([startTime])
+  @@index([endTime])
 }
 
 model Complaint {
@@ -167,6 +179,10 @@ model Complaint {
 
   @@index([createdAt])
   @@index([status, createdAt])
+  @@index([customerName])
+  @@index([connectionNumber])
+  @@index([category])
+  @@index([phone])
 }
 
 model StatusHistory {
