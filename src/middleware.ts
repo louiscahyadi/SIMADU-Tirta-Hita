@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 import { env } from "@/lib/env";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 import type { NextRequest } from "next/server";
 
@@ -11,56 +12,15 @@ export async function middleware(req: NextRequest) {
   const pathname = url.pathname;
   const isApi = pathname.startsWith("/api/");
 
-  // Simple in-memory rate limiter (best-effort). For production, prefer Redis or edge KV.
-  const RATE_LIMIT = 60; // requests
-  const WINDOW_MS = 60_000; // 1 minute
-
+  // Rate limiting using centralized utility
   // Special rate limit for public complaint endpoint
-  const PUBLIC_COMPLAINT_LIMIT = 10; // requests
-  const PUBLIC_COMPLAINT_WINDOW_MS = 300_000; // 5 minutes
-
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    // @ts-ignore - NextRequest may expose ip in some runtimes
-    (req as any).ip ||
-    "unknown";
-
-  const now = Date.now();
-  // @ts-ignore - attach a global store for dev/server runtime
-  const store = ((globalThis as any).__RL_STORE__ ||= new Map<string, number[]>());
-
-  // Special rate limiting for public complaint submissions
   if (pathname === "/api/complaints" && req.method === "POST") {
-    const publicKey = `public_complaint_${ip}`;
-    const arr: number[] = store.get(publicKey) || [];
-    const recent = arr.filter((t) => now - t < PUBLIC_COMPLAINT_WINDOW_MS);
-    recent.push(now);
-    store.set(publicKey, recent);
-    if (recent.length > PUBLIC_COMPLAINT_LIMIT) {
-      return new NextResponse("Terlalu banyak pengaduan. Silakan coba lagi dalam 5 menit.", {
-        status: 429,
-        headers: {
-          "Retry-After": "300",
-        },
-      });
-    }
-  }
-
-  // General API rate limiting
-  if (isApi) {
-    const key = `${ip}`;
-    const arr: number[] = store.get(key) || [];
-    const recent = arr.filter((t) => now - t < WINDOW_MS);
-    recent.push(now);
-    store.set(key, recent);
-    if (recent.length > RATE_LIMIT) {
-      return new NextResponse("Too Many Requests", {
-        status: 429,
-        headers: {
-          "Retry-After": "60",
-        },
-      });
-    }
+    const rateLimitResponse = await checkRateLimit(req, "public_complaint");
+    if (rateLimitResponse) return rateLimitResponse;
+  } else if (isApi) {
+    // General API rate limiting
+    const rateLimitResponse = await checkRateLimit(req, "api");
+    if (rateLimitResponse) return rateLimitResponse;
   }
 
   // Public pages (internal app: keep minimal)
