@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
+import LoadingButton from "@/components/LoadingButton";
 import { useToast } from "@/components/ToastProvider";
 import { parseErrorResponse } from "@/lib/errors";
 
@@ -51,6 +52,7 @@ type FormValues = {
 
 export default function PublicComplaintPage() {
   const [submittedId, setSubmittedId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<FormValues>({});
   const { push } = useToast();
 
@@ -74,28 +76,46 @@ export default function PublicComplaintPage() {
   };
 
   const onSubmit = async (values: FormValues) => {
-    // Optional: normalize on client before sending
-    const payload: FormValues = {
-      ...values,
-      phone: normalizePhone(values.phone),
-    };
-    const res = await fetch("/api/complaints", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      try {
-        const parsed = await parseErrorResponse(res);
-        push({ message: parsed.message, type: "error" });
-      } catch {
-        push({ message: "Gagal mengirim pengaduan. Mohon lengkapi data.", type: "error" });
+    setIsSubmitting(true);
+
+    // Set timeout for loading state (30 seconds)
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      push({
+        message: "Request timeout. Silakan coba lagi.",
+        type: "error",
+      });
+    }, 30000);
+
+    try {
+      // Optional: normalize on client before sending
+      const payload: FormValues = {
+        ...values,
+        phone: normalizePhone(values.phone),
+      };
+      const res = await fetch("/api/complaints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        try {
+          const parsed = await parseErrorResponse(res);
+          push({ message: parsed.message, type: "error" });
+        } catch {
+          push({ message: "Gagal mengirim pengaduan. Mohon lengkapi data.", type: "error" });
+        }
+        return;
       }
-      return;
+      const json = await res.json();
+      setSubmittedId(json.id);
+      form.reset();
+    } finally {
+      setIsSubmitting(false);
     }
-    const json = await res.json();
-    setSubmittedId(json.id);
-    form.reset();
   };
 
   return (
@@ -186,9 +206,14 @@ export default function PublicComplaintPage() {
             </div>
 
             <div className="pt-2">
-              <button type="submit" className="btn">
+              <LoadingButton
+                type="submit"
+                loading={isSubmitting}
+                loadingText="Mengirim..."
+                className="btn"
+              >
                 Kirim Pengaduan
-              </button>
+              </LoadingButton>
             </div>
           </form>
         </div>
