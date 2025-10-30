@@ -11,6 +11,7 @@ import {
   complaintQuerySchema,
   complaintUpdateSchema,
 } from "@/lib/schemas/complaints";
+import { normalizePhone } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,13 +25,7 @@ export async function POST(req: NextRequest) {
     const raw = await req.json();
     const data = complaintCreateSchema.parse(raw);
 
-    // Normalize phone: remove spaces/dashes and convert +62 to 0 before saving
-    const normalizePhone = (rawPhone?: string | null) => {
-      if (!rawPhone) return undefined;
-      let v = String(rawPhone).replace(/[ \-]/g, "");
-      if (v.startsWith("+62")) v = "0" + v.slice(3);
-      return v.length ? v : undefined;
-    };
+    // Use centralized phone normalization function
     const normalizedPhone = normalizePhone(data.phone);
 
     const created = await prisma.$transaction(async (tx) => {
