@@ -71,7 +71,35 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
     if (!hasPage) {
-      const list = await prisma.workOrder.findMany({ orderBy: { createdAt: "desc" } });
+      const list = await prisma.workOrder.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          serviceRequest: {
+            select: {
+              id: true,
+              reporterName: true,
+              customerName: true,
+              address: true,
+              urgency: true,
+            },
+          },
+          repairReport: {
+            select: {
+              id: true,
+              result: true,
+              startTime: true,
+              endTime: true,
+            },
+          },
+          complaint: {
+            select: {
+              id: true,
+              category: true,
+              status: true,
+            },
+          },
+        },
+      });
       return NextResponse.json(list);
     }
     const page = z.coerce.number().int().positive().default(1).parse(url.searchParams.get("page"));
@@ -87,6 +115,32 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
+      include: {
+        serviceRequest: {
+          select: {
+            id: true,
+            reporterName: true,
+            customerName: true,
+            address: true,
+            urgency: true,
+          },
+        },
+        repairReport: {
+          select: {
+            id: true,
+            result: true,
+            startTime: true,
+            endTime: true,
+          },
+        },
+        complaint: {
+          select: {
+            id: true,
+            category: true,
+            status: true,
+          },
+        },
+      },
     });
     return NextResponse.json({ total, items });
   } catch (e) {
