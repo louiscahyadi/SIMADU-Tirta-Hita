@@ -6,39 +6,9 @@ import { useForm } from "react-hook-form";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import LoadingButton from "@/components/LoadingButton";
 import { useToast } from "@/components/ToastProvider";
+import { COMPLAINT_CATEGORIES } from "@/lib/constants";
 import { parseErrorResponse } from "@/lib/errors";
-
-const categories = [
-  "pipa bocor",
-  "pipa keropos",
-  "pipa pecah",
-  "bocor sebelum water meter",
-  "bocor sesudah water meter",
-  "bocor setelah ganti wm",
-  "flug keran bocor",
-  "kopling bocor",
-  "lockable bocor",
-  "air mati",
-  "air kecil",
-  "air keruh",
-  "cek akurasi water meter",
-  "pengangkatan water meter",
-  "pindah water meter",
-  "tanpa water meter",
-  "water meter anginan",
-  "water meter berbunyi",
-  "water meter berembun",
-  "water meter bocor",
-  "water meter hialng",
-  "water meter kabur",
-  "water meter macet",
-  "water meter pecah",
-  "water meter rusak",
-  "water meter tertimbun",
-  "badan water meter bocor",
-  "pemakaian tinggi",
-  "air berbau",
-] as const;
+import { normalizePhone, validatePhone } from "@/lib/validation";
 
 type FormValues = {
   customerName: string;
@@ -55,25 +25,6 @@ export default function PublicComplaintPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<FormValues>({});
   const { push } = useToast();
-
-  // Normalize phone: remove spaces and dashes, convert +62 to 0
-  const normalizePhone = (raw?: string | null) => {
-    if (!raw) return undefined;
-    let v = String(raw).replace(/[ \-]/g, "");
-    if (v.startsWith("+62")) v = "0" + v.slice(3);
-    // If it ends up empty, treat as undefined (optional field)
-    return v.length ? v : undefined;
-  };
-
-  // Flexible validator accepting mobile and landline examples with spaces/dashes
-  const validatePhone = (value?: string) => {
-    if (!value) return true; // optional field
-    const v = normalizePhone(value) ?? "";
-    const mobileRe = /^08[1-9]\d{6,10}$/; // 09-13 digits total, starts 08X
-    const landlineRe = /^(021\d{7,8}|0361\d{6,8})$/; // Jakarta/Bali examples
-    const ok = mobileRe.test(v) || landlineRe.test(v);
-    return ok || "Nomor tidak valid. Contoh: 08123456789 atau 021-1234567";
-  };
 
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
@@ -178,7 +129,7 @@ export default function PublicComplaintPage() {
                   {...form.register("category", { required: "Pilih kategori" })}
                 >
                   <option value="">Pilih</option>
-                  {categories.map((c) => (
+                  {COMPLAINT_CATEGORIES.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
