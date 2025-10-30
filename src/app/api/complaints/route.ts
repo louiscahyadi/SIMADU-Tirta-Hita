@@ -107,6 +107,44 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "desc" },
     skip: (query.page - 1) * query.pageSize,
     take: query.pageSize,
+    // Include relations to avoid N+1 queries
+    include: {
+      serviceRequest: {
+        select: {
+          id: true,
+          reporterName: true,
+          urgency: true,
+          requestDate: true,
+        },
+      },
+      workOrder: {
+        select: {
+          id: true,
+          number: true,
+          team: true,
+          scheduledDate: true,
+        },
+      },
+      repairReport: {
+        select: {
+          id: true,
+          result: true,
+          startTime: true,
+          endTime: true,
+        },
+      },
+      histories: {
+        select: {
+          id: true,
+          createdAt: true,
+          status: true,
+          note: true,
+          actorRole: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5, // Limit history to last 5 entries
+      },
+    },
   });
 
   return NextResponse.json({ total, items });
