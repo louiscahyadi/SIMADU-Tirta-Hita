@@ -1,10 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import LoadingButton from "@/components/LoadingButton";
 import { useToast } from "@/components/ToastProvider";
 import { parseErrorResponse } from "@/lib/errors";
 
@@ -49,6 +50,7 @@ export default function ServiceRequestForm({
   caseId?: string;
 }) {
   const { push } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const form = useForm<UiInput>({
     resolver: zodResolver(uiSchema),
@@ -72,73 +74,91 @@ export default function ServiceRequestForm({
   });
 
   const onSubmit = async (values: UiInput) => {
-    // Compose receivedAt from date+time if provided
-    const receivedAt =
-      values.receivedDate && values.receivedTime
-        ? new Date(`${values.receivedDate}T${values.receivedTime}:00`)
-        : undefined;
-    const payload: any = {
-      caseId: values.caseId || undefined,
-      serviceNumber: values.serviceNumber?.trim() || undefined,
-      reporterName: values.reporterName,
-      reporterPhone: values.reporterPhone,
-      address: values.address,
-      receivedAt,
-      receivedBy: values.receivedBy?.trim() || undefined,
-      reasons: (values.reasons || []).filter(Boolean),
-      otherReason: values.otherReason?.trim() || undefined,
-      serviceCostBy: values.serviceCostBy,
-      description: values.description?.trim() || undefined,
-      // default
-      urgency: (values as any).urgency ?? "MEDIUM",
-      requestDate: values.requestDate,
-      // normalize
-      notes: values.notes?.trim() ? values.notes : undefined,
-    };
-    const res = await fetch("/api/service-requests", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      try {
-        const parsed = await parseErrorResponse(res);
-        // Map validation errors to fields when available
-        const fields = parsed.details?.fieldErrors as
-          | Record<string, string[] | undefined>
-          | undefined;
-        if (fields) {
-          for (const [k, arr] of Object.entries(fields)) {
-            const m = arr?.[0];
-            if (m) (form as any).setError?.(k, { type: "server", message: m });
+    setIsSubmitting(true);
+
+    // Set timeout for loading state (30 seconds)
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      push({
+        message: "Request timeout. Silakan coba lagi.",
+        type: "error",
+      });
+    }, 30000);
+
+    try {
+      // Compose receivedAt from date+time if provided
+      const receivedAt =
+        values.receivedDate && values.receivedTime
+          ? new Date(`${values.receivedDate}T${values.receivedTime}:00`)
+          : undefined;
+      const payload: any = {
+        caseId: values.caseId || undefined,
+        serviceNumber: values.serviceNumber?.trim() || undefined,
+        reporterName: values.reporterName,
+        reporterPhone: values.reporterPhone,
+        address: values.address,
+        receivedAt,
+        receivedBy: values.receivedBy?.trim() || undefined,
+        reasons: (values.reasons || []).filter(Boolean),
+        otherReason: values.otherReason?.trim() || undefined,
+        serviceCostBy: values.serviceCostBy,
+        description: values.description?.trim() || undefined,
+        // default
+        urgency: (values as any).urgency ?? "MEDIUM",
+        requestDate: values.requestDate,
+        // normalize
+        notes: values.notes?.trim() ? values.notes : undefined,
+      };
+      const res = await fetch("/api/service-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        try {
+          const parsed = await parseErrorResponse(res);
+          // Map validation errors to fields when available
+          const fields = parsed.details?.fieldErrors as
+            | Record<string, string[] | undefined>
+            | undefined;
+          if (fields) {
+            for (const [k, arr] of Object.entries(fields)) {
+              const m = arr?.[0];
+              if (m) (form as any).setError?.(k, { type: "server", message: m });
+            }
           }
+          push({ message: parsed.message, type: "error" });
+        } catch {
+          push({ message: "Gagal menyimpan", type: "error" });
         }
-        push({ message: parsed.message, type: "error" });
-      } catch {
-        push({ message: "Gagal menyimpan", type: "error" });
+        return;
       }
-      return;
+      const json = await res.json();
+      push({ message: "Permintaan service tersimpan", type: "success" });
+      onSaved?.(json.id);
+      form.reset({
+        caseId: caseId || "",
+        serviceNumber: "",
+        reporterName: "",
+        reporterPhone: "",
+        address: "",
+        receivedDate: "",
+        receivedTime: "",
+        receivedBy: "",
+        reasons: [],
+        otherReason: "",
+        serviceCostBy: undefined,
+        description: "",
+        urgency: "MEDIUM",
+        requestDate: today,
+        notes: "",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    const json = await res.json();
-    push({ message: "Permintaan service tersimpan", type: "success" });
-    onSaved?.(json.id);
-    form.reset({
-      caseId: caseId || "",
-      serviceNumber: "",
-      reporterName: "",
-      reporterPhone: "",
-      address: "",
-      receivedDate: "",
-      receivedTime: "",
-      receivedBy: "",
-      reasons: [],
-      otherReason: "",
-      serviceCostBy: undefined,
-      description: "",
-      urgency: "MEDIUM",
-      requestDate: today,
-      notes: "",
-    });
   };
 
   const { register, handleSubmit, formState, setValue } = form;
@@ -307,9 +327,14 @@ export default function ServiceRequestForm({
       </div>
 
       <div className="pt-2">
-        <button type="submit" className="btn">
+        <LoadingButton
+          type="submit"
+          loading={isSubmitting}
+          loadingText="Menyimpan..."
+          className="btn"
+        >
           Simpan Permintaan
-        </button>
+        </LoadingButton>
       </div>
     </form>
   );
