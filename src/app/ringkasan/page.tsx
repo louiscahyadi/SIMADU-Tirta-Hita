@@ -14,7 +14,7 @@ export default async function RingkasanPage() {
 
   // Fetch some quick counts
   const [complaintsNew, complaintsProcessed, srCount, woCount, rrCount] = await Promise.all([
-    (prisma as any).complaint.count({
+    prisma.complaint.count({
       where: {
         AND: [
           { processedAt: null },
@@ -24,7 +24,7 @@ export default async function RingkasanPage() {
         ],
       },
     }),
-    (prisma as any).complaint.count({
+    prisma.complaint.count({
       where: {
         OR: [
           { processedAt: { not: null } },
