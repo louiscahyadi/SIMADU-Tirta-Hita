@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
+import LoadingButton from "@/components/LoadingButton";
 import { useToast } from "@/components/ToastProvider";
 import { parseErrorResponse } from "@/lib/errors";
 
@@ -27,6 +28,7 @@ export default function RepairReportForm({
   onSaved?: (id: string) => void;
 }) {
   const { push } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const nowLocal = useMemo(() => {
     const d = new Date();
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -46,36 +48,54 @@ export default function RepairReportForm({
   });
 
   const onSubmit = async (values: FormValues) => {
-    if (!values.caseId || !values.spkId) {
-      push({ message: "Data kasus/SPK tidak valid", type: "error" });
-      return;
-    }
-    const res = await fetch("/api/repair-reports", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    if (!res.ok) {
-      let msg = "Gagal menyimpan";
-      try {
-        const parsed = await parseErrorResponse(res);
-        msg = parsed.message || msg;
-      } catch {}
-      push({ message: msg, type: "error" });
-    } else {
-      const json = await res.json();
-      push({ message: "Berita acara tersimpan", type: "success" });
-      onSaved?.(json.id);
-      form.reset({
-        caseId: caseId ?? "",
-        spkId: spkId ?? "",
-        actionTaken: "",
-        startTime: nowLocal,
-        endTime: nowLocal,
-        result: "FIXED",
-        remarks: "",
-        customerConfirmationName: "",
+    setIsSubmitting(true);
+
+    // Set timeout for loading state (30 seconds)
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      push({
+        message: "Request timeout. Silakan coba lagi.",
+        type: "error",
       });
+    }, 30000);
+
+    try {
+      if (!values.caseId || !values.spkId) {
+        push({ message: "Data kasus/SPK tidak valid", type: "error" });
+        return;
+      }
+      const res = await fetch("/api/repair-reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        let msg = "Gagal menyimpan";
+        try {
+          const parsed = await parseErrorResponse(res);
+          msg = parsed.message || msg;
+        } catch {}
+        push({ message: msg, type: "error" });
+      } else {
+        const json = await res.json();
+        push({ message: "Berita acara tersimpan", type: "success" });
+        onSaved?.(json.id);
+        form.reset({
+          caseId: caseId ?? "",
+          spkId: spkId ?? "",
+          actionTaken: "",
+          startTime: nowLocal,
+          endTime: nowLocal,
+          result: "FIXED",
+          remarks: "",
+          customerConfirmationName: "",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -155,9 +175,14 @@ export default function RepairReportForm({
       </div>
 
       <div className="pt-2">
-        <button type="submit" className="btn">
+        <LoadingButton
+          type="submit"
+          loading={isSubmitting}
+          loadingText="Menyimpan..."
+          className="btn"
+        >
           Simpan Berita Acara
-        </button>
+        </LoadingButton>
       </div>
     </form>
   );
