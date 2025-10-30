@@ -4,17 +4,26 @@ services:
     container_name: simadu-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: simadu
-      # Optional: create an app user
-      # MYSQL_USER: app
-      # MYSQL_PASSWORD: app_password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-simadu}
+      MYSQL_USER: ${MYSQL_USER:-app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-app_password}
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD:-password}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -22,6 +31,56 @@ services:
       - --default-authentication-plugin=mysql_native_password
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_0900_ai_ci
+    networks:
+      - simadu-network
+
+  # Optional: Redis untuk rate limiting (recommended untuk production)
+  redis:
+    image: redis:7-alpine
+    container_name: simadu-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - simadu-network
+    profiles:
+      - with-redis
+
+  # Uncomment untuk deploy app bersama database
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: simadu-app
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${APP_PORT:-3000}:3000"
+  #   environment:
+  #     NODE_ENV: ${NODE_ENV:-production}
+  #     DATABASE_URL: mysql://${MYSQL_USER:-app}:${MYSQL_PASSWORD:-app_password}@mysql:3306/${MYSQL_DATABASE:-simadu}
+  #     NEXTAUTH_URL: ${NEXTAUTH_URL}
+  #     NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+  #     HUMAS_USERNAME: ${HUMAS_USERNAME}
+  #     HUMAS_PASSWORD_HASH: ${HUMAS_PASSWORD_HASH}
+  #     DISTRIBUSI_USERNAME: ${DISTRIBUSI_USERNAME}
+  #     DISTRIBUSI_PASSWORD_HASH: ${DISTRIBUSI_PASSWORD_HASH}
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #   networks:
+  #     - simadu-network
+
+networks:
+  simadu-network:
+    driver: bridge
 
 volumes:
   db_data:
+  redis_data:
