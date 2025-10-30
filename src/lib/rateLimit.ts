@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { RATE_LIMITS } from "./constants";
 import { env } from "./env";
+import { logger } from "./logger";
 
 /**
  * Rate limiter interface
@@ -53,7 +54,7 @@ class RedisRateLimiter implements RateLimiter {
         token: env.UPSTASH_REDIS_REST_TOKEN!,
       });
     } catch (err) {
-      console.warn("Redis not available, falling back to memory rate limiter");
+      logger.warn("Redis not available, falling back to memory rate limiter", { error: err });
       throw err;
     }
   }
@@ -83,7 +84,10 @@ class RedisRateLimiter implements RateLimiter {
 
       return count < limit;
     } catch (err) {
-      console.error("Redis rate limit check failed:", err);
+      logger.error(
+        err instanceof Error ? err : new Error(String(err)),
+        "Redis rate limit check failed",
+      );
       // Fail open (allow request) if Redis is down
       return true;
     }
@@ -98,7 +102,7 @@ function getRateLimiter(): RateLimiter {
     try {
       return new RedisRateLimiter();
     } catch {
-      console.warn("⚠️  Redis not available, using in-memory rate limiter");
+      logger.warn("Redis not available, using in-memory rate limiter");
     }
   }
   return new MemoryRateLimiter();
