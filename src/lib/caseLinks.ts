@@ -1,3 +1,5 @@
+import { CaseStatus } from "@prisma/client";
+
 import type { Prisma } from "@prisma/client";
 
 type Tx = Prisma.TransactionClient;
@@ -42,35 +44,73 @@ export async function getCaseChain(tx: Tx, complaintId: string): Promise<CaseCha
 
 /** Ensures a case can create PSP: status must be REPORTED and no existing SR. */
 export async function assertCanCreateSR(tx: Tx, complaintId: string) {
-  const comp = await tx.complaint.findUnique({ where: { id: complaintId } });
-  if (!comp) throw new Error("Kasus tidak ditemukan");
-  if ((comp as any).status !== "REPORTED")
-    throw new Error("PSP hanya bisa dibuat ketika status kasus = NEW");
-  if (comp.serviceRequestId) throw new Error("Sudah ada PSP untuk kasus ini");
+  const comp = await tx.complaint.findUnique({
+    where: { id: complaintId },
+    select: { id: true, status: true, serviceRequestId: true },
+  });
+  if (!comp) {
+    throw new Error("Kasus tidak ditemukan. Pastikan nomor referensi pengaduan benar.");
+  }
+  if (comp.status !== CaseStatus.REPORTED) {
+    throw new Error(
+      `PSP hanya bisa dibuat ketika status kasus = REPORTED. Status saat ini: ${comp.status}`,
+    );
+  }
+  if (comp.serviceRequestId) {
+    throw new Error("PSP sudah ada untuk kasus ini. Tidak bisa membuat PSP duplikat.");
+  }
 }
 
 /** Ensures a case can create SPK: status PSP_CREATED, SR must match, no existing WO. */
 export async function assertCanCreateWO(tx: Tx, complaintId: string, pspId: string) {
-  const comp = await tx.complaint.findUnique({ where: { id: complaintId } });
-  if (!comp) throw new Error("Kasus tidak ditemukan");
-  if (comp.serviceRequestId !== pspId) throw new Error("PSP tidak sesuai dengan kasus");
-  if ((comp as any).status !== "PSP_CREATED")
-    throw new Error("SPK hanya bisa dibuat ketika status kasus = PSP_CREATED");
-  if (comp.workOrderId) throw new Error("Sudah ada SPK untuk kasus ini");
+  const comp = await tx.complaint.findUnique({
+    where: { id: complaintId },
+    select: { id: true, status: true, serviceRequestId: true, workOrderId: true },
+  });
+  if (!comp) {
+    throw new Error("Kasus tidak ditemukan. Pastikan nomor referensi pengaduan benar.");
+  }
+  if (comp.serviceRequestId !== pspId) {
+    throw new Error("PSP yang dipilih tidak sesuai dengan kasus ini.");
+  }
+  if (comp.status !== CaseStatus.PSP_CREATED) {
+    throw new Error(
+      `SPK hanya bisa dibuat ketika status kasus = PSP_CREATED. Status saat ini: ${comp.status}`,
+    );
+  }
+  if (comp.workOrderId) {
+    throw new Error("SPK sudah ada untuk kasus ini. Tidak bisa membuat SPK duplikat.");
+  }
   const sr = await tx.serviceRequest.findUnique({ where: { id: pspId } });
-  if (!sr) throw new Error("PSP tidak ditemukan");
+  if (!sr) {
+    throw new Error("PSP tidak ditemukan. Pastikan data PSP sudah dibuat sebelumnya.");
+  }
 }
 
 /** Ensures a case can create BAP: status SPK_CREATED, WO must match, no existing RR. */
 export async function assertCanCreateRR(tx: Tx, complaintId: string, spkId: string) {
-  const comp = await tx.complaint.findUnique({ where: { id: complaintId } });
-  if (!comp) throw new Error("Kasus tidak ditemukan");
-  if (comp.workOrderId !== spkId) throw new Error("SPK tidak sesuai dengan kasus");
-  if ((comp as any).status !== "SPK_CREATED")
-    throw new Error("BAP hanya bisa dibuat ketika status kasus = SPK_CREATED");
-  if (comp.repairReportId) throw new Error("Sudah ada BAP untuk kasus ini");
+  const comp = await tx.complaint.findUnique({
+    where: { id: complaintId },
+    select: { id: true, status: true, workOrderId: true, repairReportId: true },
+  });
+  if (!comp) {
+    throw new Error("Kasus tidak ditemukan. Pastikan nomor referensi pengaduan benar.");
+  }
+  if (comp.workOrderId !== spkId) {
+    throw new Error("SPK yang dipilih tidak sesuai dengan kasus ini.");
+  }
+  if (comp.status !== CaseStatus.SPK_CREATED) {
+    throw new Error(
+      `BAP hanya bisa dibuat ketika status kasus = SPK_CREATED. Status saat ini: ${comp.status}`,
+    );
+  }
+  if (comp.repairReportId) {
+    throw new Error("BAP sudah ada untuk kasus ini. Tidak bisa membuat BAP duplikat.");
+  }
   const wo = await tx.workOrder.findUnique({ where: { id: spkId } });
-  if (!wo) throw new Error("SPK tidak ditemukan");
+  if (!wo) {
+    throw new Error("SPK tidak ditemukan. Pastikan data SPK sudah dibuat sebelumnya.");
+  }
 }
 
 /**
@@ -82,8 +122,18 @@ export async function verifyCaseConsistency(
   complaintId: string,
   opts: { fix?: boolean } = {},
 ) {
-  const comp = await tx.complaint.findUnique({ where: { id: complaintId } });
-  if (!comp) throw new Error("Kasus tidak ditemukan");
+  const comp = await tx.complaint.findUnique({
+    where: { id: complaintId },
+    select: {
+      id: true,
+      serviceRequestId: true,
+      workOrderId: true,
+      repairReportId: true,
+    },
+  });
+  if (!comp) {
+    throw new Error("Kasus tidak ditemukan untuk verifikasi konsistensi.");
+  }
   const chain = await getCaseChain(tx, complaintId);
 
   const mismatch =
