@@ -169,7 +169,26 @@ export async function GET(req: NextRequest) {
     }
     const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
     if (!hasPage) {
-      const list = await prisma.serviceRequest.findMany({ orderBy: { createdAt: "desc" } });
+      const list = await prisma.serviceRequest.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          workOrder: {
+            select: {
+              id: true,
+              number: true,
+              team: true,
+              scheduledDate: true,
+            },
+          },
+          complaint: {
+            select: {
+              id: true,
+              category: true,
+              status: true,
+            },
+          },
+        },
+      });
       return NextResponse.json(list);
     }
 
@@ -187,6 +206,23 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
+      include: {
+        workOrder: {
+          select: {
+            id: true,
+            number: true,
+            team: true,
+            scheduledDate: true,
+          },
+        },
+        complaint: {
+          select: {
+            id: true,
+            category: true,
+            status: true,
+          },
+        },
+      },
     });
     return NextResponse.json({ total, items: list });
   } catch (e) {
