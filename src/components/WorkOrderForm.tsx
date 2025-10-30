@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
+import LoadingButton from "@/components/LoadingButton";
 import { useToast } from "@/components/ToastProvider";
 import { parseErrorResponse } from "@/lib/errors";
 
@@ -33,6 +34,7 @@ export default function WorkOrderForm({
   onSaved?: (id: string) => void;
 }) {
   const { push } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const form = useForm<FormValues>({
     defaultValues: {
@@ -54,64 +56,82 @@ export default function WorkOrderForm({
   const { setError } = form;
 
   const onSubmit = async (values: FormValues) => {
-    // Basic client-side guard
-    if (!values.caseId || !values.pspId) {
-      push({ message: "Kasus/PSP tidak valid", type: "error" });
-      return;
-    }
-    const payload = {
-      ...values,
-      // normalize optional fields
-      instructions: values.instructions?.trim() ? values.instructions : undefined,
-      workOrderNumber: values.workOrderNumber?.trim() ? values.workOrderNumber.trim() : undefined,
-      reporterName: values.reporterName?.trim() ? values.reporterName.trim() : undefined,
-      disturbanceLocation: values.disturbanceLocation?.trim()
-        ? values.disturbanceLocation.trim()
-        : undefined,
-      handlingTime: values.handlingTime?.trim() ? values.handlingTime.trim() : undefined,
-      disturbanceType: values.disturbanceType?.trim() ? values.disturbanceType.trim() : undefined,
-    };
+    setIsSubmitting(true);
 
-    const res = await fetch("/api/work-orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      let msg = "Gagal menyimpan";
-      try {
-        const parsed = await parseErrorResponse(res);
-        const fieldErrors = parsed.details?.fieldErrors as
-          | Record<string, string[] | undefined>
-          | undefined;
-        if (fieldErrors) {
-          for (const [k, arr] of Object.entries(fieldErrors)) {
-            const m = arr?.[0];
-            if (m) setError(k as keyof FormValues, { type: "server", message: m });
-          }
-        }
-        msg = parsed.message || msg;
-      } catch {}
-      push({ message: msg, type: "error" });
-    } else {
-      const json = await res.json();
-      push({ message: "SPK tersimpan", type: "success" });
-      onSaved?.(json.id);
-      form.reset({
-        caseId: caseId ?? "",
-        pspId: serviceRequestId ?? "",
-        teamName: "",
-        technicians: "",
-        scheduledDate: today,
-        instructions: "",
-        workOrderNumber: "",
-        reportDate: today,
-        reporterName: "",
-        disturbanceLocation: "",
-        handledDate: today,
-        handlingTime: "",
-        disturbanceType: "",
+    // Set timeout for loading state (30 seconds)
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      push({
+        message: "Request timeout. Silakan coba lagi.",
+        type: "error",
       });
+    }, 30000);
+
+    try {
+      // Basic client-side guard
+      if (!values.caseId || !values.pspId) {
+        push({ message: "Kasus/PSP tidak valid", type: "error" });
+        return;
+      }
+      const payload = {
+        ...values,
+        // normalize optional fields
+        instructions: values.instructions?.trim() ? values.instructions : undefined,
+        workOrderNumber: values.workOrderNumber?.trim() ? values.workOrderNumber.trim() : undefined,
+        reporterName: values.reporterName?.trim() ? values.reporterName.trim() : undefined,
+        disturbanceLocation: values.disturbanceLocation?.trim()
+          ? values.disturbanceLocation.trim()
+          : undefined,
+        handlingTime: values.handlingTime?.trim() ? values.handlingTime.trim() : undefined,
+        disturbanceType: values.disturbanceType?.trim() ? values.disturbanceType.trim() : undefined,
+      };
+
+      const res = await fetch("/api/work-orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        let msg = "Gagal menyimpan";
+        try {
+          const parsed = await parseErrorResponse(res);
+          const fieldErrors = parsed.details?.fieldErrors as
+            | Record<string, string[] | undefined>
+            | undefined;
+          if (fieldErrors) {
+            for (const [k, arr] of Object.entries(fieldErrors)) {
+              const m = arr?.[0];
+              if (m) setError(k as keyof FormValues, { type: "server", message: m });
+            }
+          }
+          msg = parsed.message || msg;
+        } catch {}
+        push({ message: msg, type: "error" });
+      } else {
+        const json = await res.json();
+        push({ message: "SPK tersimpan", type: "success" });
+        onSaved?.(json.id);
+        form.reset({
+          caseId: caseId ?? "",
+          pspId: serviceRequestId ?? "",
+          teamName: "",
+          technicians: "",
+          scheduledDate: today,
+          instructions: "",
+          workOrderNumber: "",
+          reportDate: today,
+          reporterName: "",
+          disturbanceLocation: "",
+          handledDate: today,
+          handlingTime: "",
+          disturbanceType: "",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -265,9 +285,14 @@ export default function WorkOrderForm({
       </div>
 
       <div className="pt-2">
-        <button type="submit" className="btn">
+        <LoadingButton
+          type="submit"
+          loading={isSubmitting}
+          loadingText="Menyimpan..."
+          className="btn"
+        >
           Simpan SPK
-        </button>
+        </LoadingButton>
       </div>
     </form>
   );
