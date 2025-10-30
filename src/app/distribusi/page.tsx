@@ -6,7 +6,6 @@ import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-// import { entityLabel } from "@/lib/uiLabels";
 
 export const dynamic = "force-dynamic";
 
