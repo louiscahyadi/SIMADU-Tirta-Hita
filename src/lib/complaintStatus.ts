@@ -34,21 +34,37 @@ export async function updateComplaintStatus(
   status: CaseStatusType,
   opts: UpdateStatusOptions,
 ) {
+  // Build update data with proper typing
+  const updateData: Prisma.ComplaintUpdateInput = {
+    status: status,
+    ...(opts.link
+      ? {
+          serviceRequestId:
+            opts.link.serviceRequestId !== undefined ? opts.link.serviceRequestId : undefined,
+          workOrderId: opts.link.workOrderId !== undefined ? opts.link.workOrderId : undefined,
+          repairReportId:
+            opts.link.repairReportId !== undefined ? opts.link.repairReportId : undefined,
+          processedAt:
+            opts.link.processedAt !== undefined
+              ? opts.link.processedAt
+                ? new Date(opts.link.processedAt)
+                : null
+              : undefined,
+        }
+      : {}),
+  };
+
   // Update complaint status (+ optional links)
   await tx.complaint.update({
     where: { id: complaintId },
-    data: {
-      status: status as any,
-      // Cast to any to allow scalar id updates in Unchecked update
-      ...(opts.link as any),
-    },
+    data: updateData,
   });
 
   // Record history
   await tx.statusHistory.create({
     data: {
       complaintId,
-      status: status as any,
+      status: status,
       actorRole: opts.actorRole,
       actorId: opts.actorId ?? null,
       note: opts.note ?? null,
