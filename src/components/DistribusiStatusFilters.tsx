@@ -65,7 +65,9 @@ export default function DistribusiStatusFilters({
     params.set("rPage", "1");
     params.set("pPage", "1");
     if (overrides) {
-      for (const [k, v] of Object.entries(overrides)) setOrDelete(k, v as any);
+      for (const [k, v] of Object.entries(overrides)) {
+        setOrDelete(k, v);
+      }
     }
     return `?${params.toString()}`;
   };
