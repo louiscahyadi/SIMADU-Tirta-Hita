@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { Suspense } from "react";
 
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 import { authOptions } from "@/lib/auth";
 import { homeQuerySchema } from "@/lib/schemas/query";
 
@@ -71,7 +72,14 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       : undefined;
 
   return (
-    <Suspense fallback={<div className="p-4">Memuat...</div>}>
+    <Suspense
+      fallback={
+        <div className="space-y-4 p-4">
+          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
+          <LoadingSkeleton type="form" rows={6} />
+        </div>
+      }
+    >
       <HomePageClient
         role={role}
         initialFlow={qp.flow as "service" | "workorder" | "repair"}
