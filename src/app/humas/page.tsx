@@ -5,6 +5,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import HumasServiceFormCard from "@/components/HumasServiceFormCard";
 import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { entityLabel } from "@/lib/uiLabels";
 
@@ -70,11 +71,44 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
       : {}),
   };
 
-  // KPI counters (matching HUMAS Status) with filters
-  const [baruCount, prosesCount, selesaiCount, totalCount] = await Promise.all([
-    prisma.complaint.count({
+  // KPI counters and data with error handling
+  let baruCount = 0;
+  let prosesCount = 0;
+  let selesaiCount = 0;
+  let totalCount = 0;
+  let latestComplaints: any[] = [];
+  let latestServices: any[] = [];
+
+  try {
+    // KPI counters (matching HUMAS Status) with filters
+    [baruCount, prosesCount, selesaiCount, totalCount] = await Promise.all([
+      prisma.complaint.count({
+        where: {
+          ...complaintBaseWhere,
+          AND: [
+            { processedAt: null },
+            { serviceRequestId: null },
+            { workOrderId: null },
+            { repairReportId: null },
+          ],
+        },
+      }),
+      prisma.complaint.count({
+        where: {
+          ...complaintBaseWhere,
+          AND: [
+            { repairReportId: null },
+            { OR: [{ serviceRequestId: { not: null } }, { workOrderId: { not: null } }] },
+          ],
+        },
+      }),
+      prisma.complaint.count({ where: { ...complaintBaseWhere, repairReportId: { not: null } } }),
+      prisma.complaint.count({ where: complaintBaseWhere }),
+    ]);
+
+    // Incoming complaints: not yet processed and no SR/WO/RR linked
+    latestComplaints = await prisma.complaint.findMany({
       where: {
-        ...complaintBaseWhere,
         AND: [
           { processedAt: null },
           { serviceRequestId: null },
@@ -82,37 +116,33 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
           { repairReportId: null },
         ],
       },
-    }),
-    prisma.complaint.count({
-      where: {
-        ...complaintBaseWhere,
-        AND: [
-          { repairReportId: null },
-          { OR: [{ serviceRequestId: { not: null } }, { workOrderId: { not: null } }] },
-        ],
-      },
-    }),
-    prisma.complaint.count({ where: { ...complaintBaseWhere, repairReportId: { not: null } } }),
-    prisma.complaint.count({ where: complaintBaseWhere }),
-  ]);
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    });
 
-  // Incoming complaints: not yet processed and no SR/WO/RR linked
-  const latestComplaints = await prisma.complaint.findMany({
-    where: {
-      AND: [
-        { processedAt: null },
-        { serviceRequestId: null },
-        { workOrderId: null },
-        { repairReportId: null },
-      ],
-    },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
-  const latestServices = await prisma.serviceRequest.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
+    latestServices = await prisma.serviceRequest.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    });
+  } catch (e: any) {
+    // If DB is unreachable, show a friendly message instead of a runtime crash
+    logger.error(
+      e instanceof Error ? e : new Error(String(e?.message ?? e)),
+      "HUMAS dashboard DB error",
+    );
+    return (
+      <div className="space-y-3">
+        <h2 className="text-xl font-semibold">HUMAS</h2>
+        <p className="text-red-600">
+          Tidak dapat menghubungi server database. Silakan pastikan database berjalan dan
+          konfigurasi `DATABASE_URL` sudah benar. (Detail: {String(e?.message ?? e)})
+        </p>
+        <p className="text-sm text-gray-600">
+          Tips: jalankan database lokal atau docker-compose lalu coba lagi.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
