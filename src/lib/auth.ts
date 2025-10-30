@@ -1,6 +1,7 @@
 import Credentials from "next-auth/providers/credentials";
 
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 import { verifyPassword } from "@/lib/password";
 
 import type { NextAuthOptions, User } from "next-auth";
@@ -61,9 +62,9 @@ export const authOptions: NextAuthOptions = {
           isValid = await verifyPassword(password, account.ph);
         } else if (account.p) {
           // Fallback: plain text comparison (DEPRECATED - only for dev)
-          console.warn(
-            `⚠️  Plain password used for ${username}. Please migrate to HASHED passwords!`,
-          );
+          logger.warn(`Plain password used for ${username}. Please migrate to HASHED passwords!`, {
+            username,
+          });
           isValid = account.p === password;
         }
 
