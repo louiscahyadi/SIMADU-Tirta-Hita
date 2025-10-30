@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
           actionTaken: data.actionTaken,
           startTime: new Date(data.startTime),
           endTime: new Date(data.endTime),
-          result: data.result as any,
+          result: data.result,
           remarks: data.remarks ?? null,
           customerConfirmationName: data.customerConfirmationName ?? null,
           workOrder: { connect: { id: data.spkId } },
@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
       .int()
       .positive()
       .max(100)
-      .default(10)
+      .default(20)
       .parse(url.searchParams.get("pageSize"));
     const total = await prisma.repairReport.count();
     const list = await prisma.repairReport.findMany({
