@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
       .int()
       .positive()
       .max(100)
-      .default(10)
+      .default(20)
       .parse(url.searchParams.get("pageSize"));
     const total = await prisma.workOrder.count();
     const items = await prisma.workOrder.findMany({
