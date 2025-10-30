@@ -9,6 +9,8 @@ import {
   Legend,
   Filler,
   TimeSeriesScale,
+  ChartData,
+  ChartOptions,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 
@@ -20,7 +22,7 @@ ChartJS.register(
   Tooltip,
   Legend,
   Filler,
-  TimeSeriesScale
+  TimeSeriesScale,
 );
 
 type Dataset = {
@@ -30,15 +32,13 @@ type Dataset = {
   backgroundColor?: string;
 };
 
-export default function LineChart({
-  labels,
-  datasets,
-}: {
-  labels: string[];
-  datasets: Dataset[];
-}) {
-  const data = { labels, datasets } as any;
-  const options = {
+export default function LineChart({ labels, datasets }: { labels: string[]; datasets: Dataset[] }) {
+  const data: ChartData<"line"> = {
+    labels,
+    datasets,
+  };
+
+  const options: ChartOptions<"line"> = {
     responsive: true,
     plugins: {
       legend: { display: true, position: "top" as const },
@@ -49,6 +49,7 @@ export default function LineChart({
       y: { beginAtZero: true, ticks: { precision: 0 } },
     },
     elements: { point: { radius: 2 } },
-  } as const;
+  };
+
   return <Line data={data} options={options} height={120} />;
 }
