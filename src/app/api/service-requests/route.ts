@@ -26,19 +26,19 @@ export async function POST(req: NextRequest) {
         // kompatibilitas tampilan lama
         customerName: data.reporterName,
         address: data.address,
-        serviceNumber: (data as any).serviceNumber ?? null,
+        serviceNumber: data.serviceNumber ?? null,
         phone: data.reporterPhone,
 
         // PSP fields
         reporterName: data.reporterName,
         reporterPhone: data.reporterPhone,
-        description: (data as any).description ?? null,
-        receivedAt: (data as any).receivedAt ?? null,
-        receivedBy: (data as any).receivedBy ?? null,
-        reasons: (data as any).reasons ? (data as any).reasons : undefined,
-        otherReason: (data as any).otherReason ?? null,
-        serviceCostBy: (data as any).serviceCostBy ?? null,
-        urgency: data.urgency, // sudah LOW|MEDIUM|HIGH
+        description: data.description ?? null,
+        receivedAt: data.receivedAt ?? null,
+        receivedBy: data.receivedBy ?? null,
+        reasons: data.reasons ? data.reasons : undefined,
+        otherReason: data.otherReason ?? null,
+        serviceCostBy: data.serviceCostBy ?? null,
+        urgency: data.urgency,
         requestDate: data.requestDate,
         notes: data.notes ?? null,
       },
@@ -116,17 +116,17 @@ export async function PATCH(req: NextRequest) {
       const next = await tx.serviceRequest.update({
         where: { id: data.id },
         data: {
-          serviceNumber: (data as any).serviceNumber ?? undefined,
+          serviceNumber: data.serviceNumber ?? undefined,
           reporterName: data.reporterName ?? undefined,
           reporterPhone: data.reporterPhone ?? undefined,
           address: data.address ?? undefined,
-          receivedAt: (data as any).receivedAt ?? undefined,
-          receivedBy: (data as any).receivedBy ?? undefined,
-          reasons: (data as any).reasons ?? undefined,
-          otherReason: (data as any).otherReason ?? undefined,
-          serviceCostBy: (data as any).serviceCostBy ?? undefined,
-          description: (data as any).description ?? undefined,
-          urgency: (data.urgency as any) ?? undefined,
+          receivedAt: data.receivedAt ?? undefined,
+          receivedBy: data.receivedBy ?? undefined,
+          reasons: data.reasons ?? undefined,
+          otherReason: data.otherReason ?? undefined,
+          serviceCostBy: data.serviceCostBy ?? undefined,
+          description: data.description ?? undefined,
+          urgency: data.urgency ?? undefined,
           requestDate: data.requestDate ?? undefined,
           notes: data.notes === undefined ? undefined : data.notes || null,
         },
@@ -198,7 +198,7 @@ export async function GET(req: NextRequest) {
       .int()
       .positive()
       .max(100)
-      .default(10)
+      .default(20)
       .parse(url.searchParams.get("pageSize"));
 
     const total = await prisma.serviceRequest.count();
