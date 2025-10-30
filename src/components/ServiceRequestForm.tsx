@@ -40,13 +40,19 @@ const uiSchema = z.object({
 
 type UiInput = z.infer<typeof uiSchema>;
 
+// Extended type untuk initialData yang bisa include complaintCategory
+type InitialDataType = Partial<UiInput> & {
+  complaintCategory?: string;
+  serviceNumber?: string;
+};
+
 export default function ServiceRequestForm({
   onSaved,
   initialData,
   caseId,
 }: {
   onSaved?: (id: string) => void;
-  initialData?: Partial<UiInput> & { complaintCategory?: string };
+  initialData?: InitialDataType;
   caseId?: string;
 }) {
   const { push } = useToast();
@@ -56,7 +62,7 @@ export default function ServiceRequestForm({
     resolver: zodResolver(uiSchema),
     defaultValues: {
       caseId: caseId || initialData?.caseId,
-      serviceNumber: (initialData as any)?.serviceNumber || "",
+      serviceNumber: initialData?.serviceNumber || "",
       reporterName: initialData?.reporterName || "",
       reporterPhone: initialData?.reporterPhone || "",
       address: initialData?.address || "",
@@ -103,10 +109,8 @@ export default function ServiceRequestForm({
         otherReason: values.otherReason?.trim() || undefined,
         serviceCostBy: values.serviceCostBy,
         description: values.description?.trim() || undefined,
-        // default
-        urgency: (values as any).urgency ?? "MEDIUM",
+        urgency: values.urgency,
         requestDate: values.requestDate,
-        // normalize
         notes: values.notes?.trim() ? values.notes : undefined,
       };
       const res = await fetch("/api/service-requests", {
@@ -127,7 +131,9 @@ export default function ServiceRequestForm({
           if (fields) {
             for (const [k, arr] of Object.entries(fields)) {
               const m = arr?.[0];
-              if (m) (form as any).setError?.(k, { type: "server", message: m });
+              if (m && form.setError) {
+                form.setError(k as keyof UiInput, { type: "server", message: m });
+              }
             }
           }
           push({ message: parsed.message, type: "error" });
@@ -167,8 +173,8 @@ export default function ServiceRequestForm({
   useEffect(() => {
     if (caseId) setValue("caseId", caseId);
     if (initialData) {
-      if (typeof (initialData as any).serviceNumber !== "undefined")
-        setValue("serviceNumber", ((initialData as any).serviceNumber as any) || "");
+      if (typeof initialData.serviceNumber !== "undefined")
+        setValue("serviceNumber", initialData.serviceNumber || "");
       if (typeof initialData.reporterName !== "undefined")
         setValue("reporterName", initialData.reporterName || "");
       if (typeof initialData.reporterPhone !== "undefined")
