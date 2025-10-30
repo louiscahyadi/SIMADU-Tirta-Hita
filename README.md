@@ -1,35 +1,68 @@
-# PERUMDA Tirta Hita Buleleng – Sistem Pengaduan
+# PERUMDA Tirta Hita Buleleng – Sistem Pengaduan (SIMADU)
 
-Aplikasi full-stack (Next.js 14 + Prisma + MySQL + Tailwind) untuk menerima laporan/pengaduan pelanggan dan mencatat:
+Aplikasi full-stack (Next.js 14 + Prisma + MySQL + Tailwind) untuk mengelola laporan/pengaduan internal pelanggan dan mencatat:
 
-- Permintaan Service/Perbaikan
+- Permintaan Service/Perbaikan (PSP)
 - Surat Perintah Kerja (SPK)
 - Berita Acara Perbaikan (BAP)
 
-## Fitur
+**Sistem ini dirancang untuk penggunaan internal** divisi HUMAS dan DISTRIBUSI Perumda Tirta Hita Buleleng.
+
+## Fitur Utama
+
+- ✅ **Role-Based Access**: Pemisahan akses HUMAS dan DISTRIBUSI
+- ✅ **Status Tracking**: Pelacakan status dari REPORTED → COMPLETED
+- ✅ **Document Chain**: PSP → SPK → BAP dengan konsistensi data
+- ✅ **History Tracking**: Riwayat perubahan status setiap pengaduan
+- ✅ **Dashboard**: KPI counters dan summary untuk tiap divisi
+- ✅ **Export/Print**: Cetak dokumen untuk keperluan administrasi
+- ✅ **Security**: Password hashing (bcrypt), secure sessions, rate limiting
 
 ## Cara Menjalankan (Windows PowerShell)
 
-1. Install dependency (butuh Node.js 18+):
+### 1. Install Dependencies
+
+Butuh Node.js 18+ dan npm:
 
 ```pwsh
 npm install
 ```
 
-2. Siapkan environment variables:
-
-- Salin file `.env.example` menjadi `.env`
-- Isi nilai sesuai lingkungan Anda (database, URL, secret)
-- Pastikan tidak ada variabel lain di `.env` selain yang ada di `.env.example` (hapus `ADMIN_USERNAME` dan `ADMIN_PASSWORD` jika ada)
-
-3. Generate Prisma Client dan jalankan migrasi (membuat tabel di MySQL):
+### 2. Setup Environment Variables
 
 ```pwsh
-npm run db:generate
-npm run db:migrate
+# Salin .env.example ke .env
+Copy-Item .env.example .env
+
+# Generate secure NEXTAUTH_SECRET
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# Copy output dan paste ke .env sebagai NEXTAUTH_SECRET
+
+# Generate hashed passwords untuk HUMAS dan DISTRIBUSI
+npx ts-node scripts/generate-hashed-passwords.ts
+# Copy output (HUMAS_PASSWORD_HASH dan DISTRIBUSI_PASSWORD_HASH) ke .env
 ```
 
-4. Jalankan mode development:
+### 3. Setup Database
+
+**Pastikan MySQL sudah berjalan** (lokal atau via Docker):
+
+```pwsh
+# Jika pakai Docker Compose:
+npm run db:up
+npm run db:ps  # cek status, tunggu sampai Healthy
+
+# Generate Prisma Client
+npm run db:generate
+
+# Jalankan database migrations
+npm run db:migrate
+
+# (Opsional) Seed data contoh
+npm run db:seed
+```
+
+### 4. Jalankan Development Server
 
 ```pwsh
 npm run dev
@@ -37,27 +70,50 @@ npm run dev
 
 Aplikasi berjalan di http://localhost:3000
 
+### 5. Login
+
+- **HUMAS**: `/login/humas` - Gunakan username/password yang di-set di `.env`
+- **DISTRIBUSI**: `/login/distribusi` - Gunakan username/password yang di-set di `.env`
+
+---
+
 ## Environment Variables
 
 Gunakan file `.env` (disalin dari `.env.example`) dan isi nilai berikut:
 
-- NODE_ENV: Lingkungan aplikasi (`development` | `test` | `production`). Default: `development`.
-- DATABASE_URL: Koneksi MySQL. Format: `mysql://USER:PASSWORD@HOST:PORT/DB`
-- NEXTAUTH_URL: Base URL aplikasi. Contoh dev: `http://localhost:3000`. Produksi harus HTTPS publik.
-- NEXTAUTH_SECRET: String acak panjang untuk enkripsi NextAuth (min 16 karakter). Wajib diganti pada produksi.
-- HUMAS_USERNAME / HUMAS_PASSWORD: Kredensial internal untuk divisi HUMAS (Credentials provider).
-- DISTRIBUSI_USERNAME / DISTRIBUSI_PASSWORD: Kredensial internal untuk divisi DISTRIBUSI (Credentials provider).
+### Required (Wajib):
 
-Catatan penting:
+- **DATABASE_URL**: Koneksi MySQL. Format: `mysql://USER:PASSWORD@HOST:PORT/DB`  
+  Contoh: `mysql://root:password@localhost:3306/simadu`
 
-- Variabel `ADMIN_USERNAME` dan `ADMIN_PASSWORD` tidak digunakan dan tidak ada di schema. Hapus dari `.env` jika ada.
-- Jangan commit file `.env` ke repository; hanya commit `.env.example`.
-- Contoh cara membuat secret acak (opsional):
+- **NEXTAUTH_URL**: Base URL aplikasi.
+  - Development: `http://localhost:3000`
+  - Production: Harus HTTPS, contoh: `https://simadu.yourdomain.com`
 
-```pwsh
-# Node.js
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
+- **NEXTAUTH_SECRET**: String acak **minimal 32 karakter** untuk enkripsi session.  
+  Generate dengan: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+
+- **HUMAS_USERNAME** / **HUMAS_PASSWORD_HASH**: Kredensial divisi HUMAS  
+  Generate hash: `npx ts-node scripts/generate-hashed-passwords.ts`
+
+- **DISTRIBUSI_USERNAME** / **DISTRIBUSI_PASSWORD_HASH**: Kredensial divisi DISTRIBUSI  
+  Generate hash: `npx ts-node scripts/generate-hashed-passwords.ts`
+
+### Optional (Opsional):
+
+- **UPSTASH_REDIS_REST_URL** / **UPSTASH_REDIS_REST_TOKEN**: Redis untuk rate limiting (direkomendasikan untuk production)
+
+### ⚠️ **PENTING - SECURITY**:
+
+1. **JANGAN** gunakan plain passwords di production
+2. **SELALU** gunakan `*_PASSWORD_HASH` dengan bcrypt
+3. **GANTI** `NEXTAUTH_SECRET` dengan nilai yang kuat (min 32 karakter)
+4. **JANGAN** commit file `.env` ke repository
+
+Catatan:
+
+- Variabel `ADMIN_USERNAME` dan `ADMIN_PASSWORD` **tidak digunakan** dan sudah deprecated
+- Untuk backward compatibility, plain password masih bisa digunakan di development, tapi akan muncul warning
 
 ## Menjalankan MySQL via Docker
 
@@ -148,25 +204,35 @@ Catatan: Indeks `@@index([status, createdAt])` ditambahkan untuk mempercepat daf
 
 ## Otentikasi (NextAuth) – Internal Only
 
-Seluruh halaman aplikasi ini ditujukan untuk penggunaan internal divisi HUMAS/DISTRIBUSI. Akses
-dibatasi menggunakan NextAuth (Credentials provider) dengan 2 role: `humas` dan `distribusi`.
+Seluruh halaman aplikasi ini ditujukan untuk penggunaan **internal** divisi HUMAS dan DISTRIBUSI. Akses dibatasi menggunakan NextAuth (Credentials provider) dengan 2 role:
 
-1. Pastikan `.env` berisi variabel berikut (lihat `.env.example`):
+- **`humas`**: Dapat membuat PSP (Permintaan Service), mengelola pengaduan, akses Daftar Data
+- **`distribusi`**: Dapat membuat SPK dan BAP, melihat detail dokumen, akses Status Distribusi
 
-- `NEXTAUTH_URL=http://localhost:3000`
-- `NEXTAUTH_SECRET=some-long-random-string`
-- `HUMAS_USERNAME=humas`
-- `HUMAS_PASSWORD=humas123`
-- `DISTRIBUSI_USERNAME=distribusi`
-- `DISTRIBUSI_PASSWORD=distribusi123`
+### Setup Kredensial:
 
-Jangan gunakan `ADMIN_USERNAME` / `ADMIN_PASSWORD` karena tidak didukung.
+1. Generate hashed passwords:
 
-2. Buka `/login` dan pilih divisi untuk masuk. Setelah login, halaman internal dapat diakses sesuai
-   role. Pengguna HUMAS dapat membuat PSP dan mengelola data terkait; pengguna DISTRIBUSI
-   membuat SPK dan BAP.
+```pwsh
+npx ts-node scripts/generate-hashed-passwords.ts
+```
 
-Catatan:
+2. Tambahkan ke `.env`:
 
-- Endpoint `POST /api/complaints` tidak dibuka untuk publik. Jika dibutuhkan kanal pengaduan
-  publik, implementasi terpisah harus mempertimbangkan validasi, rate limiting, dan anti-spam.
+```env
+HUMAS_USERNAME=humas
+HUMAS_PASSWORD_HASH=<hash dari script>
+DISTRIBUSI_USERNAME=distribusi
+DISTRIBUSI_PASSWORD_HASH=<hash dari script>
+```
+
+3. Login di:
+
+- HUMAS: `/login/humas`
+- DISTRIBUSI: `/login/distribusi`
+
+**Catatan**:
+
+- Endpoint `POST /api/complaints` (publik) sudah di-disable. Sistem ini murni internal.
+- Rate limiting aktif untuk mencegah abuse
+- Session menggunakan JWT dengan secure secret
