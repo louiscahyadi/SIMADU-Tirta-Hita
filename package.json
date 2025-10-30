@@ -17,7 +17,14 @@
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f mysql",
     "db:ps": "docker compose ps",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "setup": "npm install && npx prisma generate",
+    "setup:passwords": "npx ts-node scripts/generate-hashed-passwords.ts",
+    "db:migrate:prod": "npx prisma migrate deploy",
+    "docker:up": "docker compose up -d",
+    "docker:up:redis": "docker compose --profile with-redis up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -25,6 +32,9 @@
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@prisma/client": "^6.17.1",
+    "@upstash/ratelimit": "^2.0.0",
+    "@upstash/redis": "^1.34.0",
+    "bcryptjs": "^2.4.3",
     "chart.js": "^4.5.0",
     "next": "^14.2.5",
     "next-auth": "^4.24.7",
@@ -35,6 +45,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.7.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
