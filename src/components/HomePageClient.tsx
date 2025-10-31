@@ -67,7 +67,9 @@ export default function HomePageClient({
                   if (t.id === "workorder") {
                     alert("Silakan simpan Permintaan Service terlebih dahulu.");
                   } else if (t.id === "repair") {
-                    alert("Silakan simpan Surat Perintah Kerja terlebih dahulu.");
+                    alert(
+                      "Berita Acara hanya dapat dibuat setelah SPK selesai dikerjakan di lapangan. Gunakan dashboard Distribusi untuk membuat BA dari SPK yang sudah selesai.",
+                    );
                   }
                   return;
                 }
@@ -84,7 +86,7 @@ export default function HomePageClient({
                     ? "Peran tidak diizinkan"
                     : t.id === "workorder"
                       ? "Kunci: butuh Permintaan Service"
-                      : "Kunci: butuh Surat Perintah Kerja"
+                      : "Kunci: butuh SPK yang telah selesai dikerjakan di lapangan"
                   : undefined
               }
             >
@@ -124,12 +126,14 @@ export default function HomePageClient({
             serviceRequestId={serviceRequestId}
             onSaved={(id) => {
               setWorkOrderId(id);
-              setActive("repair");
+              // Don't automatically switch to repair - let distribusi handle it later via dashboard
+              // setActive("repair");
             }}
           />
         )}
         {active === "repair" && role === "distribusi" && (
           <RepairReportForm
+            caseId={complaintId}
             spkId={workOrderId}
             onSaved={() => {
               // selesai flow
