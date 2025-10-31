@@ -112,7 +112,10 @@ export default function WorkOrderForm({
         push({ message: msg, type: "error" });
       } else {
         const json = await res.json();
-        push({ message: "SPK tersimpan", type: "success" });
+        push({
+          message: "SPK tersimpan. Berita Acara akan dibuat setelah pekerjaan selesai di lapangan.",
+          type: "success",
+        });
         onSaved?.(json.id);
         form.reset({
           caseId: caseId ?? "",
