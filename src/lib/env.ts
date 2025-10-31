@@ -29,10 +29,10 @@ const devDefault = {
   NEXTAUTH_SECRET: "dev_secret_change_in_production_min32chars",
   HUMAS_USERNAME: "humas",
   HUMAS_PASSWORD: "humas123",
-  HUMAS_PASSWORD_HASH: "$2a$10$LQ3aGmY8QXZ3X8sVXJZ9.ewKjWvQqGjY9Q7WXJ9nI5Z9XJ9nI5Z9X", // humas123
+  // HUMAS_PASSWORD_HASH: undefined, // No hash for dev
   DISTRIBUSI_USERNAME: "distribusi",
   DISTRIBUSI_PASSWORD: "distribusi123",
-  DISTRIBUSI_PASSWORD_HASH: "$2a$10$LQ3aGmY8QXZ3X8sVXJZ9.ewKjWvQqGjY9Q7WXJ9nI5Z9XJ9nI5Z9X", // distribusi123
+  // DISTRIBUSI_PASSWORD_HASH: undefined, // No hash for dev
 } as const;
 
 const withDefaults = {
@@ -45,15 +45,12 @@ const withDefaults = {
     RAW.HUMAS_USERNAME || (!isProd || isBuild ? devDefault.HUMAS_USERNAME : undefined),
   HUMAS_PASSWORD:
     RAW.HUMAS_PASSWORD || (!isProd || isBuild ? devDefault.HUMAS_PASSWORD : undefined),
-  HUMAS_PASSWORD_HASH:
-    RAW.HUMAS_PASSWORD_HASH || (!isProd || isBuild ? devDefault.HUMAS_PASSWORD_HASH : undefined),
+  HUMAS_PASSWORD_HASH: RAW.HUMAS_PASSWORD_HASH, // No fallback, use what's in .env only
   DISTRIBUSI_USERNAME:
     RAW.DISTRIBUSI_USERNAME || (!isProd || isBuild ? devDefault.DISTRIBUSI_USERNAME : undefined),
   DISTRIBUSI_PASSWORD:
     RAW.DISTRIBUSI_PASSWORD || (!isProd || isBuild ? devDefault.DISTRIBUSI_PASSWORD : undefined),
-  DISTRIBUSI_PASSWORD_HASH:
-    RAW.DISTRIBUSI_PASSWORD_HASH ||
-    (!isProd || isBuild ? devDefault.DISTRIBUSI_PASSWORD_HASH : undefined),
+  DISTRIBUSI_PASSWORD_HASH: RAW.DISTRIBUSI_PASSWORD_HASH, // No fallback, use what's in .env only
 };
 
 const EnvSchema = z.object({
