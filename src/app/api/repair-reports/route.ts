@@ -22,14 +22,44 @@ export async function POST(req: NextRequest) {
     const created = await prisma.$transaction(async (tx) => {
       await assertCanCreateRR(tx, data.caseId, data.spkId);
 
+      // Compile action taken from repair types and reasons
+      let actionTaken = "";
+      if (data.repairTypes.length > 0) {
+        actionTaken += "Jenis Perbaikan:\n" + data.repairTypes.map((t) => `- ${t}`).join("\n");
+        if (data.otherRepairType) {
+          actionTaken += `\n- ${data.otherRepairType}`;
+        }
+      }
+      if (data.notHandledReasons.length > 0) {
+        if (actionTaken) actionTaken += "\n\n";
+        actionTaken +=
+          "Alasan Tidak Ditangani:\n" + data.notHandledReasons.map((r) => `- ${r}`).join("\n");
+        if (data.otherNotHandledReason) {
+          actionTaken += `\n- ${data.otherNotHandledReason}`;
+        }
+      }
+      if (data.remarks) {
+        if (actionTaken) actionTaken += "\n\n";
+        actionTaken += "Catatan:\n" + data.remarks;
+      }
+
       const rr = await tx.repairReport.create({
         data: {
-          actionTaken: data.actionTaken,
+          actionTaken: actionTaken || "Tidak ada tindakan tercatat",
           startTime: new Date(data.startTime),
           endTime: new Date(data.endTime),
           result: data.result,
           remarks: data.remarks ?? null,
           customerConfirmationName: data.customerConfirmationName ?? null,
+          // Store detailed data in legacy fields
+          actions: data.repairTypes.length > 0 ? data.repairTypes : undefined,
+          otherActions: data.otherRepairType ?? null,
+          notHandledReasons: data.notHandledReasons.length > 0 ? data.notHandledReasons : undefined,
+          otherNotHandled: data.otherNotHandledReason ?? null,
+          city: data.city ?? null,
+          executorName: data.executorName ?? null,
+          team: data.team ?? null,
+          authorizedBy: data.authorizedBy ?? null,
           workOrder: { connect: { id: data.spkId } },
         },
       });
