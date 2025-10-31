@@ -116,6 +116,13 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
       where: { repairReport: { is: null } },
       orderBy: { createdAt: "asc" },
       take: 5,
+      include: {
+        complaint: {
+          select: {
+            id: true,
+          },
+        },
+      },
     });
   } catch (e: any) {
     // If DB is unreachable (Prisma can't connect), show a friendly message instead of a runtime crash
@@ -154,6 +161,16 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
           <Link className="btn-outline btn-sm" href="/distribusi/status#repair">
             Lihat Berita Acara
           </Link>
+        </div>
+      </div>
+
+      {/* Workflow info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+        <div className="font-medium text-blue-900 mb-2">Alur Kerja Distribusi:</div>
+        <div className="text-blue-800 space-y-1">
+          <div>1. Buat SPK dari Permintaan Service yang masuk</div>
+          <div>2. SPK diberikan ke tim lapangan untuk dikerjakan</div>
+          <div>3. Setelah pekerjaan selesai di lapangan, buat Berita Acara</div>
         </div>
       </div>
 
@@ -297,9 +314,16 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
               Lihat semua
             </Link>
           </div>
+          <div className="text-xs text-gray-600 mb-3">
+            SPK yang sudah selesai dikerjakan di lapangan dan perlu dibuatkan berita acara
+          </div>
           <ul className="divide-y">
             {needRR.map((w) => {
               const params = new URLSearchParams({ flow: "repair", workOrderId: w.id });
+              // Add complaintId if available from workOrder
+              if (w.complaint?.id) {
+                params.set("complaintId", w.complaint.id);
+              }
               return (
                 <li key={w.id} className="py-2 flex items-center justify-between">
                   <div className="min-w-0">
