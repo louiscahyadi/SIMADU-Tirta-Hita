@@ -167,14 +167,6 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
       />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Status DISTRIBUSI</h2>
-        <div className="flex gap-2">
-          <Link className="btn-outline btn-sm" href="/distribusi/status#workorder">
-            Lihat SPK
-          </Link>
-          <Link className="btn-outline btn-sm" href="/distribusi/status#repair">
-            Lihat Berita Acara
-          </Link>
-        </div>
       </div>
 
       {/* Filter bar (client-side, persisted) */}
