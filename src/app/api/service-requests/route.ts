@@ -153,7 +153,9 @@ export async function GET(req: NextRequest) {
     const byId = url.searchParams.get("id");
     if (byId) {
       const sr = await prisma.serviceRequest.findUnique({ where: { id: byId } });
-      if (!sr) return errorResponse(AppError.notFound());
+      if (!sr) {
+        return errorResponse(AppError.notFound("Service Request tidak ditemukan"));
+      }
       // related complaint to prefill SPK
       const comp = await prisma.complaint.findFirst({
         where: { serviceRequestId: byId },
