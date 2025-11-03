@@ -108,7 +108,9 @@ export default function WorkOrderForm({
             }
           }
           msg = parsed.message || msg;
-        } catch {}
+        } catch (e) {
+          // Error parsing response
+        }
         push({ message: msg, type: "error" });
       } else {
         const json = await res.json();
@@ -117,6 +119,8 @@ export default function WorkOrderForm({
           type: "success",
         });
         onSaved?.(json.id);
+
+        // Reset form to default values while keeping case and service request IDs
         form.reset({
           caseId: caseId ?? "",
           pspId: serviceRequestId ?? "",
@@ -152,10 +156,20 @@ export default function WorkOrderForm({
     (async () => {
       try {
         const res = await fetch(`/api/service-requests?id=${encodeURIComponent(id)}`);
-        if (!res.ok) return;
+        if (!res.ok) {
+          return;
+        }
+
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          return;
+        }
+
         const data = await res.json();
+
         // Ensure pspId is set in the form in case defaultValue was empty on first render
         setValue("pspId", id, { shouldValidate: true });
+
         // Nama Pelapor: prefer reporterName, fallback to customerName
         const reporter = (
           data?.reporterName ||
@@ -165,12 +179,16 @@ export default function WorkOrderForm({
         ).toString();
         const address = (data?.address || data?._complaintAddress || "").toString();
         const jenis = (data?._complaintCategory || "").toString();
-        const compId = (data?._complaintId || "").toString();
+        const compId = (data?._complaintId || data?.complaintId || "").toString();
+
         if (reporter) setValue("reporterName", reporter, { shouldValidate: true });
         if (address) setValue("disturbanceLocation", address, { shouldValidate: true });
         if (jenis) setValue("disturbanceType", jenis, { shouldValidate: true });
-        if (compId) setValue("caseId", compId, { shouldValidate: true });
-        else {
+
+        // Set complaint ID from service request data or URL fallback
+        if (compId) {
+          setValue("caseId", compId, { shouldValidate: true });
+        } else {
           // Fallback: if PSP not linked to complaint, try complaintId from URL
           try {
             const q = new URLSearchParams(window.location.search);
@@ -178,7 +196,9 @@ export default function WorkOrderForm({
             if (fromUrl) setValue("caseId", fromUrl, { shouldValidate: true });
           } catch {}
         }
-      } catch {}
+      } catch (error) {
+        // Silently fail, user can manually provide complaintId
+      }
     })();
     // intentionally run once per serviceRequestId
   }, [serviceRequestId, setValue]);
