@@ -53,12 +53,29 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       });
   }
 
-  // Additional cross-field checks per flow
+  // Additional cross-field checks per flow and auto-fetch missing complaintId
   if (qp.flow === "workorder" && !qp.serviceRequestId) {
     errors.push("Parameter 'serviceRequestId' wajib untuk flow=workorder.");
   }
   if (qp.flow === "repair" && !qp.workOrderId) {
     errors.push("Parameter 'workOrderId' wajib untuk flow=repair.");
+  }
+
+  // Auto-fetch complaintId if missing for workorder flow
+  let finalComplaintId = qp.complaintId;
+  if (qp.flow === "workorder" && qp.serviceRequestId && !qp.complaintId) {
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      const complaint = await prisma.complaint.findFirst({
+        where: { serviceRequestId: qp.serviceRequestId },
+        select: { id: true },
+      });
+      if (complaint) {
+        finalComplaintId = complaint.id;
+      }
+    } catch (error) {
+      // Silently fail, user can manually provide complaintId
+    }
   }
 
   const srInitial =
@@ -83,7 +100,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       <HomePageClient
         role={role}
         initialFlow={qp.flow as "service" | "workorder" | "repair"}
-        initialComplaintId={qp.complaintId || undefined}
+        initialComplaintId={finalComplaintId || undefined}
         initialServiceRequestId={qp.serviceRequestId || undefined}
         initialWorkOrderId={qp.workOrderId || undefined}
         srInitial={srInitial}
