@@ -7,6 +7,12 @@ import { z } from "zod";
 
 import LoadingButton from "@/components/LoadingButton";
 import { useToast } from "@/components/ToastProvider";
+import {
+  COMMON_ERRORS,
+  SUCCESS_MESSAGES,
+  FORM_ERRORS,
+  VALIDATION_ERRORS,
+} from "@/lib/errorMessages";
 import { parseErrorResponse } from "@/lib/errors";
 
 const phoneRegex = /^[+\d ]+$/;
@@ -16,14 +22,14 @@ const uiSchema = z.object({
   serviceNumber: z.string().trim().max(50).optional(),
   reporterName: z.string().min(2).max(100),
   reporterPhone: z.string().min(8).max(20).regex(phoneRegex, {
-    message: "Hanya boleh +, spasi, dan angka",
+    message: VALIDATION_ERRORS.PHONE_FORMAT,
   }),
   address: z.string().min(5).max(200),
   // Diterima: Hari/Tanggal, Jam, Petugas Jaga
   receivedDate: z.string().optional(), // yyyy-mm-dd
   receivedTime: z
     .string()
-    .regex(/^\d{2}:\d{2}$/, { message: "Format jam HH:MM" })
+    .regex(/^\d{2}:\d{2}$/, { message: VALIDATION_ERRORS.TIME_FORMAT })
     .optional(),
   receivedBy: z.string().min(2).max(100).optional(),
   // Alasan Permintaan Service
@@ -86,7 +92,7 @@ export default function ServiceRequestForm({
     const timeoutId = setTimeout(() => {
       setIsSubmitting(false);
       push({
-        message: "Request timeout. Silakan coba lagi.",
+        message: COMMON_ERRORS.TIMEOUT,
         type: "error",
       });
     }, 30000);
@@ -138,12 +144,12 @@ export default function ServiceRequestForm({
           }
           push({ message: parsed.message, type: "error" });
         } catch {
-          push({ message: "Gagal menyimpan", type: "error" });
+          push({ message: FORM_ERRORS.SERVICE_REQUEST.SAVE_FAILED, type: "error" });
         }
         return;
       }
       const json = await res.json();
-      push({ message: "Permintaan service tersimpan", type: "success" });
+      push({ message: SUCCESS_MESSAGES.SERVICE_REQUEST_SAVED, type: "success" });
       onSaved?.(json.id);
       form.reset({
         caseId: caseId || "",
