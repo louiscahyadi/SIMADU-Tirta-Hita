@@ -589,23 +589,37 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
       ]),
       skip: (page - 1) * pageSize,
       take: pageSize,
+      // ✅ FIX N+1: Include relations in single query
+      include: {
+        repairReport: {
+          select: { id: true },
+        },
+        complaint: {
+          select: { id: true },
+        },
+        serviceRequest: {
+          select: { id: true },
+        },
+      },
     });
-    const allRRs = (await (prisma as any).repairReport.findMany({
-      select: { id: true, workOrderId: true },
-    })) as Array<{ id: string; workOrderId: string | null }>;
 
-    for (const r of allRRs) if (r.workOrderId) woToRr.set(r.workOrderId, r.id);
-    // Build WO -> SR map for badges
-    const allWOs = (await (prisma as any).workOrder.findMany({
-      select: { id: true, serviceRequestId: true },
-    })) as Array<{ id: string; serviceRequestId: string | null }>;
-    for (const w of allWOs) if (w.serviceRequestId) woToSr.set(w.id, w.serviceRequestId);
-    // Build WO -> Complaint map for badges
-    const compForWO = (await (prisma as any).complaint.findMany({
-      select: { id: true, workOrderId: true },
-      where: { workOrderId: { not: null } },
-    })) as Array<{ id: string; workOrderId: string | null }>;
-    for (const c of compForWO) if (c.workOrderId) woToComplaint.set(c.workOrderId, c.id);
+    // ✅ FIX N+1: Build relation maps from included data instead of separate queries
+    for (const wo of workorders) {
+      // Build WO -> RR map
+      if (wo.repairReport?.id) {
+        woToRr.set(wo.id, wo.repairReport.id);
+      }
+
+      // Build WO -> SR map
+      if (wo.serviceRequest?.id) {
+        woToSr.set(wo.id, wo.serviceRequest.id);
+      }
+
+      // Build WO -> Complaint map
+      if (wo.complaint?.id) {
+        woToComplaint.set(wo.id, wo.complaint.id);
+      }
+    }
   } else {
     const where = {
       ...(dateRange ? { createdAt: dateRange } : {}),
@@ -636,23 +650,43 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
       ]),
       skip: (page - 1) * pageSize,
       take: pageSize,
+      // ✅ FIX N+1: Include relations in single query
+      include: {
+        workOrder: {
+          select: {
+            id: true,
+            serviceRequest: {
+              select: { id: true },
+            },
+            complaint: {
+              select: { id: true },
+            },
+          },
+        },
+        complaint: {
+          select: { id: true },
+        },
+      },
     });
-    // Build WO -> SR to allow SR badge through WO
-    const allWOs = (await (prisma as any).workOrder.findMany({
-      select: { id: true, serviceRequestId: true },
-    })) as Array<{ id: string; serviceRequestId: string | null }>;
-    for (const w of allWOs) if (w.serviceRequestId) woToSr.set(w.id, w.serviceRequestId);
-    // Build RR -> Complaint and WO -> Complaint maps for badges
-    const compForRR = (await (prisma as any).complaint.findMany({
-      select: { id: true, repairReportId: true },
-      where: { repairReportId: { not: null } },
-    })) as Array<{ id: string; repairReportId: string | null }>;
-    for (const c of compForRR) if (c.repairReportId) rrToComplaint.set(c.repairReportId, c.id);
-    const compForWO = (await (prisma as any).complaint.findMany({
-      select: { id: true, workOrderId: true },
-      where: { workOrderId: { not: null } },
-    })) as Array<{ id: string; workOrderId: string | null }>;
-    for (const c of compForWO) if (c.workOrderId) woToComplaint.set(c.workOrderId, c.id);
+
+    // ✅ FIX N+1: Build relation maps from included data instead of separate queries
+    for (const rr of repairs) {
+      // Build RR -> Complaint map
+      if (rr.complaint?.id) {
+        rrToComplaint.set(rr.id, rr.complaint.id);
+      }
+
+      // If RR has WorkOrder, build WO -> SR and WO -> Complaint maps
+      if (rr.workOrder) {
+        const wo = rr.workOrder;
+        if (wo.serviceRequest?.id) {
+          woToSr.set(wo.id, wo.serviceRequest.id);
+        }
+        if (wo.complaint?.id) {
+          woToComplaint.set(wo.id, wo.complaint.id);
+        }
+      }
+    }
   }
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
