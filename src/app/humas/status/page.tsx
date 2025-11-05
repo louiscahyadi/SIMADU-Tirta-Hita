@@ -4,6 +4,12 @@ import { getServerSession } from "next-auth";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  buildWhereClause,
+  buildComplaintStatusFilter,
+  parseDateParams,
+  SEARCH_FIELDS,
+} from "@/lib/queryBuilder";
 import { entityAbbr, entityLabel } from "@/lib/uiLabels";
 
 export const dynamic = "force-dynamic";
@@ -43,89 +49,46 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
   const toStr = getParam(searchParams, "to");
   const status = (getParam(searchParams, "status") ?? "").trim(); // "baru" | "proses" | "selesai" | ""
 
-  const from = fromStr ? new Date(fromStr) : undefined;
-  const to = toStr ? new Date(toStr) : undefined;
-  let toEnd: Date | undefined = undefined;
-  if (to) {
-    toEnd = new Date(to);
-    toEnd.setHours(23, 59, 59, 999);
-  }
-  const dateRange = from || toEnd ? { gte: from, lte: toEnd } : undefined;
+  const { from, to } = parseDateParams(
+    new URLSearchParams(
+      Object.entries(searchParams || {})
+        .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+        .filter(([, v]) => v != null) as string[][],
+    ),
+  );
 
-  // Build where clauses
-  const complaintWhere: any = {
-    ...(dateRange ? { createdAt: dateRange } : {}),
-    ...(q
-      ? {
-          OR: [
-            { customerName: { contains: q, mode: "insensitive" } },
-            { address: { contains: q, mode: "insensitive" } },
-            { connectionNumber: { contains: q, mode: "insensitive" } },
-            { phone: { contains: q, mode: "insensitive" } },
-            { complaintText: { contains: q, mode: "insensitive" } },
-            { category: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-    ...(status === "baru"
-      ? {
+  // Build where clauses using utility functions
+  const complaintWhere = buildWhereClause({
+    dateRange: { from, to },
+    searchTerm: q,
+    searchFields: SEARCH_FIELDS.complaint,
+    additionalConditions: (() => {
+      if (status === "proses") {
+        return {
           AND: [
-            { processedAt: null },
-            { serviceRequestId: null },
-            { workOrderId: null },
+            {
+              OR: [{ serviceRequestId: { not: null } }, { workOrderId: { not: null } }],
+            },
             { repairReportId: null },
           ],
-        }
-      : status === "proses"
-        ? {
-            AND: [
-              {
-                OR: [{ serviceRequestId: { not: null } }, { workOrderId: { not: null } }],
-              },
-              { repairReportId: null },
-            ],
-          }
-        : status === "selesai"
-          ? { repairReportId: { not: null } }
-          : {}),
-  };
+        };
+      }
+      return buildComplaintStatusFilter(status);
+    })(),
+  });
 
-  const serviceWhere: any = {
-    ...(dateRange ? { createdAt: dateRange } : {}),
-    ...(q
-      ? {
-          OR: [
-            { customerName: { contains: q, mode: "insensitive" } },
-            { address: { contains: q, mode: "insensitive" } },
-            { serviceNumber: { contains: q, mode: "insensitive" } },
-            { phone: { contains: q, mode: "insensitive" } },
-            { receivedBy: { contains: q, mode: "insensitive" } },
-            { handlerName: { contains: q, mode: "insensitive" } },
-            { inspectorName: { contains: q, mode: "insensitive" } },
-            { actionTaken: { contains: q, mode: "insensitive" } },
-            { serviceCostBy: { contains: q, mode: "insensitive" } },
-            { handoverReceiver: { contains: q, mode: "insensitive" } },
-            { handoverCustomer: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
+  const serviceWhere = buildWhereClause({
+    dateRange: { from, to },
+    searchTerm: q,
+    searchFields: SEARCH_FIELDS.serviceRequest,
+  });
+
   // Base where for KPI counters (same filter by date/q, without narrowing by selected status)
-  const complaintWhereBase: any = {
-    ...(dateRange ? { createdAt: dateRange } : {}),
-    ...(q
-      ? {
-          OR: [
-            { customerName: { contains: q, mode: "insensitive" } },
-            { address: { contains: q, mode: "insensitive" } },
-            { connectionNumber: { contains: q, mode: "insensitive" } },
-            { phone: { contains: q, mode: "insensitive" } },
-            { complaintText: { contains: q, mode: "insensitive" } },
-            { category: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
+  const complaintWhereBase = buildWhereClause({
+    dateRange: { from, to },
+    searchTerm: q,
+    searchFields: SEARCH_FIELDS.complaint,
+  });
 
   // Pagination params (complaints & services lists)
   const cSizeParam = parseInt(getParam(searchParams, "cSize") || "10", 10);
@@ -145,12 +108,7 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
     prisma.complaint.count({
       where: {
         ...complaintWhereBase,
-        AND: [
-          { processedAt: null },
-          { serviceRequestId: null },
-          { workOrderId: null },
-          { repairReportId: null },
-        ],
+        ...buildComplaintStatusFilter("baru"),
       },
     }),
     prisma.complaint.count({
@@ -162,7 +120,12 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
         ],
       },
     }),
-    prisma.complaint.count({ where: { ...complaintWhereBase, repairReportId: { not: null } } }),
+    prisma.complaint.count({
+      where: {
+        ...complaintWhereBase,
+        ...buildComplaintStatusFilter("selesai"),
+      },
+    }),
     prisma.complaint.count({ where: complaintWhereBase }),
   ]);
 
