@@ -62,7 +62,7 @@ export default function WorkOrderForm({
     const timeoutId = setTimeout(() => {
       setIsSubmitting(false);
       push({
-        message: "Request timeout. Silakan coba lagi.",
+        message: "Permintaan melebihi batas waktu. Silakan coba lagi.",
         type: "error",
       });
     }, 30000);
@@ -95,7 +95,7 @@ export default function WorkOrderForm({
       clearTimeout(timeoutId);
 
       if (!res.ok) {
-        let msg = "Gagal menyimpan";
+        let msg = "Gagal menyimpan SPK";
         try {
           const parsed = await parseErrorResponse(res);
           const fieldErrors = parsed.details?.fieldErrors as
@@ -115,7 +115,8 @@ export default function WorkOrderForm({
       } else {
         const json = await res.json();
         push({
-          message: "SPK tersimpan. Berita Acara akan dibuat setelah pekerjaan selesai di lapangan.",
+          message:
+            "SPK berhasil disimpan. Berita Acara akan dibuat setelah pekerjaan selesai di lapangan.",
           type: "success",
         });
         onSaved?.(json.id);
