@@ -6,6 +6,7 @@ import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { AppError, ErrorCode, errorResponse, handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { buildWhereClause, SEARCH_FIELDS } from "@/lib/queryBuilder";
 import {
   complaintCreateSchema,
   complaintQuerySchema,
@@ -72,29 +73,14 @@ export async function GET(req: NextRequest) {
     pageSize: searchParams.get("pageSize") || undefined,
   });
 
-  let toEnd: Date | undefined;
   const fromDate = query.from ? new Date(query.from) : undefined;
   const toDate = query.to ? new Date(query.to) : undefined;
-  if (toDate) {
-    toEnd = new Date(toDate);
-    toEnd.setHours(23, 59, 59, 999);
-  }
 
-  const where: any = {
-    ...(fromDate || toEnd ? { createdAt: { gte: fromDate, lte: toEnd } } : {}),
-    ...(query.q
-      ? {
-          OR: [
-            { customerName: { contains: query.q, mode: "insensitive" } },
-            { address: { contains: query.q, mode: "insensitive" } },
-            { connectionNumber: { contains: query.q, mode: "insensitive" } },
-            { phone: { contains: query.q, mode: "insensitive" } },
-            { complaintText: { contains: query.q, mode: "insensitive" } },
-            { category: { contains: query.q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
+  const where = buildWhereClause({
+    dateRange: { from: fromDate, to: toDate },
+    searchTerm: query.q,
+    searchFields: SEARCH_FIELDS.complaint,
+  });
 
   const total = await prisma.complaint.count({ where });
   const items = await prisma.complaint.findMany({
