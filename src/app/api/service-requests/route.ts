@@ -5,6 +5,7 @@ import { z } from "zod";
 import { assertCanCreateSR, verifyCaseConsistency } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
+import { BUSINESS_ERRORS } from "@/lib/errorMessages";
 import { AppError, ErrorCode, errorResponse, handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { serviceRequestSchema } from "@/lib/schemas/serviceRequest";
@@ -110,7 +111,7 @@ export async function PATCH(req: NextRequest) {
         where: { id: data.id },
         include: { workOrder: true },
       });
-      if (!sr) throw new Error("PSP tidak ditemukan");
+      if (!sr) throw new Error(BUSINESS_ERRORS.DATA_NOT_FOUND);
       if (sr.workOrder) throw new Error("PSP tidak bisa diubah setelah SPK dibuat");
 
       const next = await tx.serviceRequest.update({
@@ -154,7 +155,7 @@ export async function GET(req: NextRequest) {
     if (byId) {
       const sr = await prisma.serviceRequest.findUnique({ where: { id: byId } });
       if (!sr) {
-        return errorResponse(AppError.notFound("Service Request tidak ditemukan"));
+        return errorResponse(AppError.notFound(BUSINESS_ERRORS.DATA_NOT_FOUND));
       }
       // related complaint to prefill SPK
       const comp = await prisma.complaint.findFirst({
