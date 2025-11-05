@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { VALIDATION_ERRORS } from "../errorMessages";
+
 // PSP (Permintaan Service/Perbaikan) – dibuat oleh Humas
 // Field spec (updated):
 // - caseId (optional)
@@ -26,9 +28,9 @@ export const serviceRequestSchema = z
     reporterPhone: z
       .string()
       .trim()
-      .min(8, { message: "Minimal 8 karakter" })
-      .max(20, { message: "Maksimal 20 karakter" })
-      .regex(phoneRegex, { message: "Hanya boleh +, spasi, dan angka" }),
+      .min(8, { message: VALIDATION_ERRORS.PHONE_MIN_LENGTH })
+      .max(20, { message: VALIDATION_ERRORS.PHONE_MAX_LENGTH })
+      .regex(phoneRegex, { message: VALIDATION_ERRORS.PHONE_FORMAT }),
     address: z.string().trim().min(5).max(200),
     receivedAt: z.coerce.date().optional(),
     receivedBy: z.string().trim().min(2).max(100).optional(),
