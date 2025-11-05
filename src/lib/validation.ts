@@ -1,4 +1,5 @@
 import { PHONE_PATTERNS } from "./constants";
+import { VALIDATION_ERRORS } from "./errorMessages";
 
 /**
  * Normalize Indonesian phone number
@@ -45,7 +46,7 @@ export function validatePhone(value?: string): true | string {
     return true;
   }
 
-  return "Nomor tidak valid. Format: 08xx-xxxx-xxxx (mobile) atau 0xxx-xxxx-xxxx (telepon rumah)";
+  return VALIDATION_ERRORS.PHONE_INVALID;
 }
 
 /**
