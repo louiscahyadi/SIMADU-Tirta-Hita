@@ -4,6 +4,13 @@ import { getToken } from "next-auth/jwt";
 import { env } from "@/lib/env";
 import { AppError, errorResponse, handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import {
+  buildWhereClause,
+  buildOrderBy,
+  buildComplaintStatusFilter,
+  SEARCH_FIELDS,
+  SORT_FIELDS,
+} from "@/lib/queryBuilder";
 
 function getParam(sp: URLSearchParams, key: string) {
   const v = sp.get(key);
@@ -50,57 +57,17 @@ export async function GET(req: NextRequest) {
       | "asc"
       | "desc";
 
-    // Normalize end-of-day
-    let toEnd: Date | undefined = undefined;
-    if (to) {
-      toEnd = new Date(to);
-      toEnd.setHours(23, 59, 59, 999);
-    }
-    const dateRange = from || toEnd ? { gte: from, lte: toEnd } : undefined;
-
-    function buildOrderBy(allowed: string[]) {
-      const field = allowed.includes(sortBy) ? sortBy : "createdAt";
-      return { [field]: sortOrder } as any;
-    }
-
     if (tab === "complaint") {
-      const where: any = {
-        ...(dateRange ? { createdAt: dateRange } : {}),
-        ...(q
-          ? {
-              OR: [
-                { customerName: { contains: q, mode: "insensitive" } },
-                { address: { contains: q, mode: "insensitive" } },
-                { connectionNumber: { contains: q, mode: "insensitive" } },
-                { phone: { contains: q, mode: "insensitive" } },
-                { complaintText: { contains: q, mode: "insensitive" } },
-                { category: { contains: q, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-        ...(status === "baru"
-          ? {
-              AND: [
-                { processedAt: null },
-                { serviceRequestId: null },
-                { workOrderId: null },
-                { repairReportId: null },
-              ],
-            }
-          : status === "processed"
-            ? {
-                OR: [
-                  { processedAt: { not: null } },
-                  { serviceRequestId: { not: null } },
-                  { workOrderId: { not: null } },
-                  { repairReportId: { not: null } },
-                ],
-              }
-            : {}),
-      };
+      const where = buildWhereClause({
+        dateRange: { from, to },
+        searchTerm: q,
+        searchFields: SEARCH_FIELDS.complaint,
+        additionalConditions: buildComplaintStatusFilter(status),
+      });
+
       const rows = await prisma.complaint.findMany({
         where,
-        orderBy: buildOrderBy(["createdAt", "customerName", "category"]),
+        orderBy: buildOrderBy(sortBy, sortOrder, SORT_FIELDS.complaint),
       });
       const headers = [
         "createdAt",
@@ -122,35 +89,15 @@ export async function GET(req: NextRequest) {
     }
 
     if (tab === "service") {
-      const where: any = {
-        ...(dateRange ? { createdAt: dateRange } : {}),
-        ...(q
-          ? {
-              OR: [
-                { customerName: { contains: q, mode: "insensitive" } },
-                { address: { contains: q, mode: "insensitive" } },
-                { serviceNumber: { contains: q, mode: "insensitive" } },
-                { phone: { contains: q, mode: "insensitive" } },
-                { receivedBy: { contains: q, mode: "insensitive" } },
-                { handlerName: { contains: q, mode: "insensitive" } },
-                { inspectorName: { contains: q, mode: "insensitive" } },
-                { actionTaken: { contains: q, mode: "insensitive" } },
-                { serviceCostBy: { contains: q, mode: "insensitive" } },
-                { handoverReceiver: { contains: q, mode: "insensitive" } },
-                { handoverCustomer: { contains: q, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      };
+      const where = buildWhereClause({
+        dateRange: { from, to },
+        searchTerm: q,
+        searchFields: SEARCH_FIELDS.serviceRequest,
+      });
+
       const rows = await prisma.serviceRequest.findMany({
         where,
-        orderBy: buildOrderBy([
-          "createdAt",
-          "customerName",
-          "address",
-          "serviceNumber",
-          "handlerName",
-        ]),
+        orderBy: buildOrderBy(sortBy, sortOrder, SORT_FIELDS.serviceRequest),
       });
       const headers = [
         "createdAt",
@@ -172,33 +119,15 @@ export async function GET(req: NextRequest) {
     }
 
     if (tab === "workorder") {
-      const where: any = {
-        ...(dateRange ? { createdAt: dateRange } : {}),
-        ...(q
-          ? {
-              OR: [
-                { number: { contains: q, mode: "insensitive" } },
-                { reporterName: { contains: q, mode: "insensitive" } },
-                { handlingTime: { contains: q, mode: "insensitive" } },
-                { disturbanceLocation: { contains: q, mode: "insensitive" } },
-                { disturbanceType: { contains: q, mode: "insensitive" } },
-                { city: { contains: q, mode: "insensitive" } },
-                { executorName: { contains: q, mode: "insensitive" } },
-                { team: { contains: q, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      };
+      const where = buildWhereClause({
+        dateRange: { from, to },
+        searchTerm: q,
+        searchFields: SEARCH_FIELDS.workOrder,
+      });
+
       const rows = await prisma.workOrder.findMany({
         where,
-        orderBy: buildOrderBy([
-          "createdAt",
-          "number",
-          "reporterName",
-          "disturbanceLocation",
-          "disturbanceType",
-          "team",
-        ]),
+        orderBy: buildOrderBy(sortBy, sortOrder, SORT_FIELDS.workOrder),
       });
       const headers = [
         "createdAt",
@@ -218,24 +147,15 @@ export async function GET(req: NextRequest) {
     }
 
     // repair
-    const where: any = {
-      ...(dateRange ? { createdAt: dateRange } : {}),
-      ...(q
-        ? {
-            OR: [
-              { city: { contains: q, mode: "insensitive" } },
-              { executorName: { contains: q, mode: "insensitive" } },
-              { team: { contains: q, mode: "insensitive" } },
-              { authorizedBy: { contains: q, mode: "insensitive" } },
-              { otherActions: { contains: q, mode: "insensitive" } },
-              { otherNotHandled: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    };
+    const where = buildWhereClause({
+      dateRange: { from, to },
+      searchTerm: q,
+      searchFields: SEARCH_FIELDS.repairReport,
+    });
+
     const rows = await prisma.repairReport.findMany({
       where,
-      orderBy: buildOrderBy(["createdAt", "city", "team", "authorizedBy"]),
+      orderBy: buildOrderBy(sortBy, sortOrder, SORT_FIELDS.repairReport),
     });
     const headers = ["createdAt", "city", "team", "actions", "notHandledReasons", "authorizedBy"];
     const csv = toCsv(rows, headers, (r, h) => r[h]);
