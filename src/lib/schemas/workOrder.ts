@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { VALIDATION_ERRORS } from "../errorMessages";
+
 // SPK (Surat Perintah Kerja) – dibuat oleh Distribusi dari PSP
 // Required fields (MVP):
 // - caseId (hidden) uuid/string, required
@@ -40,7 +42,7 @@ export const workOrderSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["scheduledDate"],
-        message: "Tanggal harus hari ini atau setelahnya",
+        message: VALIDATION_ERRORS.DATE_FUTURE,
       });
     }
   })
