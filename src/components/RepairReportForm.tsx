@@ -113,7 +113,7 @@ export default function RepairReportForm({
     const timeoutId = setTimeout(() => {
       setIsSubmitting(false);
       push({
-        message: "Request timeout. Silakan coba lagi.",
+        message: "Permintaan melebihi batas waktu. Silakan coba lagi.",
         type: "error",
       });
     }, 30000);
@@ -190,7 +190,7 @@ export default function RepairReportForm({
         push({ message: msg, type: "error" });
       } else {
         const json = await res.json();
-        push({ message: "Berita acara tersimpan berhasil", type: "success" });
+        push({ message: "Berita acara perbaikan berhasil disimpan", type: "success" });
         onSaved?.(json.id);
 
         // Redirect to distribusi dashboard after successful save
@@ -201,7 +201,7 @@ export default function RepairReportForm({
     } catch (error) {
       clearTimeout(timeoutId);
       push({
-        message: `Error: ${error instanceof Error ? error.message : "Terjadi kesalahan tidak dikenal"}`,
+        message: `Terjadi kesalahan: ${error instanceof Error ? error.message : "Kesalahan tidak dikenal"}`,
         type: "error",
       });
     } finally {
