@@ -177,25 +177,34 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
     orderBy: { createdAt: "desc" },
     skip: (sPage - 1) * sSize,
     take: sSize,
+    // ✅ FIX N+1: Include related WorkOrder and RepairReport in single query
+    include: {
+      workOrder: {
+        select: {
+          id: true,
+          repairReport: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   // Build relation maps for Service -> WO -> RR to show processing badge
-  const srIds = services.map((s) => s.id);
+  // ✅ FIX N+1: Use included data instead of separate queries
   let srToWo = new Map<string, string>();
   let woHasRr = new Set<string>();
-  if (srIds.length) {
-    const wos = (await (prisma as any).workOrder.findMany({
-      where: { serviceRequestId: { in: srIds } },
-      select: { id: true, serviceRequestId: true },
-    })) as Array<{ id: string; serviceRequestId: string | null }>;
-    const woIds = wos.map((w) => w.id);
-    for (const w of wos) if (w.serviceRequestId) srToWo.set(w.serviceRequestId, w.id);
-    if (woIds.length) {
-      const rrs = (await (prisma as any).repairReport.findMany({
-        where: { workOrderId: { in: woIds } },
-        select: { workOrderId: true },
-      })) as Array<{ workOrderId: string | null }>;
-      for (const r of rrs) if (r.workOrderId) woHasRr.add(r.workOrderId);
+
+  for (const service of services) {
+    if (service.workOrder) {
+      const workOrder = service.workOrder;
+      srToWo.set(service.id, workOrder.id);
+
+      if (workOrder.repairReport) {
+        woHasRr.add(workOrder.id);
+      }
     }
   }
 
