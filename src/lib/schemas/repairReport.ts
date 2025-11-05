@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { VALIDATION_ERRORS } from "../errorMessages";
+
 // BAP (Berita Acara Perbaikan)
 // Required fields:
 // - caseId (hidden) uuid/string, required
@@ -41,7 +43,7 @@ export const repairReportSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["endTime"],
-          message: "Waktu selesai harus >= waktu mulai",
+          message: VALIDATION_ERRORS.TIME_END_BEFORE_START,
         });
       }
     }
