@@ -5,6 +5,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import DistribusiStatusFilters from "@/components/DistribusiStatusFilters";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { buildWhereClause, parseDateParams, SEARCH_FIELDS } from "@/lib/queryBuilder";
 import { entityAbbr } from "@/lib/uiLabels";
 
 export const dynamic = "force-dynamic";
@@ -42,64 +43,37 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
   const q = (getParam(searchParams, "q") ?? "").trim();
   const fromStr = getParam(searchParams, "from");
   const toStr = getParam(searchParams, "to");
-  const from = fromStr ? new Date(fromStr) : undefined;
-  const to = toStr ? new Date(toStr) : undefined;
-  let toEnd: Date | undefined;
-  if (to) {
-    toEnd = new Date(to);
-    toEnd.setHours(23, 59, 59, 999);
-  }
-  const dateRange = from || toEnd ? { gte: from, lte: toEnd } : undefined;
+  const { from, to } = parseDateParams(
+    new URLSearchParams(
+      Object.entries(searchParams || {})
+        .map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+        .filter(([, v]) => v != null) as string[][],
+    ),
+  );
 
-  const woWhere: any = {
-    ...(dateRange ? { createdAt: dateRange } : {}),
-    ...(q
-      ? {
-          OR: [
-            { number: { contains: q, mode: "insensitive" } },
-            { reporterName: { contains: q, mode: "insensitive" } },
-            { disturbanceLocation: { contains: q, mode: "insensitive" } },
-            { disturbanceType: { contains: q, mode: "insensitive" } },
-            { city: { contains: q, mode: "insensitive" } },
-            { executorName: { contains: q, mode: "insensitive" } },
-            { team: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
-  const rrWhere: any = {
-    ...(dateRange ? { createdAt: dateRange } : {}),
-    ...(q
-      ? {
-          OR: [
-            { city: { contains: q, mode: "insensitive" } },
-            { executorName: { contains: q, mode: "insensitive" } },
-            { team: { contains: q, mode: "insensitive" } },
-            { authorizedBy: { contains: q, mode: "insensitive" } },
-            { otherActions: { contains: q, mode: "insensitive" } },
-            { otherNotHandled: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
+  const woWhere = buildWhereClause({
+    dateRange: { from, to },
+    searchTerm: q,
+    searchFields: SEARCH_FIELDS.workOrder,
+  });
+
+  const rrWhere = buildWhereClause({
+    dateRange: { from, to },
+    searchTerm: q,
+    searchFields: SEARCH_FIELDS.repairReport,
+  });
+
   // PSP queue (ServiceRequest) – only items that are ready for Distribusi (linked complaint status PSP_CREATED) and belum punya SPK
-  const srWhere: any = {
-    ...(dateRange ? { createdAt: dateRange } : {}),
-    complaint: { is: { status: "PSP_CREATED" as any } },
-    workOrder: { is: null },
-    ...(q
-      ? {
-          OR: [
-            { reporterName: { contains: q, mode: "insensitive" } },
-            { customerName: { contains: q, mode: "insensitive" } },
-            { address: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
-            { reporterPhone: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
-  // Pagination params
+  const srWhere = buildWhereClause({
+    dateRange: { from, to },
+    searchTerm: q,
+    searchFields: ["reporterName", "customerName", "address", "description", "reporterPhone"],
+    additionalConditions: {
+      complaint: { is: { status: "PSP_CREATED" as any } },
+      workOrder: { is: null },
+    },
+  });
+  // Pagination params using utility functions
   const wSizeParam = parseInt(getParam(searchParams, "wSize") || "10", 10);
   const wSize = Number.isFinite(wSizeParam) && wSizeParam > 0 ? Math.min(wSizeParam, 100) : 10;
   const wPageParam = parseInt(getParam(searchParams, "wPage") || "1", 10);
