@@ -33,7 +33,7 @@ export default function PublicComplaintPage() {
     const timeoutId = setTimeout(() => {
       setIsSubmitting(false);
       push({
-        message: "Request timeout. Silakan coba lagi.",
+        message: "Permintaan melebihi batas waktu. Silakan coba lagi.",
         type: "error",
       });
     }, 30000);
