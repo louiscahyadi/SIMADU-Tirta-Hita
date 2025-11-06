@@ -5,7 +5,9 @@ import React from "react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
+import { CacheKeys, CacheTags, CacheConfig, rememberWithMetrics } from "@/lib/cache";
 import { prisma } from "@/lib/prisma";
+import { buildComplaintQuery, buildServiceRequestQuery } from "@/lib/queryBuilder";
 import { entityLabel, entityAbbr } from "@/lib/uiLabels";
 
 export const dynamic = "force-dynamic";
@@ -472,92 +474,103 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
   }
 
   if (active === "complaint") {
-    const where: any = {
-      ...(dateRange ? { createdAt: dateRange } : {}),
-      ...(q
-        ? {
-            OR: [
-              { customerName: { contains: q, mode: "insensitive" } },
-              { address: { contains: q, mode: "insensitive" } },
-              { connectionNumber: { contains: q, mode: "insensitive" } },
-              { phone: { contains: q, mode: "insensitive" } },
-              { complaintText: { contains: q, mode: "insensitive" } },
-              { category: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-      ...(statusFilter === "baru"
-        ? {
-            AND: [
-              { processedAt: null },
-              { serviceRequestId: null },
-              { workOrderId: null },
-              { repairReportId: null },
-            ],
-          }
-        : statusFilter === "processed"
-          ? {
-              OR: [
-                { processedAt: { not: null } },
-                { serviceRequestId: { not: null } },
-                { workOrderId: { not: null } },
-                { repairReportId: { not: null } },
-              ],
-            }
-          : {}),
+    // ✅ PERFORMANCE: Use optimized query builder with caching
+    const filters = {
+      dateRange: from || to ? { from, to } : undefined,
+      searchTerm: q,
+      status: statusFilter,
     };
-    totalCount = await (prisma as any).complaint.count({ where });
-    complaints = await (prisma as any).complaint.findMany({
-      where,
-      orderBy: buildOrderBy(["createdAt", "customerName", "category"]),
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+
+    const queryOptions = buildComplaintQuery(filters, {
+      includeLevel: "basic",
+      page,
+      pageSize,
+      sortBy,
+      sortOrder,
     });
+
+    // Create cache keys
+    const countCacheKey = CacheKeys.complaint.count(filters);
+    const listCacheKey = CacheKeys.complaint.list({
+      ...filters,
+      page,
+      pageSize,
+      sortBy,
+      sortOrder,
+    });
+
+    // ✅ PERFORMANCE: Execute count and list queries in parallel with caching
+    const [count, complaintsList] = await Promise.all([
+      rememberWithMetrics(
+        countCacheKey,
+        () => (prisma as any).complaint.count({ where: queryOptions.where }),
+        CacheConfig.COUNT_TTL,
+        [CacheTags.COMPLAINTS, CacheTags.STATISTICS],
+      ),
+      rememberWithMetrics(
+        listCacheKey,
+        () => (prisma as any).complaint.findMany(queryOptions),
+        CacheConfig.LIST_TTL,
+        [CacheTags.COMPLAINTS],
+      ),
+    ]);
+
+    totalCount = count as number;
+    complaints = complaintsList as any[];
   } else if (active === "service") {
-    const where = {
-      ...(dateRange ? { createdAt: dateRange } : {}),
-      ...(q
-        ? {
-            OR: [
-              { customerName: { contains: q, mode: "insensitive" } },
-              { address: { contains: q, mode: "insensitive" } },
-              { serviceNumber: { contains: q, mode: "insensitive" } },
-              { phone: { contains: q, mode: "insensitive" } },
-              { receivedBy: { contains: q, mode: "insensitive" } },
-              { handlerName: { contains: q, mode: "insensitive" } },
-              { inspectorName: { contains: q, mode: "insensitive" } },
-              { actionTaken: { contains: q, mode: "insensitive" } },
-              { serviceCostBy: { contains: q, mode: "insensitive" } },
-              { handoverReceiver: { contains: q, mode: "insensitive" } },
-              { handoverCustomer: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    } as any;
-    totalCount = await prisma.serviceRequest.count({ where });
-    services = await prisma.serviceRequest.findMany({
-      where,
-      orderBy: buildOrderBy([
-        "createdAt",
-        "customerName",
-        "address",
-        "serviceNumber",
-        "handlerName",
-      ]),
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+    // ✅ PERFORMANCE: Use optimized query builder with caching for service requests
+    const filters = {
+      dateRange: from || to ? { from, to } : undefined,
+      searchTerm: q,
+    };
+
+    const queryOptions = buildServiceRequestQuery(filters, {
+      includeLevel: "basic",
+      page,
+      pageSize,
+      sortBy,
+      sortOrder,
     });
-    // Build relations for badges (broad select and map in JS)
-    const allWOs = (await (prisma as any).workOrder.findMany({
-      select: { id: true, serviceRequestId: true },
-    })) as Array<{ id: string; serviceRequestId: string | null }>;
 
-    for (const w of allWOs) if (w.serviceRequestId) srToWo.set(w.serviceRequestId, w.id);
-    const allRRs = (await (prisma as any).repairReport.findMany({
-      select: { id: true, workOrderId: true },
-    })) as Array<{ id: string; workOrderId: string | null }>;
+    // Create cache keys
+    const countCacheKey = CacheKeys.serviceRequest.count(filters);
+    const listCacheKey = CacheKeys.serviceRequest.list({
+      ...filters,
+      page,
+      pageSize,
+      sortBy,
+      sortOrder,
+    });
 
-    for (const r of allRRs) if (r.workOrderId) woToRr.set(r.workOrderId, r.id);
+    // ✅ PERFORMANCE: Execute queries in parallel with caching
+    const [count, servicesList] = await Promise.all([
+      rememberWithMetrics(
+        countCacheKey,
+        () => prisma.serviceRequest.count({ where: queryOptions.where }),
+        CacheConfig.COUNT_TTL,
+        [CacheTags.SERVICE_REQUESTS, CacheTags.STATISTICS],
+      ),
+      rememberWithMetrics(
+        listCacheKey,
+        () => prisma.serviceRequest.findMany(queryOptions),
+        CacheConfig.LIST_TTL,
+        [CacheTags.SERVICE_REQUESTS],
+      ),
+    ]);
+
+    totalCount = count as number;
+    services = servicesList as any[];
+
+    // ✅ PERFORMANCE: Build relation maps from included data instead of separate queries
+    // The optimized query already includes related work orders and repair reports
+    for (const service of services) {
+      if (service.workOrder?.id) {
+        srToWo.set(service.id, service.workOrder.id);
+        if (service.workOrder.repairReport?.id) {
+          woToRr.set(service.workOrder.id, service.workOrder.repairReport.id);
+        }
+      }
+    }
   } else if (active === "workorder") {
     const where = {
       ...(dateRange ? { createdAt: dateRange } : {}),
