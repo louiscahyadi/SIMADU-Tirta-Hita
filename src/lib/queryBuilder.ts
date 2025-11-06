@@ -255,6 +255,302 @@ export function parseDateParams(searchParams: URLSearchParams) {
 }
 
 /**
+ * Performance-optimized includes for common entity queries
+ */
+export const OPTIMIZED_INCLUDES = {
+  complaint: {
+    // Basic include for list views
+    basic: {
+      serviceRequest: {
+        select: { id: true, reporterName: true, urgency: true, requestDate: true },
+      },
+      workOrder: {
+        select: { id: true, number: true, team: true, scheduledDate: true },
+      },
+      repairReport: {
+        select: { id: true, result: true, startTime: true, endTime: true },
+      },
+    },
+    // Full include for detail views
+    detailed: {
+      serviceRequest: {
+        select: {
+          id: true,
+          reporterName: true,
+          urgency: true,
+          requestDate: true,
+          description: true,
+          notes: true,
+        },
+      },
+      workOrder: {
+        select: {
+          id: true,
+          number: true,
+          team: true,
+          scheduledDate: true,
+          technicians: true,
+          instructions: true,
+        },
+      },
+      repairReport: {
+        select: {
+          id: true,
+          result: true,
+          startTime: true,
+          endTime: true,
+          actionTaken: true,
+          remarks: true,
+          customerConfirmationName: true,
+        },
+      },
+      histories: {
+        select: {
+          id: true,
+          createdAt: true,
+          status: true,
+          note: true,
+          actorRole: true,
+        },
+        orderBy: { createdAt: "desc" as const },
+        take: 10, // Limit history records for performance
+      },
+    },
+  },
+  serviceRequest: {
+    basic: {
+      workOrder: {
+        select: {
+          id: true,
+          number: true,
+          team: true,
+          scheduledDate: true,
+          repairReport: {
+            select: { id: true, result: true },
+          },
+        },
+      },
+      complaint: {
+        select: { id: true, customerName: true, category: true },
+      },
+    },
+  },
+  workOrder: {
+    basic: {
+      serviceRequest: {
+        select: { id: true, reporterName: true, urgency: true },
+      },
+      repairReport: {
+        select: { id: true, result: true, startTime: true, endTime: true },
+      },
+      complaint: {
+        select: { id: true, customerName: true, category: true },
+      },
+    },
+  },
+  repairReport: {
+    basic: {
+      workOrder: {
+        select: {
+          id: true,
+          number: true,
+          team: true,
+          serviceRequest: {
+            select: { id: true, reporterName: true },
+          },
+          complaint: {
+            select: { id: true, customerName: true },
+          },
+        },
+      },
+      complaint: {
+        select: { id: true, customerName: true, category: true },
+      },
+    },
+  },
+};
+
+/**
+ * Build optimized complaint query with selective includes
+ */
+export function buildComplaintQuery(
+  filters: {
+    dateRange?: { from?: Date; to?: Date };
+    searchTerm?: string;
+    status?: string;
+    additionalConditions?: Record<string, any>;
+  },
+  options: {
+    includeLevel?: "basic" | "detailed";
+    page?: number;
+    pageSize?: number;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+  } = {},
+) {
+  const {
+    includeLevel = "basic",
+    page = 1,
+    pageSize = 10,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = options;
+
+  const where = buildWhereClause({
+    dateRange: filters.dateRange,
+    searchTerm: filters.searchTerm,
+    searchFields: SEARCH_FIELDS.complaint,
+    additionalConditions: {
+      ...buildComplaintStatusFilter(filters.status),
+      ...filters.additionalConditions,
+    },
+  });
+
+  const include = OPTIMIZED_INCLUDES.complaint[includeLevel];
+  const orderBy = buildOrderBy(sortBy, sortOrder, SORT_FIELDS.complaint);
+  const pagination = buildPaginationOptions(page, pageSize);
+
+  return {
+    where,
+    include,
+    orderBy,
+    ...pagination,
+  };
+}
+
+/**
+ * Build optimized service request query
+ */
+export function buildServiceRequestQuery(
+  filters: {
+    dateRange?: { from?: Date; to?: Date };
+    searchTerm?: string;
+    additionalConditions?: Record<string, any>;
+  },
+  options: {
+    includeLevel?: "basic";
+    page?: number;
+    pageSize?: number;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+  } = {},
+) {
+  const {
+    includeLevel = "basic",
+    page = 1,
+    pageSize = 10,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = options;
+
+  const where = buildWhereClause({
+    dateRange: filters.dateRange,
+    searchTerm: filters.searchTerm,
+    searchFields: SEARCH_FIELDS.serviceRequest,
+    additionalConditions: filters.additionalConditions,
+  });
+
+  const include = OPTIMIZED_INCLUDES.serviceRequest[includeLevel];
+  const orderBy = buildOrderBy(sortBy, sortOrder, SORT_FIELDS.serviceRequest);
+  const pagination = buildPaginationOptions(page, pageSize);
+
+  return {
+    where,
+    include,
+    orderBy,
+    ...pagination,
+  };
+}
+
+/**
+ * Build optimized work order query
+ */
+export function buildWorkOrderQuery(
+  filters: {
+    dateRange?: { from?: Date; to?: Date };
+    searchTerm?: string;
+    additionalConditions?: Record<string, any>;
+  },
+  options: {
+    includeLevel?: "basic";
+    page?: number;
+    pageSize?: number;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+  } = {},
+) {
+  const {
+    includeLevel = "basic",
+    page = 1,
+    pageSize = 10,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = options;
+
+  const where = buildWhereClause({
+    dateRange: filters.dateRange,
+    searchTerm: filters.searchTerm,
+    searchFields: SEARCH_FIELDS.workOrder,
+    additionalConditions: filters.additionalConditions,
+  });
+
+  const include = OPTIMIZED_INCLUDES.workOrder[includeLevel];
+  const orderBy = buildOrderBy(sortBy, sortOrder, SORT_FIELDS.workOrder);
+  const pagination = buildPaginationOptions(page, pageSize);
+
+  return {
+    where,
+    include,
+    orderBy,
+    ...pagination,
+  };
+}
+
+/**
+ * Build optimized repair report query
+ */
+export function buildRepairReportQuery(
+  filters: {
+    dateRange?: { from?: Date; to?: Date };
+    searchTerm?: string;
+    additionalConditions?: Record<string, any>;
+  },
+  options: {
+    includeLevel?: "basic";
+    page?: number;
+    pageSize?: number;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+  } = {},
+) {
+  const {
+    includeLevel = "basic",
+    page = 1,
+    pageSize = 10,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = options;
+
+  const where = buildWhereClause({
+    dateRange: filters.dateRange,
+    searchTerm: filters.searchTerm,
+    searchFields: SEARCH_FIELDS.repairReport,
+    additionalConditions: filters.additionalConditions,
+  });
+
+  const include = OPTIMIZED_INCLUDES.repairReport[includeLevel];
+  const orderBy = buildOrderBy(sortBy, sortOrder, SORT_FIELDS.repairReport);
+  const pagination = buildPaginationOptions(page, pageSize);
+
+  return {
+    where,
+    include,
+    orderBy,
+    ...pagination,
+  };
+}
+
+/**
  * Complete query utility that combines common patterns
  */
 export function buildCompleteQuery({
