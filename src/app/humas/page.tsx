@@ -5,6 +5,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import HumasServiceFormCard from "@/components/HumasServiceFormCard";
 import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
+import { CacheKeys, CacheTags, CacheConfig, rememberWithMetrics } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { entityLabel } from "@/lib/uiLabels";
@@ -80,50 +81,80 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
   let latestServices: any[] = [];
 
   try {
-    // KPI counters (matching HUMAS Status) with filters
-    [baruCount, prosesCount, selesaiCount, totalCount] = await Promise.all([
-      prisma.complaint.count({
-        where: {
-          ...complaintBaseWhere,
-          AND: [
-            { processedAt: null },
-            { serviceRequestId: null },
-            { workOrderId: null },
-            { repairReportId: null },
-          ],
-        },
-      }),
-      prisma.complaint.count({
-        where: {
-          ...complaintBaseWhere,
-          AND: [
-            { repairReportId: null },
-            { OR: [{ serviceRequestId: { not: null } }, { workOrderId: { not: null } }] },
-          ],
-        },
-      }),
-      prisma.complaint.count({ where: { ...complaintBaseWhere, repairReportId: { not: null } } }),
-      prisma.complaint.count({ where: complaintBaseWhere }),
+    // ✅ PERFORMANCE: Cache KPI queries with dashboard-specific cache keys
+    const dashboardFilters = { dateRange, searchTerm: q };
+    const kpiCacheKey = CacheKeys.dashboard.kpis(dashboardFilters);
+    const latestComplaintsCacheKey = `dashboard:latest-complaints:${JSON.stringify(dashboardFilters)}`;
+    const latestServicesCacheKey = `dashboard:latest-services:${JSON.stringify(dashboardFilters)}`;
+
+    // KPI counters (matching HUMAS Status) with filters - parallel execution with caching
+    [baruCount, prosesCount, selesaiCount, totalCount] = await rememberWithMetrics(
+      kpiCacheKey,
+      () =>
+        Promise.all([
+          prisma.complaint.count({
+            where: {
+              ...complaintBaseWhere,
+              AND: [
+                { processedAt: null },
+                { serviceRequestId: null },
+                { workOrderId: null },
+                { repairReportId: null },
+              ],
+            },
+          }),
+          prisma.complaint.count({
+            where: {
+              ...complaintBaseWhere,
+              AND: [
+                { repairReportId: null },
+                { OR: [{ serviceRequestId: { not: null } }, { workOrderId: { not: null } }] },
+              ],
+            },
+          }),
+          prisma.complaint.count({
+            where: { ...complaintBaseWhere, repairReportId: { not: null } },
+          }),
+          prisma.complaint.count({ where: complaintBaseWhere }),
+        ]),
+      CacheConfig.DASHBOARD_TTL,
+      [CacheTags.DASHBOARD, CacheTags.STATISTICS, CacheTags.COMPLAINTS],
+    );
+
+    // ✅ PERFORMANCE: Cache latest complaints and services separately
+    const [cachedLatestComplaints, cachedLatestServices] = await Promise.all([
+      rememberWithMetrics(
+        latestComplaintsCacheKey,
+        () =>
+          prisma.complaint.findMany({
+            where: {
+              AND: [
+                { processedAt: null },
+                { serviceRequestId: null },
+                { workOrderId: null },
+                { repairReportId: null },
+              ],
+            },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+          }),
+        CacheConfig.DASHBOARD_TTL,
+        [CacheTags.DASHBOARD, CacheTags.COMPLAINTS],
+      ),
+      rememberWithMetrics(
+        latestServicesCacheKey,
+        () =>
+          prisma.serviceRequest.findMany({
+            orderBy: { createdAt: "desc" },
+            take: 5,
+          }),
+        CacheConfig.DASHBOARD_TTL,
+        [CacheTags.DASHBOARD, CacheTags.SERVICE_REQUESTS],
+      ),
     ]);
 
-    // Incoming complaints: not yet processed and no SR/WO/RR linked
-    latestComplaints = await prisma.complaint.findMany({
-      where: {
-        AND: [
-          { processedAt: null },
-          { serviceRequestId: null },
-          { workOrderId: null },
-          { repairReportId: null },
-        ],
-      },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    });
-
-    latestServices = await prisma.serviceRequest.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    });
+    latestComplaints = cachedLatestComplaints;
+    latestServices = cachedLatestServices;
   } catch (e: any) {
     // If DB is unreachable, show a friendly message instead of a runtime crash
     logger.error(
