@@ -40,7 +40,7 @@ const uiSchema = z.object({
   // Opsional deskripsi tambahan
   description: z.string().max(2000).optional(),
   urgency: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
-  requestDate: z.string().min(1), // yyyy-mm-dd
+  requestDate: z.string().optional(), // will be set to today on server
   notes: z.string().max(2000).optional(),
 });
 
@@ -80,8 +80,8 @@ export default function ServiceRequestForm({
       serviceCostBy: undefined,
       description: initialData?.description || "",
       urgency: initialData?.urgency || "MEDIUM",
-      requestDate: initialData?.requestDate || today,
-      notes: initialData?.notes || "",
+      requestDate: undefined, // will be set to today on server
+      notes: undefined, // removed from UI
     },
   });
 
@@ -116,8 +116,8 @@ export default function ServiceRequestForm({
         serviceCostBy: values.serviceCostBy,
         description: values.description?.trim() || undefined,
         urgency: values.urgency,
-        requestDate: values.requestDate,
-        notes: values.notes?.trim() ? values.notes : undefined,
+        requestDate: today, // always use today's date
+        notes: undefined, // removed from form
       };
       const res = await fetch("/api/service-requests", {
         method: "POST",
@@ -165,8 +165,8 @@ export default function ServiceRequestForm({
         serviceCostBy: undefined,
         description: "",
         urgency: "MEDIUM",
-        requestDate: today,
-        notes: "",
+        requestDate: undefined,
+        notes: undefined,
       });
     } finally {
       setIsSubmitting(false);
@@ -322,20 +322,6 @@ export default function ServiceRequestForm({
           <textarea className="input min-h-[100px]" {...register("description")} />
         </div>
         {/* Urgensi dihapus dari UI */}
-        <div>
-          <label className="label">Tanggal Permintaan</label>
-          <input type="date" className="input" {...register("requestDate")} />
-          {errors.requestDate && (
-            <div className="text-xs text-red-600">{errors.requestDate.message as string}</div>
-          )}
-        </div>
-        <div className="md:col-span-2">
-          <label className="label">Catatan Tambahan (opsional)</label>
-          <textarea className="input min-h-[80px]" {...register("notes")} />
-          {errors.notes && (
-            <div className="text-xs text-red-600">{errors.notes.message as string}</div>
-          )}
-        </div>
       </div>
 
       <div className="pt-2">
