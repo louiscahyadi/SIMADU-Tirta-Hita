@@ -1200,7 +1200,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="px-4 py-3 text-left">
-                        {headerSortLink("Tgl Permintaan", "requestDate", "service")}
+                        {headerSortLink("Tgl Input", "createdAt", "service")}
                       </th>
                       <th className="px-4 py-3 text-left min-w-[12rem]">
                         {headerSortLink("Nama Pelapor", "reporterName", "service")}
@@ -1226,9 +1226,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                         key={s.id}
                         className="border-b border-gray-200 odd:bg-white even:bg-gray-50"
                       >
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {formatDate((s as any).requestDate ?? s.createdAt)}
-                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">{formatDate(s.createdAt)}</td>
                         <td className="px-4 py-3 font-medium min-w-[12rem]">
                           {(s as any).reporterName ?? s.customerName}
                         </td>
