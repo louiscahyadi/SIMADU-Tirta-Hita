@@ -106,10 +106,6 @@ export default async function ServiceDetail({
       {/* PSP primary details */}
       <div className="card p-4 space-y-2 text-sm">
         <div>
-          <span className="text-gray-600">Tgl Permintaan:</span>{" "}
-          {formatDate((service as any).requestDate ?? service.createdAt)}
-        </div>
-        <div>
           <span className="text-gray-600">Diterima:</span>{" "}
           {(() => {
             const ra = (service as any).receivedAt as Date | string | undefined;
@@ -152,9 +148,6 @@ export default async function ServiceDetail({
         <div>
           <span className="text-gray-600">Keterangan Tambahan:</span>{" "}
           {((service as any).description as string | undefined) ?? "-"}
-        </div>
-        <div>
-          <span className="text-gray-600">Catatan Tambahan:</span> {(service as any).notes ?? "-"}
         </div>
       </div>
 
