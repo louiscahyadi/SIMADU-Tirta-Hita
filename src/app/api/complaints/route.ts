@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+import {
+  CacheKeys,
+  CacheTags,
+  CacheConfig,
+  rememberWithMetrics,
+  CacheInvalidation,
+} from "@/lib/cache";
 import { verifyCaseConsistency } from "@/lib/caseLinks";
 import { ComplaintFlow } from "@/lib/complaintStatus";
 import { env } from "@/lib/env";
 import { AppError, ErrorCode, errorResponse, handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
-import { buildWhereClause, SEARCH_FIELDS } from "@/lib/queryBuilder";
+import { buildComplaintQuery } from "@/lib/queryBuilder";
 import {
   complaintCreateSchema,
   complaintQuerySchema,
@@ -51,6 +58,10 @@ export async function POST(req: NextRequest) {
       });
       return comp;
     });
+
+    // ✅ PERFORMANCE: Invalidate relevant caches after creating a complaint
+    CacheInvalidation.complaints();
+
     return NextResponse.json(created, { status: 201 });
   } catch (e: any) {
     if (e?.name === "ZodError") {
@@ -61,74 +72,79 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  // Require an authenticated session/token; don't rely solely on middleware
-  const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
-  if (!token) return errorResponse(AppError.unauthorized());
-  const { searchParams } = new URL(req.url);
-  const query = complaintQuerySchema.parse({
-    q: searchParams.get("q") || undefined,
-    from: searchParams.get("from") || undefined,
-    to: searchParams.get("to") || undefined,
-    page: searchParams.get("page") || undefined,
-    pageSize: searchParams.get("pageSize") || undefined,
-  });
+  try {
+    // Require an authenticated session/token; don't rely solely on middleware
+    const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
+    if (!token) return errorResponse(AppError.unauthorized());
 
-  const fromDate = query.from ? new Date(query.from) : undefined;
-  const toDate = query.to ? new Date(query.to) : undefined;
+    const { searchParams } = new URL(req.url);
+    const query = complaintQuerySchema.parse({
+      q: searchParams.get("q") || undefined,
+      from: searchParams.get("from") || undefined,
+      to: searchParams.get("to") || undefined,
+      page: searchParams.get("page") || undefined,
+      pageSize: searchParams.get("pageSize") || undefined,
+    });
 
-  const where = buildWhereClause({
-    dateRange: { from: fromDate, to: toDate },
-    searchTerm: query.q,
-    searchFields: SEARCH_FIELDS.complaint,
-  });
+    const fromDate = query.from ? new Date(query.from) : undefined;
+    const toDate = query.to ? new Date(query.to) : undefined;
 
-  const total = await prisma.complaint.count({ where });
-  const items = await prisma.complaint.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    skip: (query.page - 1) * query.pageSize,
-    take: query.pageSize,
-    // Include relations to avoid N+1 queries
-    include: {
-      serviceRequest: {
-        select: {
-          id: true,
-          reporterName: true,
-          urgency: true,
-          requestDate: true,
-        },
+    // ✅ PERFORMANCE: Use optimized query builder
+    const queryOptions = buildComplaintQuery(
+      {
+        dateRange: { from: fromDate, to: toDate },
+        searchTerm: query.q,
       },
-      workOrder: {
-        select: {
-          id: true,
-          number: true,
-          team: true,
-          scheduledDate: true,
-        },
+      {
+        includeLevel: "basic",
+        page: query.page,
+        pageSize: query.pageSize,
+        sortBy: "createdAt",
+        sortOrder: "desc",
       },
-      repairReport: {
-        select: {
-          id: true,
-          result: true,
-          startTime: true,
-          endTime: true,
-        },
-      },
-      histories: {
-        select: {
-          id: true,
-          createdAt: true,
-          status: true,
-          note: true,
-          actorRole: true,
-        },
-        orderBy: { createdAt: "desc" },
-        take: 5, // Limit history to last 5 entries
-      },
-    },
-  });
+    );
 
-  return NextResponse.json({ total, items });
+    // ✅ PERFORMANCE: Create cache keys for count and items
+    const filters = {
+      dateRange: { from: fromDate, to: toDate },
+      searchTerm: query.q,
+    };
+    const countCacheKey = CacheKeys.complaint.count(filters);
+    const listCacheKey = CacheKeys.complaint.list({
+      ...filters,
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+
+    // ✅ PERFORMANCE: Use caching for better performance - parallel execution
+    const [total, items] = await Promise.all([
+      rememberWithMetrics(
+        countCacheKey,
+        () => prisma.complaint.count({ where: queryOptions.where }),
+        CacheConfig.COUNT_TTL,
+        [CacheTags.COMPLAINTS, CacheTags.STATISTICS],
+      ),
+      rememberWithMetrics(
+        listCacheKey,
+        () => prisma.complaint.findMany(queryOptions),
+        CacheConfig.LIST_TTL,
+        [CacheTags.COMPLAINTS],
+      ),
+    ]);
+
+    return NextResponse.json({
+      total,
+      items,
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: Math.ceil(total / query.pageSize),
+      },
+    });
+  } catch (error) {
+    return handleApiError(error);
+  }
 }
 
 export async function PATCH(req: NextRequest) {
@@ -185,6 +201,10 @@ export async function PATCH(req: NextRequest) {
       await verifyCaseConsistency(tx, next.id, { fix: false });
       return next;
     });
+
+    // ✅ PERFORMANCE: Invalidate relevant caches after updating a complaint
+    CacheInvalidation.complaints();
+
     return NextResponse.json(updated);
   } catch (e) {
     if ((e as any)?.name === "ZodError") {
