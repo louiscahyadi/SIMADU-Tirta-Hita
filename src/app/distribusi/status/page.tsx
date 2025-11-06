@@ -180,7 +180,7 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-xs text-gray-500 whitespace-nowrap">
-                      {formatDate((sr.requestDate as Date | undefined) ?? s.createdAt)}
+                      {formatDate(s.createdAt)}
                     </span>
                     <Link className="btn-outline btn-sm" href={`/daftar-data/service/${s.id}`}>
                       Detail
