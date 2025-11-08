@@ -189,21 +189,99 @@ export default async function HumasStatusPage({ searchParams }: PageProps) {
 
       {/* KPI counters */}
       <div className="grid sm:grid-cols-4 gap-3">
-        <div className="card p-3">
-          <div className="text-xs text-gray-500">Baru</div>
-          <div className="text-xl font-semibold">{baruCount}</div>
+        <div className="card p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-medium text-blue-700">Baru</div>
+            <div className="p-2 bg-blue-500 rounded-lg">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 17h5l-5 5v-5zM21 5H3a2 2 0 00-2 2v10a2 2 0 002 2h5l5-5V7a2 2 0 00-2-2z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-blue-900">{baruCount}</div>
+          <div className="text-xs text-blue-600 mt-1">Pengaduan masuk</div>
         </div>
-        <div className="card p-3">
-          <div className="text-xs text-gray-500">Proses</div>
-          <div className="text-xl font-semibold">{prosesCount}</div>
+        <div className="card p-4 bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-medium text-amber-700">Proses</div>
+            <div className="p-2 bg-amber-500 rounded-lg">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-amber-900">{prosesCount}</div>
+          <div className="text-xs text-amber-600 mt-1">Sedang dikerjakan</div>
         </div>
-        <div className="card p-3">
-          <div className="text-xs text-gray-500">Selesai</div>
-          <div className="text-xl font-semibold">{selesaiCount}</div>
+        <div className="card p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-medium text-green-700">Selesai</div>
+            <div className="p-2 bg-green-500 rounded-lg">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-green-900">{selesaiCount}</div>
+          <div className="text-xs text-green-600 mt-1">Telah tuntas</div>
         </div>
-        <div className="card p-3">
-          <div className="text-xs text-gray-500">Total</div>
-          <div className="text-xl font-semibold">{totalCount}</div>
+        <div className="card p-4 bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-medium text-gray-700">Total</div>
+            <div className="p-2 bg-gray-500 rounded-lg">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-gray-900">{totalCount}</div>
+          <div className="text-xs text-gray-600 mt-1">Keseluruhan data</div>
         </div>
       </div>
 
