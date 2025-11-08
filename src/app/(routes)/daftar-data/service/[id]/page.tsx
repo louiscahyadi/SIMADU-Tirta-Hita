@@ -162,31 +162,29 @@ export default async function ServiceDetail({
           <span className="text-gray-600">Tindakan (opsional):</span> {service.actionTaken ?? "-"}
         </div>
       </div>
-      <div className="card p-4 text-sm">
-        <div className="font-medium mb-2">Keterkaitan</div>
-        <div className="flex items-center gap-2">
-          <span
-            className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700"
-            title={entityLabel("serviceRequest")}
-          >
-            {entityAbbr("serviceRequest")}
-          </span>
-          {wo ? (
-            <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${wo.id}`}>
-              {entityLabel("workOrder")}
-            </Link>
-          ) : (
-            <span className="text-gray-400">{entityLabel("workOrder")} -</span>
-          )}
-          {rr ? (
-            <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${rr.id}`}>
-              {entityLabel("repairReport")}
-            </Link>
-          ) : (
-            <span className="text-gray-400">{entityLabel("repairReport")} -</span>
-          )}
+      {(wo || rr) && (
+        <div className="card p-4 text-sm">
+          <div className="font-medium mb-2">Dokumen Terkait</div>
+          <div className="flex items-center gap-2">
+            <span
+              className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700"
+              title={entityLabel("serviceRequest")}
+            >
+              {entityAbbr("serviceRequest")}
+            </span>
+            {wo && (
+              <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${wo.id}`}>
+                {entityLabel("workOrder")}
+              </Link>
+            )}
+            {rr && (
+              <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${rr.id}`}>
+                {entityLabel("repairReport")}
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       {complaint ? (
         <StatusHistoryPanel
           items={(complaint as any).histories}
