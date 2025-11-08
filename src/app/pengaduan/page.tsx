@@ -21,7 +21,6 @@ type FormValues = {
 };
 
 export default function PublicComplaintPage() {
-  const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<FormValues>({});
   const { push } = useToast();
@@ -62,7 +61,18 @@ export default function PublicComplaintPage() {
         return;
       }
       const json = await res.json();
-      setSubmittedId(json.id);
+
+      // Success notification
+      push({
+        message: "Pengaduan berhasil disimpan dan akan segera diproses.",
+        type: "success",
+      });
+
+      // Redirect to HUMAS dashboard after short delay
+      setTimeout(() => {
+        window.location.href = "/humas";
+      }, 1500);
+
       form.reset();
     } finally {
       setIsSubmitting(false);
@@ -72,103 +82,91 @@ export default function PublicComplaintPage() {
   return (
     <div className="space-y-4">
       <Breadcrumbs items={[{ label: "Beranda", href: "/" }, { label: "Pengaduan" }]} />
-      {submittedId ? (
-        <div className="max-w-xl mx-auto card p-6 space-y-3">
-          <h1 className="text-xl font-semibold">Pengaduan terkirim</h1>
-          <p className="text-gray-700">Terima kasih. Nomor referensi:</p>
-          <div className="font-mono">{submittedId}</div>
-          <p className="text-gray-600 text-sm">
-            Petugas kami akan menindaklanjuti laporan Anda. Simpan nomor referensi ini bila
-            diperlukan.
-          </p>
-        </div>
-      ) : (
-        <div className="max-w-2xl mx-auto card p-6">
-          <h1 className="text-xl font-semibold mb-4">Form Pengaduan Pelanggan</h1>
-          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="label">Nama Pelanggan</label>
-                <input className="input" {...form.register("customerName", { required: true })} />
-              </div>
-              <div>
-                <label className="label">No. HP</label>
-                <input
-                  className="input"
-                  placeholder="08123456789 atau 021-1234567"
-                  {...form.register("phone", {
-                    validate: validatePhone,
-                  })}
-                />
-                {form.formState.errors.phone?.message ? (
-                  <div className="text-red-600 text-xs mt-1">
-                    {form.formState.errors.phone?.message as string}
-                  </div>
-                ) : null}
-              </div>
-              <div className="md:col-span-2">
-                <label className="label">Alamat</label>
-                <input className="input" {...form.register("address", { required: true })} />
-              </div>
-              <div className="md:col-span-2">
-                <label className="label">Link Maps (opsional)</label>
-                <input
-                  className="input"
-                  placeholder="https://maps.app.goo.gl/..."
-                  {...form.register("mapsLink")}
-                />
-              </div>
-              <div>
-                <label className="label">No. Sambungan Pelanggan</label>
-                <input className="input" {...form.register("connectionNumber")} />
-              </div>
-              <div>
-                <label className="label">Kategori Pengaduan</label>
-                <select
-                  className="input"
-                  {...form.register("category", { required: "Pilih kategori" })}
-                >
-                  <option value="">Pilih</option>
-                  {COMPLAINT_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                {form.formState.errors.category?.message ? (
-                  <div className="text-red-600 text-xs mt-1">
-                    {form.formState.errors.category?.message as string}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
+      <div className="max-w-2xl mx-auto card p-6">
+        <h1 className="text-xl font-semibold mb-4">Form Pengaduan Pelanggan</h1>
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="label">Keluhan / Pengaduan</label>
-              <textarea
-                className="input min-h-28"
-                {...form.register("complaintText", { required: "Wajib diisi" })}
+              <label className="label">Nama Pelanggan</label>
+              <input className="input" {...form.register("customerName", { required: true })} />
+            </div>
+            <div>
+              <label className="label">No. HP</label>
+              <input
+                className="input"
+                placeholder="08123456789 atau 021-1234567"
+                {...form.register("phone", {
+                  validate: validatePhone,
+                })}
               />
-              {form.formState.errors.complaintText?.message ? (
+              {form.formState.errors.phone?.message ? (
                 <div className="text-red-600 text-xs mt-1">
-                  {form.formState.errors.complaintText?.message as string}
+                  {form.formState.errors.phone?.message as string}
                 </div>
               ) : null}
             </div>
-
-            <div className="pt-2">
-              <LoadingButton
-                type="submit"
-                loading={isSubmitting}
-                loadingText="Mengirim..."
-                className="btn"
-              >
-                Kirim Pengaduan
-              </LoadingButton>
+            <div className="md:col-span-2">
+              <label className="label">Alamat</label>
+              <input className="input" {...form.register("address", { required: true })} />
             </div>
-          </form>
-        </div>
-      )}
+            <div className="md:col-span-2">
+              <label className="label">Link Maps (opsional)</label>
+              <input
+                className="input"
+                placeholder="https://maps.app.goo.gl/..."
+                {...form.register("mapsLink")}
+              />
+            </div>
+            <div>
+              <label className="label">No. Sambungan Pelanggan</label>
+              <input className="input" {...form.register("connectionNumber")} />
+            </div>
+            <div>
+              <label className="label">Kategori Pengaduan</label>
+              <select
+                className="input"
+                {...form.register("category", { required: "Pilih kategori" })}
+              >
+                <option value="">Pilih</option>
+                {COMPLAINT_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {form.formState.errors.category?.message ? (
+                <div className="text-red-600 text-xs mt-1">
+                  {form.formState.errors.category?.message as string}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div>
+            <label className="label">Keluhan / Pengaduan</label>
+            <textarea
+              className="input min-h-28"
+              {...form.register("complaintText", { required: "Wajib diisi" })}
+            />
+            {form.formState.errors.complaintText?.message ? (
+              <div className="text-red-600 text-xs mt-1">
+                {form.formState.errors.complaintText?.message as string}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="pt-2">
+            <LoadingButton
+              type="submit"
+              loading={isSubmitting}
+              loadingText="Mengirim..."
+              className="btn"
+            >
+              Kirim Pengaduan
+            </LoadingButton>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
