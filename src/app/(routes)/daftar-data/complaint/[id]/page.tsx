@@ -111,35 +111,31 @@ export default async function ComplaintDetail({
           </div>
         ) : null}
       </div>
-      <div className="card p-4 text-sm">
-        <div className="font-medium mb-2">Keterkaitan</div>
-        <div className="flex items-center gap-2">
-          {c.serviceRequestId ? (
-            <Link
-              className="btn-outline btn-sm"
-              href={`/daftar-data/service/${c.serviceRequestId}`}
-            >
-              Permintaan Service
-            </Link>
-          ) : (
-            <span className="text-gray-400">Permintaan Service -</span>
-          )}
-          {c.workOrderId ? (
-            <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${c.workOrderId}`}>
-              Surat Perintah Kerja
-            </Link>
-          ) : (
-            <span className="text-gray-400">Surat Perintah Kerja -</span>
-          )}
-          {c.repairReportId ? (
-            <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${c.repairReportId}`}>
-              Berita Acara
-            </Link>
-          ) : (
-            <span className="text-gray-400">Berita Acara -</span>
-          )}
+      {(c.serviceRequestId || c.workOrderId || c.repairReportId) && (
+        <div className="card p-4 text-sm">
+          <div className="font-medium mb-2">Dokumen Terkait</div>
+          <div className="flex items-center gap-2">
+            {c.serviceRequestId && (
+              <Link
+                className="btn-outline btn-sm"
+                href={`/daftar-data/service/${c.serviceRequestId}`}
+              >
+                Permintaan Service
+              </Link>
+            )}
+            {c.workOrderId && (
+              <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${c.workOrderId}`}>
+                Surat Perintah Kerja
+              </Link>
+            )}
+            {c.repairReportId && (
+              <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${c.repairReportId}`}>
+                Berita Acara
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       <StatusHistoryPanel items={(c as any).histories} currentStatus={(c as any).status} />
     </div>
   );
