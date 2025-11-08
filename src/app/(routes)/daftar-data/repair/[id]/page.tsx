@@ -202,36 +202,34 @@ export default async function RepairDetail({
           </div>
         )}
       </div>
-      <div className="card p-4 text-sm">
-        <div className="font-medium mb-2">Keterkaitan</div>
-        <div className="flex items-center gap-2">
-          {srEntity ? (
-            <Link className="btn-outline btn-sm" href={`/daftar-data/service/${srEntity.id}`}>
-              {entityLabel("serviceRequest")}
-            </Link>
-          ) : (
-            <span className="text-gray-400">{entityLabel("serviceRequest")} -</span>
-          )}
-          {wo ? (
-            <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${wo.id}`}>
-              {entityLabel("workOrder")}
-            </Link>
-          ) : (
-            <span className="text-gray-400">{entityLabel("workOrder")} -</span>
-          )}
-          <span
-            className="rounded bg-green-50 px-2 py-0.5 text-green-700"
-            title={entityLabel("repairReport")}
-          >
-            {entityAbbr("repairReport")}
-          </span>
-          {cFromRr ? (
-            <Link className="btn-outline btn-sm" href={`/daftar-data/complaint/${cFromRr.id}`}>
-              Complaint
-            </Link>
-          ) : null}
+      {(srEntity || wo || cFromRr) && (
+        <div className="card p-4 text-sm">
+          <div className="font-medium mb-2">Dokumen Terkait</div>
+          <div className="flex items-center gap-2">
+            {srEntity && (
+              <Link className="btn-outline btn-sm" href={`/daftar-data/service/${srEntity.id}`}>
+                {entityLabel("serviceRequest")}
+              </Link>
+            )}
+            {wo && (
+              <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${wo.id}`}>
+                {entityLabel("workOrder")}
+              </Link>
+            )}
+            <span
+              className="rounded bg-green-50 px-2 py-0.5 text-green-700"
+              title={entityLabel("repairReport")}
+            >
+              {entityAbbr("repairReport")}
+            </span>
+            {cFromRr && (
+              <Link className="btn-outline btn-sm" href={`/daftar-data/complaint/${cFromRr.id}`}>
+                Complaint
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       {cFromRr ? (
         <StatusHistoryPanel
           items={(cFromRr as any).histories}
