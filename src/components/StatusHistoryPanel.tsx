@@ -128,22 +128,24 @@ export default function StatusHistoryPanel({
 
   return (
     <div className={`card p-4 ${className ?? ""}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="font-medium">Riwayat Status</div>
-        {currentStatus ? (
-          <div
-            className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${statusBadgeCls(currentStatus)}`}
-            title="Status saat ini"
-          >
-            {currentStatus}
-          </div>
-        ) : null}
+      <div className="mb-2">
+        <div className="flex items-center justify-between">
+          <div className="font-medium">Riwayat Status</div>
+          {currentStatus ? (
+            <div
+              className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${statusBadgeCls(currentStatus)} shrink-0`}
+              title="Status saat ini"
+            >
+              {currentStatus}
+            </div>
+          ) : null}
+        </div>
       </div>
       {list.length === 0 ? (
         <div className="text-sm text-gray-500">Belum ada riwayat.</div>
       ) : (
         <>
-          <ol className="relative ml-3 border-l border-gray-200">
+          <ol className="relative ml-3 border-l border-gray-200 mt-2">
             {list.map((it, idx) => {
               const meta = statusMeta[it.status];
               const isLast = idx === list.length - 1;
