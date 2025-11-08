@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       await ComplaintFlow.markReported(tx, comp.id, {
         actorRole: isPublic ? "public" : "humas",
         actorId: isPublic ? null : (token?.sub ?? null),
-        note: isPublic ? "Pengaduan dari publik" : "Kasus dibuat",
+        note: isPublic ? "Pengaduan dari publik" : "Pengaduan dibuat",
       });
       return comp;
     });
