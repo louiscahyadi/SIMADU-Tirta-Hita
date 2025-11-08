@@ -235,7 +235,7 @@ export default async function RingkasanPage() {
                               Detail
                             </Link>
                             <Link className="btn-outline btn-sm" href={href}>
-                              Buat Permintaan Service
+                              Buat Service
                             </Link>
                           </div>
                         ) : (
