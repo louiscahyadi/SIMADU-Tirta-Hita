@@ -243,17 +243,70 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
         <div id="workorder" className="card p-4">
           {/* KPI untuk SPK/BA (menggunakan filter saat ini) */}
           <div className="grid grid-cols-4 gap-2 mb-3 text-sm">
-            <div className="card p-2">
-              <div className="text-xs text-gray-500">SPK Proses</div>
-              <div className="text-lg font-semibold">{spkProses}</div>
+            <div className="card p-3 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-medium text-orange-700">SPK Proses</div>
+                <div className="p-1.5 bg-orange-500 rounded-lg">
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-lg font-bold text-orange-900">{spkProses}</div>
+              <div className="text-xs text-orange-600 mt-1">Sedang dikerjakan</div>
             </div>
-            <div className="card p-2">
-              <div className="text-xs text-gray-500">SPK Selesai</div>
-              <div className="text-lg font-semibold">{spkSelesai}</div>
+            <div className="card p-3 bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-medium text-emerald-700">SPK Selesai</div>
+                <div className="p-1.5 bg-emerald-500 rounded-lg">
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-lg font-bold text-emerald-900">{spkSelesai}</div>
+              <div className="text-xs text-emerald-600 mt-1">Telah diselesaikan</div>
             </div>
-            <div className="card p-2">
-              <div className="text-xs text-gray-500">SPK Total</div>
-              <div className="text-lg font-semibold flex items-center gap-2">
+            <div className="card p-3 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-medium text-blue-700">SPK Total</div>
+                <div className="p-1.5 bg-blue-500 rounded-lg">
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-lg font-bold text-blue-900 flex items-center gap-2">
                 {wTotal}
                 {(() => {
                   const sp = new URLSearchParams();
@@ -263,7 +316,7 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
                   sp.set("tab", "workorder");
                   return (
                     <Link
-                      className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-700 text-xs"
+                      className="rounded-full bg-blue-200 hover:bg-blue-300 px-2 py-0.5 text-blue-800 text-xs font-medium transition-colors"
                       href={`/distribusi/status?${sp.toString()}#workorder`}
                       title="Lihat di Status Distribusi"
                     >
@@ -272,10 +325,29 @@ export default async function DistribusiStatusPage({ searchParams }: PageProps) 
                   );
                 })()}
               </div>
+              <div className="text-xs text-blue-600 mt-1">Total SPK</div>
             </div>
-            <div className="card p-2">
-              <div className="text-xs text-gray-500">BA Total</div>
-              <div className="text-lg font-semibold">{baTotal}</div>
+            <div className="card p-3 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-medium text-purple-700">BA Total</div>
+                <div className="p-1.5 bg-purple-500 rounded-lg">
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div className="text-lg font-bold text-purple-900">{baTotal}</div>
+              <div className="text-xs text-purple-600 mt-1">Total Berita Acara</div>
             </div>
           </div>
           <div className="flex items-center justify-between mb-2">
