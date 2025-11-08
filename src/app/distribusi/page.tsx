@@ -164,33 +164,95 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {/* Workflow info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-        <div className="font-medium text-blue-900 mb-2">Alur Kerja Distribusi:</div>
-        <div className="text-blue-800 space-y-1">
-          <div>1. Buat SPK dari Permintaan Service yang masuk</div>
-          <div>2. SPK diberikan ke tim lapangan untuk dikerjakan</div>
-          <div>3. Setelah pekerjaan selesai di lapangan, buat Berita Acara</div>
-        </div>
-      </div>
-
       {/* KPI counters */}
       <div className="grid sm:grid-cols-4 gap-3">
-        <div className="card p-3">
-          <div className="text-xs text-gray-500">SPK Proses</div>
-          <div className="text-xl font-semibold">{spkProses}</div>
+        <div className="card p-4 bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-medium text-orange-700">SPK Proses</div>
+            <div className="p-2 bg-orange-500 rounded-lg">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-orange-900">{spkProses}</div>
+          <div className="text-xs text-orange-600 mt-1">Sedang dikerjakan</div>
         </div>
-        <div className="card p-3">
-          <div className="text-xs text-gray-500">SPK Selesai</div>
-          <div className="text-xl font-semibold">{spkSelesai}</div>
+        <div className="card p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-medium text-emerald-700">SPK Selesai</div>
+            <div className="p-2 bg-emerald-500 rounded-lg">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-emerald-900">{spkSelesai}</div>
+          <div className="text-xs text-emerald-600 mt-1">Telah diselesaikan</div>
         </div>
-        <div className="card p-3">
-          <div className="text-xs text-gray-500">SPK Total</div>
-          <div className="text-xl font-semibold">{spkTotal}</div>
+        <div className="card p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-medium text-blue-700">SPK Total</div>
+            <div className="p-2 bg-blue-500 rounded-lg">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-blue-900">{spkTotal}</div>
+          <div className="text-xs text-blue-600 mt-1">Total SPK</div>
         </div>
-        <div className="card p-3">
-          <div className="text-xs text-gray-500">BA Total</div>
-          <div className="text-xl font-semibold">{baTotal}</div>
+        <div className="card p-4 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-medium text-purple-700">BA Total</div>
+            <div className="p-2 bg-purple-500 rounded-lg">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-purple-900">{baTotal}</div>
+          <div className="text-xs text-purple-600 mt-1">Total Berita Acara</div>
         </div>
       </div>
 
