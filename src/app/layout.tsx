@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   Daftar Data (HUMAS)
                 </a>
                 <a className="text-gray-700 hover:underline" href="/pengaduan">
-                  Pengaduan Publik
+                  Tambahkan Pengaduan
                 </a>
                 <HeaderAuth />
               </nav>
