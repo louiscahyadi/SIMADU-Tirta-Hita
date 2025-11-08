@@ -316,11 +316,6 @@ export default function ServiceRequestForm({
           </div>
         </div>
 
-        {/* Opsional deskripsi tambahan */}
-        <div className="md:col-span-2">
-          <label className="label">Keterangan Tambahan (opsional)</label>
-          <textarea className="input min-h-[100px]" {...register("description")} />
-        </div>
         {/* Urgensi dihapus dari UI */}
       </div>
 
