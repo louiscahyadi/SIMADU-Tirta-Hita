@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -12,8 +13,6 @@ type FormValues = {
   pspId: string;
   teamName: string;
   technicians: string;
-  scheduledDate: string;
-  instructions?: string;
   workOrderNumber?: string;
   // Tambahan field SPK
   reportDate?: string; // Lap. Hari / Tanggal
@@ -33,6 +32,7 @@ export default function WorkOrderForm({
   serviceRequestId?: string;
   onSaved?: (id: string) => void;
 }) {
+  const router = useRouter();
   const { push } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -42,8 +42,6 @@ export default function WorkOrderForm({
       pspId: serviceRequestId ?? "",
       teamName: "",
       technicians: "",
-      scheduledDate: today,
-      instructions: "",
       workOrderNumber: "",
       reportDate: today,
       reporterName: "",
@@ -76,7 +74,6 @@ export default function WorkOrderForm({
       const payload = {
         ...values,
         // normalize optional fields
-        instructions: values.instructions?.trim() ? values.instructions : undefined,
         workOrderNumber: values.workOrderNumber?.trim() ? values.workOrderNumber.trim() : undefined,
         reporterName: values.reporterName?.trim() ? values.reporterName.trim() : undefined,
         disturbanceLocation: values.disturbanceLocation?.trim()
@@ -121,22 +118,10 @@ export default function WorkOrderForm({
         });
         onSaved?.(json.id);
 
-        // Reset form to default values while keeping case and service request IDs
-        form.reset({
-          caseId: caseId ?? "",
-          pspId: serviceRequestId ?? "",
-          teamName: "",
-          technicians: "",
-          scheduledDate: today,
-          instructions: "",
-          workOrderNumber: "",
-          reportDate: today,
-          reporterName: "",
-          disturbanceLocation: "",
-          handledDate: today,
-          handlingTime: "",
-          disturbanceType: "",
-        });
+        // Redirect ke halaman beranda divisi distribusi setelah berhasil menyimpan SPK
+        setTimeout(() => {
+          router.push("/distribusi");
+        }, 1500); // Delay 1.5 detik untuk memastikan user melihat pesan sukses
       }
     } finally {
       setIsSubmitting(false);
@@ -156,56 +141,121 @@ export default function WorkOrderForm({
     if (!id) return;
     (async () => {
       try {
+        console.log("🔄 Auto-filling SPK form from PSP ID:", id);
         const res = await fetch(`/api/service-requests?id=${encodeURIComponent(id)}`);
         if (!res.ok) {
+          console.log("❌ Failed to fetch PSP data:", res.status);
           return;
         }
 
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
+          console.log("❌ Invalid response content type:", contentType);
           return;
         }
 
         const data = await res.json();
+        console.log("📦 PSP data received:", data);
 
         // Ensure pspId is set in the form in case defaultValue was empty on first render
         setValue("pspId", id, { shouldValidate: true });
 
-        // Nama Pelapor: prefer reporterName, fallback to customerName
+        // Nama Pelapor: prioritas dari data PSP, fallback ke complaint
         const reporter = (
           data?.reporterName ||
-          data?._complaintCustomerName ||
           data?.customerName ||
+          data?._complaintCustomerName ||
           ""
-        ).toString();
-        const address = (data?.address || data?._complaintAddress || "").toString();
-        const jenis = (data?._complaintCategory || "").toString();
+        )
+          .toString()
+          .trim();
+
+        // Lokasi Gangguan: prioritas dari address PSP, fallback ke complaint
+        const address = (data?.address || data?._complaintAddress || "").toString().trim();
+
+        // Jenis Gangguan: dari kategori complaint
+        const jenis = (data?._complaintCategory || "").toString().trim();
+
+        // Complaint ID untuk linking
         const compId = (data?._complaintId || data?.complaintId || "").toString();
 
-        if (reporter) setValue("reporterName", reporter, { shouldValidate: true });
-        if (address) setValue("disturbanceLocation", address, { shouldValidate: true });
-        if (jenis) setValue("disturbanceType", jenis, { shouldValidate: true });
+        // Set values dengan logging untuk debugging
+        if (reporter) {
+          console.log("✅ Setting Nama Pelapor:", reporter);
+          setValue("reporterName", reporter, { shouldValidate: true });
+        } else {
+          console.log("⚠️ No reporter name found in PSP data");
+        }
+
+        if (address) {
+          console.log("✅ Setting Lokasi Gangguan:", address);
+          setValue("disturbanceLocation", address, { shouldValidate: true });
+        } else {
+          console.log("⚠️ No address found in PSP data");
+        }
+
+        if (jenis) {
+          console.log("✅ Setting Jenis Gangguan:", jenis);
+          setValue("disturbanceType", jenis, { shouldValidate: true });
+        } else {
+          console.log("⚠️ No disturbance type found in PSP data");
+        }
 
         // Set complaint ID from service request data or URL fallback
         if (compId) {
           setValue("caseId", compId, { shouldValidate: true });
+          console.log("✅ Setting Case ID:", compId);
         } else {
           // Fallback: if PSP not linked to complaint, try complaintId from URL
           try {
             const q = new URLSearchParams(window.location.search);
             const fromUrl = q.get("complaintId");
-            if (fromUrl) setValue("caseId", fromUrl, { shouldValidate: true });
+            if (fromUrl) {
+              setValue("caseId", fromUrl, { shouldValidate: true });
+              console.log("✅ Setting Case ID from URL:", fromUrl);
+            }
           } catch {}
         }
+
+        // Show success message to user
+        push({
+          message:
+            "Data nama pelapor, lokasi gangguan, dan jenis gangguan berhasil diisi otomatis dari PSP",
+          type: "success",
+        });
       } catch (error) {
-        // Silently fail, user can manually provide complaintId
+        console.error("❌ Error auto-filling SPK form:", error);
+        push({
+          message: "Gagal mengisi otomatis dari data PSP. Silakan isi manual.",
+          type: "error",
+        });
       }
     })();
     // intentionally run once per serviceRequestId
-  }, [serviceRequestId, setValue]);
+  }, [serviceRequestId, setValue, push]);
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      {/* Info Auto-fill */}
+      {serviceRequestId && (
+        <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-800">
+          <div className="flex items-center">
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span className="font-medium">Auto-fill Aktif:</span>
+            <span className="ml-1">
+              Nama pelapor, lokasi gangguan, dan jenis gangguan akan diisi otomatis dari data PSP.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Hidden IDs - use defaultValue so setValue() can update later */}
       <input
         type="hidden"
@@ -234,12 +284,26 @@ export default function WorkOrderForm({
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="label">Nama Pelapor</label>
-          <input className="input" {...register("reporterName", { maxLength: 100 })} />
+          <label className="label">
+            Nama Pelapor
+            <span className="text-xs text-green-600 ml-1">(otomatis dari PSP)</span>
+          </label>
+          <input
+            className="input bg-green-50 border-green-200"
+            {...register("reporterName", { maxLength: 100 })}
+            placeholder="Akan terisi otomatis dari data PSP"
+          />
         </div>
         <div>
-          <label className="label">Lokasi Gangguan</label>
-          <input className="input" {...register("disturbanceLocation", { maxLength: 255 })} />
+          <label className="label">
+            Lokasi Gangguan
+            <span className="text-xs text-green-600 ml-1">(otomatis dari PSP)</span>
+          </label>
+          <input
+            className="input bg-green-50 border-green-200"
+            {...register("disturbanceLocation", { maxLength: 255 })}
+            placeholder="Akan terisi otomatis dari data PSP"
+          />
         </div>
       </div>
 
@@ -260,10 +324,13 @@ export default function WorkOrderForm({
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="label">Jenis Gangguan</label>
+          <label className="label">
+            Jenis Gangguan
+            <span className="text-xs text-green-600 ml-1">(otomatis dari PSP)</span>
+          </label>
           <input
-            className="input"
-            placeholder="Contoh: kebocoran pipa"
+            className="input bg-green-50 border-green-200"
+            placeholder="Akan terisi otomatis dari kategori pengaduan"
             {...register("disturbanceType", { maxLength: 100 })}
           />
         </div>
@@ -288,24 +355,6 @@ export default function WorkOrderForm({
           />
           {errors.technicians && <div className="text-xs text-red-600">Wajib 2–200 karakter</div>}
         </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-4">
-        <div>
-          <label className="label">Jadwal Pekerjaan</label>
-          <input type="date" className="input" {...register("scheduledDate", { required: true })} />
-          {errors.scheduledDate && <div className="text-xs text-red-600">Tanggal wajib</div>}
-        </div>
-        <div />
-      </div>
-
-      <div>
-        <label className="label">Catatan Teknis/Instruksi (opsional)</label>
-        <textarea
-          className="input min-h-[100px]"
-          {...register("instructions", { maxLength: 2000 })}
-        />
-        {errors.instructions && <div className="text-xs text-red-600">Maksimal 2000 karakter</div>}
       </div>
 
       <div className="pt-2">
