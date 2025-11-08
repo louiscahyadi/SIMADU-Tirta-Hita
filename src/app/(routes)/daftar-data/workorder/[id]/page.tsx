@@ -113,36 +113,34 @@ export default async function WorkOrderDetail({
           {((wo as any).instructions as string) ?? "-"}
         </div>
       </div>
-      <div className="card p-4 text-sm">
-        <div className="font-medium mb-2">Keterkaitan</div>
-        <div className="flex items-center gap-2">
-          {sr ? (
-            <Link className="btn-outline btn-sm" href={`/daftar-data/service/${sr.id}`}>
-              {entityLabel("serviceRequest")}
-            </Link>
-          ) : (
-            <span className="text-gray-400">{entityLabel("serviceRequest")} -</span>
-          )}
-          <span
-            className="rounded bg-blue-50 px-2 py-0.5 text-blue-700"
-            title={entityLabel("workOrder")}
-          >
-            {entityAbbr("workOrder")}
-          </span>
-          {rr ? (
-            <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${rr.id}`}>
-              {entityLabel("repairReport")}
-            </Link>
-          ) : (
-            <span className="text-gray-400">{entityLabel("repairReport")} -</span>
-          )}
-          {cFromWo ? (
-            <Link className="btn-outline btn-sm" href={`/daftar-data/complaint/${cFromWo.id}`}>
-              Complaint
-            </Link>
-          ) : null}
+      {(sr || rr || cFromWo) && (
+        <div className="card p-4 text-sm">
+          <div className="font-medium mb-2">Dokumen Terkait</div>
+          <div className="flex items-center gap-2">
+            {sr && (
+              <Link className="btn-outline btn-sm" href={`/daftar-data/service/${sr.id}`}>
+                {entityLabel("serviceRequest")}
+              </Link>
+            )}
+            <span
+              className="rounded bg-blue-50 px-2 py-0.5 text-blue-700"
+              title={entityLabel("workOrder")}
+            >
+              {entityAbbr("workOrder")}
+            </span>
+            {rr && (
+              <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${rr.id}`}>
+                {entityLabel("repairReport")}
+              </Link>
+            )}
+            {cFromWo && (
+              <Link className="btn-outline btn-sm" href={`/daftar-data/complaint/${cFromWo.id}`}>
+                Complaint
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       {cFromWo ? (
         <StatusHistoryPanel
           items={(cFromWo as any).histories}
