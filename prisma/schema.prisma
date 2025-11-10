@@ -7,6 +7,151 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model ServiceRequest {
+  id               String     @id @default(cuid())
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  customerName     String
+  address          String
+  serviceNumber    String?
+  phone            String?
+  receivedAt       DateTime?
+  receivedBy       String?
+  handledAt        DateTime?
+  handlerName      String?
+  inspectedAt      DateTime?
+  inspectorName    String?
+  reasons          Json?
+  otherReason      String?
+  actionTaken      String?
+  serviceCostBy    String?
+  handoverReceiver String?
+  handoverCustomer String?
+  handoverAt       DateTime?
+  reporterName     String?
+  reporterPhone    String?
+  description      String?    @db.Text
+  urgency          Urgency    @default(MEDIUM)
+  requestDate      DateTime   @default(now())
+  notes            String?    @db.Text
+  complaint        Complaint? @relation("ComplaintToServiceRequest")
+  workOrder        WorkOrder?
+
+  @@index([createdAt])
+  @@index([customerName])
+  @@index([serviceNumber])
+  @@index([reporterName])
+  @@index([requestDate])
+  @@index([urgency])
+}
+
+model WorkOrder {
+  id                  String          @id @default(cuid())
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  reportDate          DateTime?
+  number              String?
+  handledDate         DateTime?
+  reporterName        String?
+  handlingTime        String?
+  disturbanceLocation String?
+  disturbanceType     String?
+  city                String?
+  cityDate            DateTime?
+  executorName        String?
+  team                String?
+  technicians         String?
+  scheduledDate       DateTime?
+  instructions        String?         @db.Text
+  serviceRequestId    String?         @unique
+  creatorSignature    String?         @db.Text
+  creatorSignedAt     DateTime?
+  creatorSignedBy     String?
+  supervisorSignature String?         @db.Text
+  supervisorSignedAt  DateTime?
+  supervisorSignedBy  String?
+  complaint           Complaint?      @relation("ComplaintToWorkOrder")
+  repairReport        RepairReport?
+  serviceRequest      ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
+
+  @@index([createdAt])
+  @@index([number])
+  @@index([disturbanceLocation])
+  @@index([team])
+  @@index([scheduledDate])
+}
+
+model RepairReport {
+  id                       String        @id @default(cuid())
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+  actionTaken              String?       @db.Text
+  startTime                DateTime?
+  endTime                  DateTime?
+  result                   RepairResult?
+  remarks                  String?       @db.Text
+  customerConfirmationName String?
+  actions                  Json?
+  otherActions             String?
+  notHandledReasons        Json?
+  otherNotHandled          String?
+  city                     String?
+  cityDate                 DateTime?
+  executorName             String?
+  team                     String?
+  authorizedBy             String?
+  workOrderId              String?       @unique
+  complaint                Complaint?    @relation("ComplaintToRepairReport")
+  workOrder                WorkOrder?    @relation(fields: [workOrderId], references: [id])
+
+  @@index([createdAt])
+  @@index([result])
+  @@index([startTime])
+  @@index([endTime])
+}
+
+model Complaint {
+  id               String          @id @default(cuid())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  customerName     String
+  address          String          @db.Text
+  mapsLink         String?         @db.VarChar(512)
+  connectionNumber String?
+  phone            String?
+  complaintText    String          @db.Text
+  category         String
+  processedAt      DateTime?
+  status           CaseStatus      @default(REPORTED)
+  serviceRequestId String?         @unique
+  workOrderId      String?         @unique
+  repairReportId   String?         @unique
+  repairReport     RepairReport?   @relation("ComplaintToRepairReport", fields: [repairReportId], references: [id])
+  serviceRequest   ServiceRequest? @relation("ComplaintToServiceRequest", fields: [serviceRequestId], references: [id])
+  workOrder        WorkOrder?      @relation("ComplaintToWorkOrder", fields: [workOrderId], references: [id])
+  histories        StatusHistory[]
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([customerName])
+  @@index([connectionNumber])
+  @@index([category])
+  @@index([phone])
+}
+
+model StatusHistory {
+  id          String     @id @default(cuid())
+  createdAt   DateTime   @default(now())
+  complaintId String
+  status      CaseStatus
+  note        String?    @db.Text
+  actorRole   String
+  actorId     String?
+  complaint   Complaint  @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId, createdAt])
+}
+
 enum CaseStatus {
   REPORTED
   PSP_CREATED
@@ -26,174 +171,4 @@ enum Urgency {
   LOW
   MEDIUM
   HIGH
-}
-
-model ServiceRequest {
-  id                 String   @id @default(cuid())
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  // Legacy/customer-facing fields (kept for compatibility)
-  customerName       String
-  address            String
-  serviceNumber      String?  // No. S.L.
-  phone              String?
-
-  receivedAt         DateTime? // DITERIMA Hari/Tgl + Jam
-  receivedBy         String?   // Petugas Jaga
-
-  handledAt          DateTime? // DIKERJAKAN OLEH Hari/Tgl + Jam
-  handlerName        String?   // Petugas Penanggulangan
-
-  inspectedAt        DateTime?
-  inspectorName      String?
-
-  reasons            Json?    // JSON array of reasons
-  otherReason        String?   // Lain-lain
-  actionTaken        String?   // Tindakan yang dilakukan (ringkas)
-
-  serviceCostBy      String?   // PERUMDA AM | Langganan
-
-  handoverReceiver   String?   // Yang Menerima (BAP mini inside form)
-  handoverCustomer   String?   // Nama Pelanggan
-  handoverAt         DateTime? // Hari/Tanggal penyerahan
-
-  // PSP (MVP) fields
-  reporterName       String?
-  reporterPhone      String?
-  description        String?   @db.Text
-  urgency            Urgency  @default(MEDIUM)
-  requestDate        DateTime @default(now())
-  notes              String?  @db.Text
-
-  // Relations
-  workOrder          WorkOrder?
-  complaint          Complaint? @relation(name: "ComplaintToServiceRequest")
-
-  @@index([createdAt])
-  @@index([customerName])
-  @@index([serviceNumber])
-  @@index([reporterName])
-  @@index([requestDate])
-  @@index([urgency])
-}
-
-model WorkOrder {
-  id                 String   @id @default(cuid())
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  reportDate         DateTime? // Lap. Hari/Tgl
-  number             String?   // No
-  handledDate        DateTime? // Hari/Tgl. ditangani
-
-  reporterName       String?
-  handlingTime       String?
-  disturbanceLocation String?
-  disturbanceType    String?
-
-  city               String?   // e.g., Singaraja
-  cityDate           DateTime?
-  executorName       String?
-  team               String?
-
-  // New SPK (MVP) fields
-  technicians        String?   // daftar nama teknisi dipisah koma
-  scheduledDate      DateTime?
-  instructions       String?   @db.Text
-
-  // Relations
-  serviceRequestId   String?   @unique
-  serviceRequest     ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
-  repairReport       RepairReport?
-  complaint          Complaint? @relation(name: "ComplaintToWorkOrder")
-
-  @@index([createdAt])
-  @@index([number])
-  @@index([disturbanceLocation])
-  @@index([team])
-  @@index([scheduledDate])
-}
-
-model RepairReport {
-  id                 String   @id @default(cuid())
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  // New BAP fields (MVP)
-  actionTaken        String?   @db.Text
-  startTime          DateTime?
-  endTime            DateTime?
-  result             RepairResult?
-  remarks            String?   @db.Text
-  customerConfirmationName String?
-
-  // Deprecated legacy fields (kept for backward compatibility)
-  actions            Json?
-  otherActions       String?
-  notHandledReasons  Json?
-  otherNotHandled    String?
-  city               String?
-  cityDate           DateTime?
-  executorName       String?
-  team               String?
-  authorizedBy       String?
-
-  // Relations
-  workOrderId        String?  @unique
-  workOrder          WorkOrder? @relation(fields: [workOrderId], references: [id], onDelete: SetNull)
-  complaint          Complaint? @relation(name: "ComplaintToRepairReport")
-
-  @@index([createdAt])
-  @@index([result])
-  @@index([startTime])
-  @@index([endTime])
-}
-
-model Complaint {
-  id               String   @id @default(cuid())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  customerName     String
-  address          String   @db.Text
-  mapsLink         String?  @db.VarChar(512)
-  connectionNumber String? // No Sambungan Pelanggan (No. SL)
-  phone            String?
-  complaintText    String   @db.Text // Keluhan/Pengaduan (deskripsi bebas)
-  category         String   // Kategori pengaduan dari daftar pilihan
-  processedAt      DateTime?
-
-  // Status tracking
-  status           CaseStatus @default(REPORTED)
-  histories        StatusHistory[]
-
-  // Optional linkage to processing chain
-  serviceRequestId String? @unique
-  workOrderId      String? @unique
-  repairReportId   String? @unique
-
-  serviceRequest   ServiceRequest? @relation(name: "ComplaintToServiceRequest", fields: [serviceRequestId], references: [id], onDelete: SetNull)
-  workOrder        WorkOrder?      @relation(name: "ComplaintToWorkOrder", fields: [workOrderId], references: [id], onDelete: SetNull)
-  repairReport     RepairReport?   @relation(name: "ComplaintToRepairReport", fields: [repairReportId], references: [id], onDelete: SetNull)
-
-  @@index([createdAt])
-  @@index([status, createdAt])
-  @@index([customerName])
-  @@index([connectionNumber])
-  @@index([category])
-  @@index([phone])
-}
-
-model StatusHistory {
-  id           String     @id @default(cuid())
-  createdAt    DateTime   @default(now())
-  complaintId  String
-  complaint    Complaint  @relation(fields: [complaintId], references: [id], onDelete: Cascade)
-  status       CaseStatus
-  note         String?    @db.Text
-  actorRole    String
-  actorId      String?
-
-  @@index([complaintId, createdAt])
 }
