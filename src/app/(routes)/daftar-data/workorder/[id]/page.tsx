@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
@@ -113,6 +114,54 @@ export default async function WorkOrderDetail({
           {((wo as any).instructions as string) ?? "-"}
         </div>
       </div>
+
+      {/* Digital Signature Section */}
+      {((wo as any).creatorSignature as string) && (
+        <div className="card p-4">
+          <div className="font-medium mb-3 text-blue-900">Tanda Tangan Digital</div>
+          <div className="space-y-3">
+            <div className="max-w-xs">
+              <div className="text-sm text-gray-600 mb-2">Pembuat SPK:</div>
+              <div className="border rounded-lg p-2 bg-gray-50 relative h-24">
+                <Image
+                  src={(wo as any).creatorSignature as string}
+                  alt="Tanda tangan pembuat SPK"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 320px) 280px, 320px"
+                />
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                <div>
+                  Ditandatangani oleh: {((wo as any).creatorSignedBy as string) ?? "Unknown"}
+                </div>
+                <div>Waktu: {formatDate((wo as any).creatorSignedAt)}</div>
+              </div>
+            </div>
+
+            {((wo as any).supervisorSignature as string) && (
+              <div className="max-w-xs">
+                <div className="text-sm text-gray-600 mb-2">Supervisor:</div>
+                <div className="border rounded-lg p-2 bg-gray-50 relative h-24">
+                  <Image
+                    src={(wo as any).supervisorSignature as string}
+                    alt="Tanda tangan supervisor"
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 320px) 280px, 320px"
+                  />
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  <div>
+                    Ditandatangani oleh: {((wo as any).supervisorSignedBy as string) ?? "Unknown"}
+                  </div>
+                  <div>Waktu: {formatDate((wo as any).supervisorSignedAt)}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {(sr || rr || cFromWo) && (
         <div className="card p-4 text-sm">
           <div className="font-medium mb-2">Dokumen Terkait</div>
