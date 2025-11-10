@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import LoadingButton from "@/components/LoadingButton";
+import SignatureUpload from "@/components/SignatureUpload";
 import { useToast } from "@/components/ToastProvider";
 import { parseErrorResponse } from "@/lib/errors";
 
@@ -21,6 +22,8 @@ type FormValues = {
   handledDate?: string; // Hari / Tanggal ditangani
   handlingTime?: string; // Waktu Penanganan
   disturbanceType?: string; // Jenis Gangguan
+  // Digital Signature
+  creatorSignature?: string; // Base64 encoded signature image
 };
 
 export default function WorkOrderForm({
@@ -49,6 +52,7 @@ export default function WorkOrderForm({
       handledDate: today,
       handlingTime: "",
       disturbanceType: "",
+      creatorSignature: "",
     },
   });
   const { setError } = form;
@@ -71,6 +75,12 @@ export default function WorkOrderForm({
         push({ message: "Kasus/PSP tidak valid", type: "error" });
         return;
       }
+
+      // Validate signature
+      if (!validateSignature()) {
+        push({ message: "Tanda tangan wajib diisi sebelum menyimpan SPK", type: "error" });
+        return;
+      }
       const payload = {
         ...values,
         // normalize optional fields
@@ -81,6 +91,9 @@ export default function WorkOrderForm({
           : undefined,
         handlingTime: values.handlingTime?.trim() ? values.handlingTime.trim() : undefined,
         disturbanceType: values.disturbanceType?.trim() ? values.disturbanceType.trim() : undefined,
+        creatorSignature: values.creatorSignature?.trim()
+          ? values.creatorSignature.trim()
+          : undefined,
       };
 
       const res = await fetch("/api/work-orders", {
@@ -134,6 +147,19 @@ export default function WorkOrderForm({
     setValue,
     formState: { errors },
   } = form;
+
+  // Add validation for signature
+  const validateSignature = () => {
+    const signature = form.getValues("creatorSignature");
+    if (!signature || signature.trim() === "") {
+      setError("creatorSignature", {
+        type: "required",
+        message: "Tanda tangan wajib diisi",
+      });
+      return false;
+    }
+    return true;
+  };
 
   // Prefill fields from PSP when serviceRequestId is available
   useEffect(() => {
@@ -357,15 +383,43 @@ export default function WorkOrderForm({
         </div>
       </div>
 
+      {/* Digital Signature Section */}
+      <div className="card p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+        <div className="mb-3">
+          <h3 className="font-medium text-blue-900 mb-1">Tanda Tangan Pembuat SPK</h3>
+          <p className="text-sm text-blue-700">
+            Upload gambar tanda tangan untuk validasi dan otorisasi SPK ini
+          </p>
+        </div>
+
+        <SignatureUpload
+          value={form.watch("creatorSignature")}
+          onChange={(signature) => {
+            setValue("creatorSignature", signature || "", { shouldValidate: true });
+          }}
+          label="Tanda Tangan Digital"
+          required={true}
+          error={errors.creatorSignature?.message}
+          maxSizeKB={300} // Smaller size for faster loading
+        />
+      </div>
+
       <div className="pt-2">
         <LoadingButton
           type="submit"
           loading={isSubmitting}
           loadingText="Menyimpan..."
           className="btn"
+          disabled={!form.watch("creatorSignature")} // Disable if no signature
         >
           Simpan SPK
         </LoadingButton>
+
+        {!form.watch("creatorSignature") && (
+          <p className="text-sm text-red-600 mt-2">
+            ⚠️ Tanda tangan wajib diisi sebelum menyimpan SPK
+          </p>
+        )}
       </div>
     </form>
   );
