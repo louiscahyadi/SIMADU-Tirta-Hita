@@ -32,6 +32,8 @@ export const workOrderSchema = z
     handledDate: z.coerce.date().optional(), // Hari / Tanggal ditangani
     handlingTime: z.string().trim().max(100).optional(), // Waktu Penanganan
     disturbanceType: z.string().trim().max(100).optional(),
+    // Digital signature
+    creatorSignature: z.string().optional(),
   })
   .superRefine((v, ctx) => {
     // scheduledDate must be today or in the future
