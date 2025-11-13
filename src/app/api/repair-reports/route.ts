@@ -38,10 +38,6 @@ export async function POST(req: NextRequest) {
           actionTaken += `\n- ${data.otherNotHandledReason}`;
         }
       }
-      if (data.remarks) {
-        if (actionTaken) actionTaken += "\n\n";
-        actionTaken += "Catatan:\n" + data.remarks;
-      }
 
       const rr = await tx.repairReport.create({
         data: {
@@ -49,8 +45,6 @@ export async function POST(req: NextRequest) {
           startTime: new Date(data.startTime),
           endTime: new Date(data.endTime),
           result: data.result,
-          remarks: data.remarks ?? null,
-          customerConfirmationName: data.customerConfirmationName ?? null,
           // Store detailed data in legacy fields
           actions: data.repairTypes.length > 0 ? data.repairTypes : undefined,
           otherActions: data.otherRepairType ?? null,
