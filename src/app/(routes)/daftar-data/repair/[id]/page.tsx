@@ -162,13 +162,6 @@ export default async function RepairDetail({
           <span className="text-gray-600">Tindakan Perbaikan:</span>{" "}
           {(rr as any).actionTaken?.trim?.() || joinJsonArray((rr as any).actions)}
         </div>
-        <div>
-          <span className="text-gray-600">Catatan Akhir:</span> {(rr as any).remarks ?? "-"}
-        </div>
-        <div>
-          <span className="text-gray-600">Yang Menerima:</span>{" "}
-          {(rr as any).customerConfirmationName ?? "-"}
-        </div>
 
         {/* Legacy/opsional info for data lama */}
         {(rr.city || rr.team || rr.executorName || rr.authorizedBy || rr.cityDate) && (
