@@ -60,6 +60,12 @@ export async function POST(req: NextRequest) {
           executorName: data.executorName ?? null,
           team: data.team ?? null,
           authorizedBy: data.authorizedBy ?? null,
+          // Digital signature fields
+          executorSignature: data.executorSignature ?? null,
+          executorSignedAt: data.executorSignature ? new Date() : null,
+          executorSignedBy: data.executorSignature
+            ? (token?.name ?? token?.email ?? "Unknown")
+            : null,
           workOrder: { connect: { id: data.spkId } },
         },
       });
