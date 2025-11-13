@@ -13,8 +13,6 @@ import { VALIDATION_ERRORS } from "../errorMessages";
 // - startTime datetime, required
 // - endTime datetime, required, >= startTime
 // - result enum: FIXED | MONITORING | NOT_FIXED, required
-// - remarks text, optional, max 2000 chars
-// - customerConfirmationName string, optional, 2–100 chars
 // - city, executorName, team, authorizedBy - info pelaksana
 
 export const repairReportSchema = z
@@ -28,8 +26,6 @@ export const repairReportSchema = z
     startTime: z.string().datetime(),
     endTime: z.string().datetime(),
     result: z.enum(["FIXED", "MONITORING", "NOT_FIXED"]),
-    remarks: z.string().trim().max(2000).optional().or(z.literal("")),
-    customerConfirmationName: z.string().trim().min(2).max(100).optional().or(z.literal("")),
     city: z.string().trim().max(100).optional().or(z.literal("")),
     executorName: z.string().trim().max(100).optional().or(z.literal("")),
     team: z.string().trim().max(100).optional().or(z.literal("")),
@@ -53,8 +49,6 @@ export const repairReportSchema = z
     ...v,
     otherRepairType: v.otherRepairType ? v.otherRepairType : undefined,
     otherNotHandledReason: v.otherNotHandledReason ? v.otherNotHandledReason : undefined,
-    remarks: v.remarks ? v.remarks : undefined,
-    customerConfirmationName: v.customerConfirmationName ? v.customerConfirmationName : undefined,
     city: v.city ? v.city : undefined,
     executorName: v.executorName ? v.executorName : undefined,
     team: v.team ? v.team : undefined,
