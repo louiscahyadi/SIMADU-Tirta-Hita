@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import LoadingButton from "@/components/LoadingButton";
+import SignatureUpload from "@/components/SignatureUpload";
 import { useToast } from "@/components/ToastProvider";
 import { parseErrorResponse } from "@/lib/errors";
 
@@ -65,6 +66,8 @@ type FormValues = {
   executorName?: string;
   team?: string;
   authorizedBy?: string;
+  // Digital signature
+  executorSignature?: string;
 };
 
 export default function RepairReportForm({
@@ -101,6 +104,7 @@ export default function RepairReportForm({
       executorName: "",
       team: "",
       authorizedBy: "",
+      executorSignature: "",
     },
   });
 
@@ -147,6 +151,15 @@ export default function RepairReportForm({
         !values.otherNotHandledReason?.trim()
       ) {
         push({ message: "Silakan pilih minimal satu alasan untuk hasil NOT_FIXED", type: "error" });
+        return;
+      }
+
+      // Signature validation
+      if (!values.executorSignature?.trim()) {
+        push({
+          message: "Tanda tangan pelaksana wajib diisi untuk menyelesaikan Berita Acara",
+          type: "error",
+        });
         return;
       }
 
@@ -231,6 +244,10 @@ export default function RepairReportForm({
   const watchedRepairTypes = watch("repairTypes");
   const watchedNotHandledReasons = watch("notHandledReasons");
   const result = watch("result");
+  const executorSignature = watch("executorSignature");
+
+  // Check if form is ready to submit
+  const isFormReady = executorSignature && executorSignature.trim().length > 0;
 
   return (
     <form
@@ -421,6 +438,29 @@ export default function RepairReportForm({
           </div>
         </div>
       </div>
+      {/* Tanda Tangan Digital */}
+      <div className="card p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+            <span className="text-blue-600 text-sm font-medium">✍️</span>
+          </div>
+          <h3 className="font-medium text-gray-800">Tanda Tangan Pelaksana Perbaikan</h3>
+          <span className="text-red-500 text-sm">*</span>
+        </div>
+        <div className="bg-white rounded-lg p-3 border border-blue-100">
+          <SignatureUpload
+            value={watch("executorSignature")}
+            onChange={(signature) => setValue("executorSignature", signature || "")}
+            label="Upload Tanda Tangan"
+            required={true}
+            error={errors.executorSignature?.message}
+          />
+          <div className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+            <span>💡</span>
+            <span>Tip: Foto tanda tangan di atas kertas putih untuk hasil terbaik</span>
+          </div>
+        </div>
+      </div>
       <div className="pt-2 flex gap-3">
         <button
           type="button"
@@ -438,9 +478,12 @@ export default function RepairReportForm({
           type="submit"
           loading={isSubmitting}
           loadingText="Menyimpan..."
-          className="btn"
+          className={`btn ${
+            !isFormReady ? "bg-gray-300 text-gray-500 cursor-not-allowed hover:bg-gray-300" : ""
+          }`}
+          disabled={!isFormReady || isSubmitting}
         >
-          Simpan Berita Acara
+          {!isFormReady ? "Tanda Tangan Diperlukan" : "Simpan Berita Acara"}
         </LoadingButton>
       </div>
     </form>
