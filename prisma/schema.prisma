@@ -100,6 +100,10 @@ model RepairReport {
   executorName             String?
   team                     String?
   authorizedBy             String?
+  // Digital signature fields
+  executorSignature        String?       @db.Text
+  executorSignedAt         DateTime?
+  executorSignedBy         String?
   workOrderId              String?       @unique
   complaint                Complaint?    @relation("ComplaintToRepairReport")
   workOrder                WorkOrder?    @relation(fields: [workOrderId], references: [id])
