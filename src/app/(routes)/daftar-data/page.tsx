@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import React from "react";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
+import ComplaintPrintButton from "@/components/ComplaintPrintButton";
 import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
 import { CacheKeys, CacheTags, CacheConfig, rememberWithMetrics } from "@/lib/cache";
@@ -1071,22 +1072,7 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 ) : (
                                   <span className="text-gray-400">-</span>
                                 )}
-                                <a
-                                  className="btn-outline btn-sm cursor-pointer"
-                                  onClick={() => {
-                                    const printWindow = window.open(
-                                      `/api/print/complaint/${c.id}`,
-                                      "_blank",
-                                    );
-                                    if (!printWindow)
-                                      alert(
-                                        "Pop-up diblokir. Mohon izinkan pop-up untuk fitur print.",
-                                      );
-                                  }}
-                                  title="Cetak Surat Resmi"
-                                >
-                                  Cetak
-                                </a>
+                                <ComplaintPrintButton complaintId={c.id} />
                                 {c.mapsLink ? (
                                   <a
                                     className="text-gray-700 hover:underline"
