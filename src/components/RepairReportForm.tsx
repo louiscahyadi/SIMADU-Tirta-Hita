@@ -59,8 +59,6 @@ type FormValues = {
   startTime: string;
   endTime: string;
   result: "FIXED" | "MONITORING" | "NOT_FIXED";
-  remarks?: string;
-  customerConfirmationName?: string;
   // Info lokasi
   city?: string;
   executorName?: string;
@@ -98,8 +96,6 @@ export default function RepairReportForm({
       startTime: nowLocal,
       endTime: nowLocal,
       result: "FIXED",
-      remarks: "",
-      customerConfirmationName: "",
       city: "",
       executorName: "",
       team: "",
@@ -412,32 +408,7 @@ export default function RepairReportForm({
           </div>
         </div>
       )}
-      {/* Catatan dan Konfirmasi */}
-      <div className="card p-4">
-        <h3 className="font-medium mb-3">Catatan dan Konfirmasi</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="label">Catatan Tambahan (opsional)</label>
-            <textarea
-              className="input min-h-[80px]"
-              placeholder="Catatan tambahan mengenai perbaikan..."
-              {...register("remarks", { maxLength: 2000 })}
-            />
-            {errors.remarks && <div className="text-xs text-red-600">Maksimal 2000 karakter</div>}
-          </div>
-          <div>
-            <label className="label">Nama Pihak yang Menerima (opsional)</label>
-            <input
-              className="input"
-              placeholder="Nama pihak yang menerima pekerjaan"
-              {...register("customerConfirmationName", { minLength: 2, maxLength: 100 })}
-            />
-            {errors.customerConfirmationName && (
-              <div className="text-xs text-red-600">2–100 karakter</div>
-            )}
-          </div>
-        </div>
-      </div>
+
       {/* Tanda Tangan Digital */}
       <div className="card p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <div className="flex items-center gap-2 mb-3">
