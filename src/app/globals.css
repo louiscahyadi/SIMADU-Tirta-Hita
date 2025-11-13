@@ -60,23 +60,92 @@ body {
 
 /* Print-specific styles */
 @media print {
+  /* Hide web elements when printing regular pages */
   header,
   nav,
   .filter-bar,
   .pagination,
-  .btn-ekspor {
+  .btn-ekspor,
+  .breadcrumbs,
+  .print-hide {
     display: none !important;
   }
+
   body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     background: #fff;
+    font-family: "Times New Roman", serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
   }
+
   .card {
     box-shadow: none !important;
-    border: none !important;
+    border: 1pt solid #ccc !important;
+    margin-bottom: 0.5cm;
   }
+
   .page-break {
     page-break-before: always;
+  }
+
+  .no-page-break {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure good contrast for text */
+  * {
+    color: #000 !important;
+    background: transparent !important;
+  }
+
+  /* Exception for styled elements */
+  .bg-green-50,
+  .text-green-700,
+  .bg-yellow-50,
+  .text-yellow-700,
+  .bg-red-50,
+  .text-red-700,
+  .bg-blue-50,
+  .text-blue-700 {
+    background: #f0f0f0 !important;
+    color: #000 !important;
+    border: 1pt solid #999 !important;
+  }
+
+  /* Table styles for better printing */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th,
+  td {
+    border: 1pt solid #999 !important;
+    padding: 4pt !important;
+    text-align: left;
+  }
+
+  th {
+    background: #f0f0f0 !important;
+    font-weight: bold;
+  }
+
+  /* Image handling */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+
+  /* Signature images specific handling */
+  .signature-image {
+    max-width: 4cm !important;
+    max-height: 2cm !important;
+    border: 1pt solid #999 !important;
+    padding: 2pt;
   }
 }
