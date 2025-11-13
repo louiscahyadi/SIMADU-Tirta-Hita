@@ -1071,13 +1071,22 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                                 ) : (
                                   <span className="text-gray-400">-</span>
                                 )}
-                                <Link
-                                  className="btn-outline btn-sm"
-                                  href={withScope(`/daftar-data/complaint/${c.id}?print=1`)}
-                                  title="Cetak PDF"
+                                <a
+                                  className="btn-outline btn-sm cursor-pointer"
+                                  onClick={() => {
+                                    const printWindow = window.open(
+                                      `/api/print/complaint/${c.id}`,
+                                      "_blank",
+                                    );
+                                    if (!printWindow)
+                                      alert(
+                                        "Pop-up diblokir. Mohon izinkan pop-up untuk fitur print.",
+                                      );
+                                  }}
+                                  title="Cetak Surat Resmi"
                                 >
                                   Cetak
-                                </Link>
+                                </a>
                                 {c.mapsLink ? (
                                   <a
                                     className="text-gray-700 hover:underline"
