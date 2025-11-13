@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import OfficialPrintButton from "@/components/print/OfficialPrintButton";
 import PrintButton from "@/components/PrintButton";
 import StatusHistoryPanel from "@/components/StatusHistoryPanel";
 import { prisma } from "@/lib/prisma";
@@ -83,6 +84,7 @@ export default async function WorkOrderDetail({
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Detail Surat Perintah Kerja</h2>
         <div className="flex items-center gap-2">
+          <OfficialPrintButton documentType="workorder" documentId={id} />
           <PrintButton />
           <Link
             className="text-sm text-blue-700 hover:underline"
