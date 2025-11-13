@@ -34,6 +34,7 @@ export const repairReportSchema = z
     executorName: z.string().trim().max(100).optional().or(z.literal("")),
     team: z.string().trim().max(100).optional().or(z.literal("")),
     authorizedBy: z.string().trim().max(100).optional().or(z.literal("")),
+    executorSignature: z.string().min(1, "Tanda tangan pelaksana wajib diisi"),
   })
   .superRefine((v, ctx) => {
     const start = new Date(v.startTime);
@@ -58,6 +59,7 @@ export const repairReportSchema = z
     executorName: v.executorName ? v.executorName : undefined,
     team: v.team ? v.team : undefined,
     authorizedBy: v.authorizedBy ? v.authorizedBy : undefined,
+    executorSignature: v.executorSignature,
   }));
 
 export type RepairReportInput = z.infer<typeof repairReportSchema>;
