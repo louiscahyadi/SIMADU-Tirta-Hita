@@ -1,30 +1,49 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 import LoadingButton from "@/components/LoadingButton";
 import SignatureUpload from "@/components/SignatureUpload";
 import { useToast } from "@/components/ToastProvider";
 import { parseErrorResponse } from "@/lib/errors";
 
-type FormValues = {
-  caseId: string;
-  pspId: string;
-  teamName: string;
-  technicians: string;
-  workOrderNumber?: string;
-  // Tambahan field SPK
-  reportDate?: string; // Lap. Hari / Tanggal
-  reporterName?: string; // Nama Pelapor
-  disturbanceLocation?: string; // Lokasi Gangguan
-  handledDate?: string; // Hari / Tanggal ditangani
-  handlingTime?: string; // Waktu Penanganan
-  disturbanceType?: string; // Jenis Gangguan
-  // Digital Signature
-  creatorSignature?: string; // Base64 encoded signature image
-};
+// UI form schema for client-side validation
+const formSchema = z
+  .object({
+    caseId: z.string().min(1, "Case ID is required"),
+    pspId: z.string().min(1, "PSP ID is required"),
+    teamName: z.string().trim().min(2, "Tim minimal 2 karakter").max(100),
+    technicians: z.string().trim().min(2, "Teknisi minimal 2 karakter").max(200),
+    scheduledDate: z.string().min(1, "Jadwal pekerjaan wajib diisi"),
+    workOrderNumber: z.string().optional(),
+    reportDate: z.string().optional(),
+    reporterName: z.string().optional(),
+    disturbanceLocation: z.string().optional(),
+    handledDate: z.string().optional(),
+    handlingTime: z.string().optional(),
+    disturbanceType: z.string().optional(),
+    creatorSignature: z.string().min(1, "Tanda tangan wajib diisi"),
+  })
+  .superRefine((data, ctx) => {
+    // Validate scheduledDate is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const scheduledDate = new Date(data.scheduledDate);
+    if (scheduledDate < today) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["scheduledDate"],
+        message: "Jadwal tidak boleh lampau",
+      });
+    }
+  });
+
+type FormValues = z.infer<typeof formSchema>;
 
 export default function WorkOrderForm({
   caseId,
@@ -37,14 +56,17 @@ export default function WorkOrderForm({
 }) {
   const router = useRouter();
   const { push } = useToast();
+  const { data: session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       caseId: caseId ?? "",
       pspId: serviceRequestId ?? "",
       teamName: "",
       technicians: "",
+      scheduledDate: today, // Default to today
       workOrderNumber: "",
       reportDate: today,
       reporterName: "",
@@ -76,11 +98,6 @@ export default function WorkOrderForm({
         return;
       }
 
-      // Validate signature
-      if (!validateSignature()) {
-        push({ message: "Tanda tangan wajib diisi sebelum menyimpan SPK", type: "error" });
-        return;
-      }
       const payload = {
         ...values,
         // normalize optional fields
@@ -145,46 +162,97 @@ export default function WorkOrderForm({
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = form;
 
-  // Add validation for signature
-  const validateSignature = () => {
-    const signature = form.getValues("creatorSignature");
-    if (!signature || signature.trim() === "") {
-      setError("creatorSignature", {
-        type: "required",
-        message: "Tanda tangan wajib diisi",
-      });
-      return false;
-    }
-    return true;
-  };
+  const formValues = watch();
 
   // Prefill fields from PSP when serviceRequestId is available
   useEffect(() => {
     const id = serviceRequestId;
-    if (!id) return;
+    if (!id) {
+      console.log("❌ No serviceRequestId provided for auto-fill");
+      return;
+    }
+
+    // Check if user is authenticated
+    if (!session) {
+      console.log("❌ No session found, skipping auto-fill");
+      push({
+        message: "Please login to auto-fill form data.",
+        type: "error",
+      });
+      return;
+    }
+
     (async () => {
       try {
         console.log("🔄 Auto-filling SPK form from PSP ID:", id);
-        const res = await fetch(`/api/service-requests?id=${encodeURIComponent(id)}`);
+        console.log("👤 Session user:", session.user?.email, "Role:", (session as any)?.role);
+        const res = await fetch(`/api/service-requests?id=${encodeURIComponent(id)}`, {
+          method: "GET",
+          credentials: "include", // Include cookies for authentication
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            // Try to include CSRF token if available
+            ...(typeof window !== "undefined" && (window as any).__NEXT_DATA__?.props?.csrfToken
+              ? { "X-CSRF-Token": (window as any).__NEXT_DATA__.props.csrfToken }
+              : {}),
+          },
+          cache: "no-cache", // Ensure we get fresh data
+        });
+
+        console.log("📡 API Response Status:", res.status);
+        console.log("📡 API Response Headers:", Object.fromEntries(res.headers.entries()));
         if (!res.ok) {
-          console.log("❌ Failed to fetch PSP data:", res.status);
+          console.log("❌ Failed to fetch PSP data:", res.status, res.statusText);
+          const errorText = await res.text();
+          console.log("❌ Error response body:", errorText);
           return;
         }
 
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
           console.log("❌ Invalid response content type:", contentType);
+          const textContent = await res.text();
+          console.log("❌ Response content:", textContent.substring(0, 500));
+
+          // Check if this is a redirect to login page
+          if (textContent.includes("login") || textContent.includes("Login")) {
+            push({
+              message: "Session expired. Please refresh the page and try again.",
+              type: "error",
+            });
+          } else {
+            push({
+              message: "Cannot auto-fill from API. Please fill the form manually.",
+              type: "info",
+            });
+          }
+
+          console.log("⚠️ Attempting manual fallback - checking URL parameters for data...");
+          // Fallback: Try to get data from URL parameters or other sources
+          try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const complaintIdFromUrl = urlParams.get("complaintId");
+            if (complaintIdFromUrl) {
+              setValue("caseId", complaintIdFromUrl, { shouldValidate: true });
+              console.log("✅ Set Case ID from URL:", complaintIdFromUrl);
+            }
+          } catch (fallbackError) {
+            console.log("❌ Fallback also failed:", fallbackError);
+          }
           return;
         }
 
         const data = await res.json();
-        console.log("📦 PSP data received:", data);
+        console.log("📦 Complete PSP data received:", JSON.stringify(data, null, 2));
 
         // Ensure pspId is set in the form in case defaultValue was empty on first render
         setValue("pspId", id, { shouldValidate: true });
+        console.log("✅ Set pspId to:", id);
 
         // Nama Pelapor: prioritas dari data PSP, fallback ke complaint
         const reporter = (
@@ -205,12 +273,23 @@ export default function WorkOrderForm({
         // Complaint ID untuk linking
         const compId = (data?._complaintId || data?.complaintId || "").toString();
 
+        console.log("🔍 Extracted values:");
+        console.log("  - Reporter:", reporter);
+        console.log("  - Address:", address);
+        console.log("  - Category:", jenis);
+        console.log("  - Complaint ID:", compId);
+
         // Set values dengan logging untuk debugging
         if (reporter) {
           console.log("✅ Setting Nama Pelapor:", reporter);
           setValue("reporterName", reporter, { shouldValidate: true });
         } else {
           console.log("⚠️ No reporter name found in PSP data");
+          console.log("  Available reporter fields:", {
+            reporterName: data?.reporterName,
+            customerName: data?.customerName,
+            _complaintCustomerName: data?._complaintCustomerName,
+          });
         }
 
         if (address) {
@@ -218,6 +297,10 @@ export default function WorkOrderForm({
           setValue("disturbanceLocation", address, { shouldValidate: true });
         } else {
           console.log("⚠️ No address found in PSP data");
+          console.log("  Available address fields:", {
+            address: data?.address,
+            _complaintAddress: data?._complaintAddress,
+          });
         }
 
         if (jenis) {
@@ -225,6 +308,9 @@ export default function WorkOrderForm({
           setValue("disturbanceType", jenis, { shouldValidate: true });
         } else {
           console.log("⚠️ No disturbance type found in PSP data");
+          console.log("  Available category field:", {
+            _complaintCategory: data?._complaintCategory,
+          });
         }
 
         // Set complaint ID from service request data or URL fallback
@@ -232,6 +318,7 @@ export default function WorkOrderForm({
           setValue("caseId", compId, { shouldValidate: true });
           console.log("✅ Setting Case ID:", compId);
         } else {
+          console.log("⚠️ No complaint ID found in PSP data");
           // Fallback: if PSP not linked to complaint, try complaintId from URL
           try {
             const q = new URLSearchParams(window.location.search);
@@ -239,16 +326,27 @@ export default function WorkOrderForm({
             if (fromUrl) {
               setValue("caseId", fromUrl, { shouldValidate: true });
               console.log("✅ Setting Case ID from URL:", fromUrl);
+            } else {
+              console.log("⚠️ No complaintId found in URL either");
             }
-          } catch {}
+          } catch (urlError) {
+            console.log("⚠️ Error parsing URL:", urlError);
+          }
         }
 
-        // Show success message to user
-        push({
-          message:
-            "Data nama pelapor, lokasi gangguan, dan jenis gangguan berhasil diisi otomatis dari PSP",
-          type: "success",
-        });
+        // Only show success message if at least one field was filled
+        if (reporter || address || jenis) {
+          push({
+            message:
+              "Data nama pelapor, lokasi gangguan, dan jenis gangguan berhasil diisi otomatis dari PSP",
+            type: "success",
+          });
+        } else {
+          push({
+            message: "Data PSP ditemukan tetapi field auto-fill kosong. Silakan isi manual.",
+            type: "info",
+          });
+        }
       } catch (error) {
         console.error("❌ Error auto-filling SPK form:", error);
         push({
@@ -257,8 +355,8 @@ export default function WorkOrderForm({
         });
       }
     })();
-    // intentionally run once per serviceRequestId
-  }, [serviceRequestId, setValue, push]);
+    // intentionally run once per serviceRequestId and when session changes
+  }, [serviceRequestId, setValue, push, session]);
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
@@ -335,9 +433,21 @@ export default function WorkOrderForm({
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
+          <label className="label">Jadwal Pekerjaan *</label>
+          <input type="date" className="input" {...register("scheduledDate", { required: true })} />
+          {errors.scheduledDate && (
+            <div className="text-xs text-red-600">
+              Tanggal jadwal wajib diisi dan tidak boleh lampau
+            </div>
+          )}
+        </div>
+        <div>
           <label className="label">Hari / Tanggal ditangani</label>
           <input type="date" className="input" {...register("handledDate")} />
         </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
         <div>
           <label className="label">Waktu Penanganan</label>
           <input
@@ -410,15 +520,13 @@ export default function WorkOrderForm({
           loading={isSubmitting}
           loadingText="Menyimpan..."
           className="btn"
-          disabled={!form.watch("creatorSignature")} // Disable if no signature
+          disabled={isSubmitting}
         >
           Simpan SPK
         </LoadingButton>
 
-        {!form.watch("creatorSignature") && (
-          <p className="text-sm text-red-600 mt-2">
-            ⚠️ Tanda tangan wajib diisi sebelum menyimpan SPK
-          </p>
+        {errors.creatorSignature && (
+          <p className="text-sm text-red-600 mt-2">⚠️ {errors.creatorSignature.message}</p>
         )}
       </div>
     </form>
