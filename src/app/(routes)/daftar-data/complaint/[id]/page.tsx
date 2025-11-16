@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 
 import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import StatusHistoryPanel from "@/components/StatusHistoryPanel";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 function formatDate(d?: Date | string | null) {
@@ -25,6 +27,9 @@ export default async function ComplaintDetail({
   params: { id: string };
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
+
   const scope = (() => {
     const v = searchParams?.["scope"];
     return Array.isArray(v) ? v[0] : v;
@@ -66,6 +71,14 @@ export default async function ComplaintDetail({
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Detail Pengaduan</h2>
         <div className="flex items-center gap-2">
+          {role === "humas" && !c.serviceRequestId && (
+            <Link
+              className="btn-outline btn-sm"
+              href={`/?flow=service&complaintId=${encodeURIComponent(c.id)}&customerName=${encodeURIComponent(c.customerName || "")}&address=${encodeURIComponent(c.address || "")}&phone=${encodeURIComponent(c.phone || "")}&connectionNumber=${encodeURIComponent(c.connectionNumber || "")}&category=${encodeURIComponent(c.category || "")}`}
+            >
+              Buat Service
+            </Link>
+          )}
           <Link
             className="text-sm text-blue-700 hover:underline"
             href={`${listBase}?tab=complaint`}
