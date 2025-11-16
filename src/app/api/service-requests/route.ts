@@ -149,6 +149,12 @@ export async function GET(req: NextRequest) {
   try {
     const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
     if (!token) return errorResponse(AppError.unauthorized());
+
+    // Allow both humas and distribusi roles to access this endpoint
+    const role = token?.role;
+    if (role !== "humas" && role !== "distribusi") {
+      return errorResponse(AppError.forbidden(role ?? null, ["humas", "distribusi"]));
+    }
     const url = new URL(req.url);
     // Support fetching single item by id for prefilling SPK fields
     const byId = url.searchParams.get("id");
