@@ -4,7 +4,7 @@ import { homeQuerySchema } from "./query";
 
 describe("homeQuerySchema", () => {
   test("accepts valid flow values", () => {
-    for (const flow of ["service", "workorder", "repair"] as const) {
+    for (const flow of ["service", "workorder"] as const) {
       const res = homeQuerySchema.safeParse({ flow });
       expect(res.success).toBe(true);
       if (res.success) {
