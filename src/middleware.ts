@@ -80,6 +80,7 @@ export async function middleware(req: NextRequest) {
         p.startsWith("/_next") ||
         p.startsWith("/api/work-orders") ||
         p.startsWith("/api/repair-reports") ||
+        p.startsWith("/api/service-requests") ||
         p.startsWith("/api/complaints"));
     if (allowHumas || allowDistribusi) {
       const resp = NextResponse.next();
