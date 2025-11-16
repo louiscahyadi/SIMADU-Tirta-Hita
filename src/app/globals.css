@@ -71,6 +71,19 @@ body {
     display: none !important;
   }
 
+  /* Change service detail title for print */
+  [class*="daftar-data/service"] h2:first-of-type {
+    text-align: center !important;
+  }
+
+  /* Alternative selector for service detail pages */
+  h2:contains("Detail Permintaan Service") {
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    margin-bottom: 1cm !important;
+  }
+
   body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
