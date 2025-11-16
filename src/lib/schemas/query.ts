@@ -4,7 +4,7 @@ import { z } from "zod";
 // - flow: which step to render; optional, but must be one of allowed when present
 // - serviceRequestId, workOrderId, complaintId: optional but must be non-empty when provided
 
-export const flowEnum = z.enum(["service", "workorder", "repair"], {
+export const flowEnum = z.enum(["service", "workorder"], {
   required_error: "Parameter 'flow' wajib diisi.",
   invalid_type_error: "Parameter 'flow' tidak valid.",
 });
