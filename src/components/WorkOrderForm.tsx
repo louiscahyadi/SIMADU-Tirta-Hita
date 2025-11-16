@@ -180,8 +180,27 @@ export default function WorkOrderForm({
     if (!session) {
       console.log("❌ No session found, skipping auto-fill");
       push({
-        message: "Please login to auto-fill form data.",
+        message: "Session tidak ditemukan. Silakan refresh halaman dan login kembali.",
         type: "error",
+      });
+      return;
+    }
+
+    // Debug session information
+    const role = (session as any)?.user?.role || (session as any)?.role;
+    console.log("🔍 Session debug info:");
+    console.log("  - Role from session.user.role:", (session as any)?.user?.role);
+    console.log("  - Role from session.role:", (session as any)?.role);
+    console.log("  - Final role:", role);
+    console.log("  - User name:", session.user?.name);
+    console.log("  - User id:", (session as any)?.user?.id);
+
+    // Allow both humas and distribusi to use auto-fill
+    if (role && !["humas", "distribusi"].includes(role)) {
+      console.log("❌ Invalid role for auto-fill:", role);
+      push({
+        message: `Role '${role}' tidak dapat menggunakan fitur auto-fill SPK.`,
+        type: "info",
       });
       return;
     }
@@ -190,19 +209,28 @@ export default function WorkOrderForm({
       try {
         console.log("🔄 Auto-filling SPK form from PSP ID:", id);
         console.log("👤 Session user:", session.user?.email, "Role:", (session as any)?.role);
+        console.log(
+          "🌐 Making API request to:",
+          `/api/service-requests?id=${encodeURIComponent(id)}`,
+        );
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
         const res = await fetch(`/api/service-requests?id=${encodeURIComponent(id)}`, {
           method: "GET",
           credentials: "include", // Include cookies for authentication
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
-            // Try to include CSRF token if available
-            ...(typeof window !== "undefined" && (window as any).__NEXT_DATA__?.props?.csrfToken
-              ? { "X-CSRF-Token": (window as any).__NEXT_DATA__.props.csrfToken }
-              : {}),
+            // Include cache control headers
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
           },
+          signal: controller.signal,
           cache: "no-cache", // Ensure we get fresh data
         });
+
+        clearTimeout(timeoutId);
 
         console.log("📡 API Response Status:", res.status);
         console.log("📡 API Response Headers:", Object.fromEntries(res.headers.entries()));
@@ -210,6 +238,29 @@ export default function WorkOrderForm({
           console.log("❌ Failed to fetch PSP data:", res.status, res.statusText);
           const errorText = await res.text();
           console.log("❌ Error response body:", errorText);
+
+          // Handle specific HTTP status codes
+          if (res.status === 401) {
+            push({
+              message: "Session expired. Silakan refresh halaman dan login kembali.",
+              type: "error",
+            });
+          } else if (res.status === 403) {
+            push({
+              message: "Akses ditolak. Pastikan Anda login sebagai user distribusi.",
+              type: "error",
+            });
+          } else if (res.status === 404) {
+            push({
+              message: "Data PSP tidak ditemukan. Silakan pilih PSP yang valid.",
+              type: "error",
+            });
+          } else {
+            push({
+              message: `Gagal mengambil data PSP (${res.status}). Form dapat diisi manual.`,
+              type: "info",
+            });
+          }
           return;
         }
 
@@ -341,18 +392,60 @@ export default function WorkOrderForm({
               "Data nama pelapor, lokasi gangguan, dan jenis gangguan berhasil diisi otomatis dari PSP",
             type: "success",
           });
+          console.log("🎉 Auto-fill SUCCESS!");
         } else {
+          console.log("⚠️ Auto-fill INCOMPLETE - No fields were filled");
+          console.log("Available data structure:", {
+            hasReporterName: !!data?.reporterName,
+            hasCustomerName: !!data?.customerName,
+            hasAddress: !!data?.address,
+            hasComplaintCategory: !!data?._complaintCategory,
+            hasComplaintCustomerName: !!data?._complaintCustomerName,
+            hasComplaintAddress: !!data?._complaintAddress,
+            complaintId: data?._complaintId || "NULL",
+          });
           push({
-            message: "Data PSP ditemukan tetapi field auto-fill kosong. Silakan isi manual.",
+            message:
+              "Data PSP ditemukan tetapi beberapa field kosong. Silakan lengkapi data yang tersisa secara manual.",
             type: "info",
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("❌ Error auto-filling SPK form:", error);
-        push({
-          message: "Gagal mengisi otomatis dari data PSP. Silakan isi manual.",
-          type: "error",
-        });
+
+        // Handle different types of errors
+        if (error.name === "AbortError") {
+          push({
+            message: "Timeout mengambil data PSP. Form dapat diisi manual.",
+            type: "info",
+          });
+        } else if (error.message?.includes("network") || error.message?.includes("fetch")) {
+          push({
+            message: "Masalah koneksi jaringan. Form dapat diisi manual.",
+            type: "info",
+          });
+        } else {
+          push({
+            message: "Tidak dapat mengisi otomatis dari data PSP. Form dapat diisi manual.",
+            type: "info",
+          });
+        }
+
+        // Fallback: try to get complaintId from URL
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const complaintIdFromUrl = urlParams.get("complaintId");
+          if (complaintIdFromUrl) {
+            setValue("caseId", complaintIdFromUrl, { shouldValidate: true });
+            console.log("✅ Fallback: Set Case ID from URL:", complaintIdFromUrl);
+            push({
+              message: "Case ID diisi dari URL parameter. Silakan lengkapi field lainnya.",
+              type: "info",
+            });
+          }
+        } catch (fallbackError) {
+          console.log("❌ Fallback also failed:", fallbackError);
+        }
       }
     })();
     // intentionally run once per serviceRequestId and when session changes
@@ -374,8 +467,12 @@ export default function WorkOrderForm({
             </svg>
             <span className="font-medium">Auto-fill Aktif:</span>
             <span className="ml-1">
-              Nama pelapor, lokasi gangguan, dan jenis gangguan akan diisi otomatis dari data PSP.
+              Nama pelapor, lokasi gangguan, dan jenis gangguan akan diisi otomatis dari data PSP
+              (ID: {serviceRequestId}).
             </span>
+          </div>
+          <div className="text-xs text-green-600 mt-1">
+            💡 Jika field tidak terisi otomatis, periksa browser console (F12) untuk detail error.
           </div>
         </div>
       )}
