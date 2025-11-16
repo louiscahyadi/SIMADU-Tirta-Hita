@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
 import HumasServiceFormCard from "@/components/HumasServiceFormCard";
-import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
 import { CacheKeys, CacheTags, CacheConfig, rememberWithMetrics } from "@/lib/cache";
 import { logger } from "@/lib/logger";
@@ -180,89 +179,7 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
       <Breadcrumbs items={[{ label: "Beranda", href: "/" }, { label: "HUMAS" }]} />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Dashboard HUMAS</h2>
-        <div className="flex gap-2">
-          <PrintButton />
-          <Link className="btn-outline btn-sm" href="/humas/status">
-            Lihat Status
-          </Link>
-          <Link className="btn-outline btn-sm" href="/humas/daftar-data?tab=service">
-            Lihat semua data
-          </Link>
-        </div>
       </div>
-
-      {/* Filter bar (mirrors Status HUMAS quick presets) */}
-      {(() => {
-        const today = new Date();
-        const toIso = today.toISOString().slice(0, 10);
-        const startOfWeek = new Date(today);
-        const dw = startOfWeek.getDay();
-        const diffToMonday = dw === 0 ? -6 : 1 - dw;
-        startOfWeek.setDate(today.getDate() + diffToMonday);
-        const fromWeekIso = startOfWeek.toISOString().slice(0, 10);
-        const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const fromMonthIso = firstOfMonth.toISOString().slice(0, 10);
-        const withRange = (fromV: string, toV: string) => {
-          const sp = new URLSearchParams();
-          for (const [k, v] of Object.entries(searchParams ?? {}))
-            if (v != null) sp.set(k, Array.isArray(v) ? v[0]! : v);
-          sp.set("from", fromV);
-          sp.set("to", toV);
-          return `?${sp.toString()}`;
-        };
-        return (
-          <form method="get" className="card p-4 flex flex-wrap items-end gap-3">
-            <div className="flex flex-col">
-              <label className="text-sm text-gray-600">Kata kunci</label>
-              <input
-                name="q"
-                defaultValue={q}
-                className="input"
-                placeholder="Cari nama, alamat, kategori..."
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-sm text-gray-600">Dari tanggal</label>
-              <input type="date" name="from" defaultValue={fromStr || ""} className="input" />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-sm text-gray-600">Sampai tanggal</label>
-              <input type="date" name="to" defaultValue={toStr || ""} className="input" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-gray-600">Preset</span>
-              <div className="flex items-center gap-2">
-                <Link
-                  className="text-blue-700 hover:underline text-sm"
-                  href={withRange(toIso, toIso)}
-                >
-                  Hari ini
-                </Link>
-                <Link
-                  className="text-blue-700 hover:underline text-sm"
-                  href={withRange(fromWeekIso, toIso)}
-                >
-                  Minggu ini
-                </Link>
-                <Link
-                  className="text-blue-700 hover:underline text-sm"
-                  href={withRange(fromMonthIso, toIso)}
-                >
-                  Bulan ini
-                </Link>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" className="btn btn-sm">
-                Terapkan
-              </button>
-              <Link className="btn-outline btn-sm" href="/humas">
-                Reset
-              </Link>
-            </div>
-          </form>
-        );
-      })()}
 
       {/* KPI counters */}
       <div className="grid sm:grid-cols-4 gap-3">
@@ -361,6 +278,79 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
           <div className="text-xs text-gray-600 mt-1">Keseluruhan data</div>
         </div>
       </div>
+
+      {/* Filter bar (mirrors Status HUMAS quick presets) */}
+      {(() => {
+        const today = new Date();
+        const toIso = today.toISOString().slice(0, 10);
+        const startOfWeek = new Date(today);
+        const dw = startOfWeek.getDay();
+        const diffToMonday = dw === 0 ? -6 : 1 - dw;
+        startOfWeek.setDate(today.getDate() + diffToMonday);
+        const fromWeekIso = startOfWeek.toISOString().slice(0, 10);
+        const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const fromMonthIso = firstOfMonth.toISOString().slice(0, 10);
+        const withRange = (fromV: string, toV: string) => {
+          const sp = new URLSearchParams();
+          for (const [k, v] of Object.entries(searchParams ?? {}))
+            if (v != null) sp.set(k, Array.isArray(v) ? v[0]! : v);
+          sp.set("from", fromV);
+          sp.set("to", toV);
+          return `?${sp.toString()}`;
+        };
+        return (
+          <form method="get" className="card p-4 flex flex-wrap items-end gap-3">
+            <div className="flex flex-col">
+              <label className="text-sm text-gray-600">Kata kunci</label>
+              <input
+                name="q"
+                defaultValue={q}
+                className="input"
+                placeholder="Cari nama, alamat, kategori..."
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-gray-600">Dari tanggal</label>
+              <input type="date" name="from" defaultValue={fromStr || ""} className="input" />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-gray-600">Sampai tanggal</label>
+              <input type="date" name="to" defaultValue={toStr || ""} className="input" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-sm text-gray-600">Preset</span>
+              <div className="flex items-center gap-2">
+                <Link
+                  className="text-blue-700 hover:underline text-sm"
+                  href={withRange(toIso, toIso)}
+                >
+                  Hari ini
+                </Link>
+                <Link
+                  className="text-blue-700 hover:underline text-sm"
+                  href={withRange(fromWeekIso, toIso)}
+                >
+                  Minggu ini
+                </Link>
+                <Link
+                  className="text-blue-700 hover:underline text-sm"
+                  href={withRange(fromMonthIso, toIso)}
+                >
+                  Bulan ini
+                </Link>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button type="submit" className="btn btn-sm">
+                Terapkan
+              </button>
+              <Link className="btn-outline btn-sm" href="/humas">
+                Reset
+              </Link>
+            </div>
+          </form>
+        );
+      })()}
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="card p-4 space-y-3">
