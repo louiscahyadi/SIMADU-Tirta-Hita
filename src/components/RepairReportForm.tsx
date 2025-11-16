@@ -58,12 +58,11 @@ type FormValues = {
   // Info umum
   startTime: string;
   endTime: string;
-  result: "FIXED" | "MONITORING" | "NOT_FIXED";
+  result: "FIXED" | "NOT_FIXED";
   // Info lokasi
   city?: string;
   executorName?: string;
   team?: string;
-  authorizedBy?: string;
   // Digital signature
   executorSignature?: string;
 };
@@ -99,7 +98,6 @@ export default function RepairReportForm({
       city: "",
       executorName: "",
       team: "",
-      authorizedBy: "",
       executorSignature: "",
     },
   });
@@ -127,14 +125,14 @@ export default function RepairReportForm({
         return;
       }
 
-      // Basic validation: If FIXED/MONITORING, should have at least some repair types
+      // Basic validation: If FIXED, should have at least some repair types
       if (
-        values.result !== "NOT_FIXED" &&
+        values.result === "FIXED" &&
         values.repairTypes.length === 0 &&
         !values.otherRepairType?.trim()
       ) {
         push({
-          message: "Silakan pilih minimal satu jenis perbaikan untuk hasil FIXED/MONITORING",
+          message: "Silakan pilih minimal satu jenis perbaikan untuk hasil FIXED",
           type: "error",
         });
         return;
@@ -226,6 +224,51 @@ export default function RepairReportForm({
     formState: { errors },
   } = form;
 
+  // Auto-fill fields from SPK data
+  useEffect(() => {
+    if (spkId) {
+      const fetchSPKData = async () => {
+        try {
+          console.log("🔄 Auto-filling form from SPK ID:", spkId);
+          const res = await fetch(`/api/work-orders?id=${encodeURIComponent(spkId)}`, {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-cache",
+            },
+            cache: "no-cache",
+          });
+
+          if (!res.ok) {
+            console.log("❌ Failed to fetch SPK data:", res.status);
+            return;
+          }
+
+          const spkData = await res.json();
+          console.log("📋 SPK Data received:", spkData);
+
+          // Auto-fill Tim/Regu from teamName
+          if (spkData.teamName || spkData.team) {
+            const teamValue = spkData.teamName || spkData.team;
+            setValue("team", teamValue);
+            console.log("✅ Auto-filled Tim/Regu:", teamValue);
+          }
+
+          // Auto-fill Nama Pelaksana from technicians
+          if (spkData.technicians) {
+            setValue("executorName", spkData.technicians);
+            console.log("✅ Auto-filled Nama Pelaksana:", spkData.technicians);
+          }
+        } catch (error) {
+          console.error("❌ Error fetching SPK data:", error);
+        }
+      };
+
+      fetchSPKData();
+    }
+  }, [spkId, setValue]);
+
   // If no caseId provided but we have spkId, show a message
   useEffect(() => {
     if (!caseId && spkId && !caseIdLoaded) {
@@ -284,29 +327,27 @@ export default function RepairReportForm({
             />
           </div>
           <div>
-            <label className="label">Nama Pelaksana</label>
+            <label className="label">
+              Nama Pelaksana <span className="text-xs text-blue-600">(Auto dari SPK)</span>
+            </label>
             <input
-              className="input"
-              placeholder="Nama yang mengerjakan"
+              className="input bg-blue-50 border-blue-200 text-blue-800"
+              placeholder="Akan diisi otomatis dari SPK..."
+              readOnly
               {...register("executorName", { maxLength: 100 })}
             />
           </div>
         </div>
         <div className="grid md:grid-cols-2 gap-4 mt-4">
           <div>
-            <label className="label">Tim/Regu</label>
+            <label className="label">
+              Tim/Regu <span className="text-xs text-blue-600">(Auto dari SPK)</span>
+            </label>
             <input
-              className="input"
-              placeholder="Nama tim/regu"
+              className="input bg-blue-50 border-blue-200 text-blue-800"
+              placeholder="Akan diisi otomatis dari SPK..."
+              readOnly
               {...register("team", { maxLength: 100 })}
-            />
-          </div>
-          <div>
-            <label className="label">Disahkan Oleh</label>
-            <input
-              className="input"
-              placeholder="Ka. Sub. Bag. Distribusi"
-              {...register("authorizedBy", { maxLength: 100 })}
             />
           </div>
         </div>
@@ -349,7 +390,6 @@ export default function RepairReportForm({
             defaultValue="FIXED"
           >
             <option value="FIXED">FIXED - Berhasil diperbaiki</option>
-            <option value="MONITORING">MONITORING - Perlu pemantauan</option>
             <option value="NOT_FIXED">NOT_FIXED - Tidak dapat diperbaiki</option>
           </select>
         </div>
@@ -432,19 +472,7 @@ export default function RepairReportForm({
           </div>
         </div>
       </div>
-      <div className="pt-2 flex gap-3">
-        <button
-          type="button"
-          className="btn-outline btn-sm"
-          onClick={() => {
-            console.log("=== DEBUG BUTTON CLICKED ===");
-            console.log("Form errors:", Object.keys(errors));
-            console.log("Form values:", watch());
-            console.log("Is submitting:", isSubmitting);
-          }}
-        >
-          Debug
-        </button>
+      <div className="pt-2">
         <LoadingButton
           type="submit"
           loading={isSubmitting}
