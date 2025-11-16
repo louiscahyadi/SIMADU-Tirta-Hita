@@ -2,7 +2,6 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
-import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -150,18 +149,6 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
       <Breadcrumbs items={[{ label: "Beranda", href: "/" }, { label: "DISTRIBUSI" }]} />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Dashboard DISTRIBUSI</h2>
-        <div className="flex gap-2">
-          <PrintButton />
-          <Link className="btn-outline btn-sm" href="/distribusi/status">
-            Lihat Status
-          </Link>
-          <Link className="btn-outline btn-sm" href="/distribusi/status#workorder">
-            Lihat SPK
-          </Link>
-          <Link className="btn-outline btn-sm" href="/distribusi/status#repair">
-            Lihat Berita Acara
-          </Link>
-        </div>
       </div>
 
       {/* KPI counters */}
