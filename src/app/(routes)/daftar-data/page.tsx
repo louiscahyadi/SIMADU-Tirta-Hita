@@ -3,8 +3,6 @@ import { getServerSession } from "next-auth";
 import React from "react";
 
 import Breadcrumbs from "@/components/Breadcrumbs";
-import ComplaintPrintButton from "@/components/ComplaintPrintButton";
-import PrintButton from "@/components/PrintButton";
 import { authOptions } from "@/lib/auth";
 import { CacheKeys, CacheTags, CacheConfig, rememberWithMetrics } from "@/lib/cache";
 import { prisma } from "@/lib/prisma";
@@ -109,22 +107,13 @@ function FilterBar({ sp }: { sp: URLSearchParams }) {
         <div>
           <div className="font-medium">Filter</div>
           <div className="text-sm text-gray-500">
-            Gunakan kata kunci, status, dan opsi lainnya lalu terapkan untuk memperbarui tabel.
+            Gunakan status dan opsi lainnya lalu terapkan untuk memperbarui tabel.
           </div>
         </div>
         <form method="get" className="space-y-3">
           <input type="hidden" name="tab" value={tab} />
           {scope ? <input type="hidden" name="scope" value={scope} /> : null}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex flex-col">
-              <label className="text-sm text-gray-600">Kata kunci</label>
-              <input
-                name="q"
-                defaultValue={q}
-                placeholder="Cari nama, nomor, lokasi..."
-                className="input"
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col">
               <label className="text-sm text-gray-600">Status</label>
               <select name="status" defaultValue={status} className="input">
@@ -220,22 +209,11 @@ function FilterBar({ sp }: { sp: URLSearchParams }) {
   qsp30.set("from", from30Str);
   qsp30.set("to", toStr);
   qsp30.set("page", "1");
-  // Page size chips
-  const sizes = ["5", "10", "20", "50"] as const;
   // Ekspor dihapus: tidak ada URL ekspor CSV
   return (
     <form method="get" className="flex flex-wrap items-end gap-3">
       <input type="hidden" name="tab" value={tab} />
       {scope ? <input type="hidden" name="scope" value={scope} /> : null}
-      <div className="flex flex-col">
-        <label className="text-sm text-gray-600">Kata kunci</label>
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Cari nama, nomor, lokasi, dll"
-          className="input"
-        />
-      </div>
       <div className="flex flex-col">
         <label className="text-sm text-gray-600">Dari tanggal</label>
         <input type="date" name="from" defaultValue={from} className="input" />
@@ -310,32 +288,6 @@ function FilterBar({ sp }: { sp: URLSearchParams }) {
           <option value="50">50</option>
         </select>
       </div>
-      <div className="flex flex-col gap-1">
-        <span className="text-sm text-gray-600">Cepat: baris/hal</span>
-        <div className="flex items-center gap-2">
-          {sizes.map((sz) => {
-            const next = new URLSearchParams(sp);
-            next.set("tab", tab);
-            next.set("pageSize", sz);
-            next.set("page", "1");
-            const isActive = pageSize === sz;
-            return (
-              <Link
-                key={sz}
-                href={`?${next.toString()}`}
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm ${
-                  isActive
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                }`}
-                title={`Tampilkan ${sz} baris/halaman`}
-              >
-                {sz}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
       <div className="flex gap-2">
         <button type="submit" className="btn btn-sm">
           Terapkan Filter
@@ -354,7 +306,6 @@ function FilterBar({ sp }: { sp: URLSearchParams }) {
             </Link>
           );
         })()}
-        <PrintButton />
         {/* Ekspor PDF/CSV dihapus */}
       </div>
     </form>
@@ -1043,49 +994,24 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                           })()}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          {(() => {
-                            let href: string | null = null;
-                            if (c.serviceRequestId) {
-                              href = `/daftar-data/service/${c.serviceRequestId}`;
-                            } else {
-                              // Hanya HUMAS dapat memulai SR dari pengaduan
-                              if (role === "humas") {
-                                href = `/?flow=service&complaintId=${encodeURIComponent(
-                                  c.id,
-                                )}&customerName=${encodeURIComponent(
-                                  c.customerName,
-                                )}&address=${encodeURIComponent(
-                                  c.address,
-                                )}&phone=${encodeURIComponent(
-                                  c.phone || "",
-                                )}&connectionNumber=${encodeURIComponent(
-                                  c.connectionNumber || "",
-                                )}&category=${encodeURIComponent(c.category)}`;
-                              }
-                            }
-                            return (
-                              <div className="flex items-center gap-2">
-                                {href ? (
-                                  <Link className="btn-outline btn-sm" href={withScope(href)}>
-                                    Aksi
-                                  </Link>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )}
-                                <ComplaintPrintButton complaintId={c.id} />
-                                {c.mapsLink ? (
-                                  <a
-                                    className="text-gray-700 hover:underline"
-                                    href={c.mapsLink}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                  >
-                                    Maps
-                                  </a>
-                                ) : null}
-                              </div>
-                            );
-                          })()}
+                          <div className="flex items-center gap-2">
+                            <Link
+                              className="btn-outline btn-sm"
+                              href={withScope(`/daftar-data/complaint/${c.id}`)}
+                            >
+                              Detail
+                            </Link>
+                            {c.mapsLink ? (
+                              <a
+                                className="text-gray-700 hover:underline"
+                                href={c.mapsLink}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Maps
+                              </a>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                     ))}
