@@ -1314,7 +1314,11 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                             if (!hasRr) {
                               // Hanya DISTRIBUSI dapat membuat Berita Acara
                               if (role === "distribusi") {
-                                const href = `/?flow=repair&workOrderId=${encodeURIComponent(woId)}`;
+                                const params = new URLSearchParams({ workOrderId: woId });
+                                if (s.complaint?.id) {
+                                  params.set("complaintId", s.complaint.id);
+                                }
+                                const href = `/distribusi/berita-acara/create?${params.toString()}`;
                                 return (
                                   <Link
                                     className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-3 py-1.5 text-gray-700 hover:bg-gray-200"
@@ -1572,7 +1576,11 @@ export default async function DaftarDataPage({ searchParams }: PageProps) {
                             const hasRr = woToRr.has(w.id);
                             if (!hasRr) {
                               if (role === "distribusi") {
-                                const href = `/?flow=repair&workOrderId=${encodeURIComponent(w.id)}`;
+                                const params = new URLSearchParams({ workOrderId: w.id });
+                                if (w.complaint?.id) {
+                                  params.set("complaintId", w.complaint.id);
+                                }
+                                const href = `/distribusi/berita-acara/create?${params.toString()}`;
                                 return (
                                   <Link className="btn-outline btn-sm" href={href}>
                                     Aksi
