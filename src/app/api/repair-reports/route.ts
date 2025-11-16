@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
           city: data.city ?? null,
           executorName: data.executorName ?? null,
           team: data.team ?? null,
-          authorizedBy: data.authorizedBy ?? null,
           // Digital signature fields
           executorSignature: data.executorSignature ?? null,
           executorSignedAt: data.executorSignature ? new Date() : null,
@@ -72,21 +71,12 @@ export async function POST(req: NextRequest) {
         note: "BAP dibuat",
       });
 
-      // 2) Final status based on result (COMPLETED or MONITORING)
-      if (data.result === "MONITORING") {
-        await ComplaintFlow.markMonitoring(tx, data.caseId, {
-          actorRole: "distribusi",
-          actorId: token?.sub ?? null,
-          note: "BAP dikirim, hasil = MONITORING",
-        });
-      } else {
-        // Default to COMPLETED for FIXED and any other terminal result except MONITORING
-        await ComplaintFlow.markCompleted(tx, data.caseId, {
-          actorRole: "distribusi",
-          actorId: token?.sub ?? null,
-          note: `BAP dikirim, hasil = ${data.result}`,
-        });
-      }
+      // 2) Final status based on result - mark as completed regardless of FIXED or NOT_FIXED
+      await ComplaintFlow.markCompleted(tx, data.caseId, {
+        actorRole: "distribusi",
+        actorId: token?.sub ?? null,
+        note: `BAP dikirim, hasil = ${data.result}`,
+      });
 
       // Ensure complaint link fields match the SR→WO→RR chain
       await verifyCaseConsistency(tx, data.caseId, { fix: true });
