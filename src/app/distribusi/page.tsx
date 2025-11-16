@@ -381,7 +381,7 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
           </div>
           <ul className="divide-y">
             {needRR.map((w) => {
-              const params = new URLSearchParams({ flow: "repair", workOrderId: w.id });
+              const params = new URLSearchParams({ workOrderId: w.id });
               // Add complaintId if available from workOrder
               if (w.complaint?.id) {
                 params.set("complaintId", w.complaint.id);
@@ -398,7 +398,10 @@ export default async function DistribusiDashboard({ searchParams }: PageProps) {
                     <span className="text-xs text-gray-500 whitespace-nowrap">
                       {formatDate(w.createdAt)}
                     </span>
-                    <Link className="btn-outline btn-sm" href={`/${"?" + params.toString()}`}>
+                    <Link
+                      className="btn-outline btn-sm"
+                      href={`/distribusi/berita-acara/create?${params.toString()}`}
+                    >
                       Buat BA
                     </Link>
                   </div>
