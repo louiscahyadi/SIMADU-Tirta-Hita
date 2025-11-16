@@ -12,8 +12,8 @@ import { VALIDATION_ERRORS } from "../errorMessages";
 // - otherNotHandledReason string, alasan lain tidak ditangani
 // - startTime datetime, required
 // - endTime datetime, required, >= startTime
-// - result enum: FIXED | MONITORING | NOT_FIXED, required
-// - city, executorName, team, authorizedBy - info pelaksana
+// - result enum: FIXED | NOT_FIXED, required
+// - city, executorName, team - info pelaksana
 
 export const repairReportSchema = z
   .object({
@@ -25,11 +25,10 @@ export const repairReportSchema = z
     otherNotHandledReason: z.string().trim().max(200).optional().or(z.literal("")),
     startTime: z.string().datetime(),
     endTime: z.string().datetime(),
-    result: z.enum(["FIXED", "MONITORING", "NOT_FIXED"]),
+    result: z.enum(["FIXED", "NOT_FIXED"]),
     city: z.string().trim().max(100).optional().or(z.literal("")),
     executorName: z.string().trim().max(100).optional().or(z.literal("")),
     team: z.string().trim().max(100).optional().or(z.literal("")),
-    authorizedBy: z.string().trim().max(100).optional().or(z.literal("")),
     executorSignature: z.string().min(1, "Tanda tangan pelaksana wajib diisi"),
   })
   .superRefine((v, ctx) => {
@@ -52,7 +51,6 @@ export const repairReportSchema = z
     city: v.city ? v.city : undefined,
     executorName: v.executorName ? v.executorName : undefined,
     team: v.team ? v.team : undefined,
-    authorizedBy: v.authorizedBy ? v.authorizedBy : undefined,
     executorSignature: v.executorSignature,
   }));
 
