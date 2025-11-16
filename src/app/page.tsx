@@ -57,9 +57,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   if (qp.flow === "workorder" && !qp.serviceRequestId) {
     errors.push("Parameter 'serviceRequestId' wajib untuk flow=workorder.");
   }
-  if (qp.flow === "repair" && !qp.workOrderId) {
-    errors.push("Parameter 'workOrderId' wajib untuk flow=repair.");
-  }
 
   // Auto-fetch complaintId if missing for workorder flow
   let finalComplaintId = qp.complaintId;
@@ -99,7 +96,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     >
       <HomePageClient
         role={role}
-        initialFlow={qp.flow as "service" | "workorder" | "repair"}
+        initialFlow={qp.flow as "service" | "workorder"}
         initialComplaintId={finalComplaintId || undefined}
         initialServiceRequestId={qp.serviceRequestId || undefined}
         initialWorkOrderId={qp.workOrderId || undefined}
