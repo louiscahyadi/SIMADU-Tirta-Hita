@@ -341,7 +341,11 @@ export default async function RingkasanPage() {
                 </thead>
                 <tbody>
                   {latestWoNoRr.map((w: any) => {
-                    const href = `/?flow=repair&workOrderId=${encodeURIComponent(w.id)}`;
+                    const params = new URLSearchParams({ workOrderId: w.id });
+                    if (w.complaint?.id) {
+                      params.set("complaintId", w.complaint.id);
+                    }
+                    const href = `/distribusi/berita-acara/create?${params.toString()}`;
                     return (
                       <tr key={w.id} className="odd:bg-white even:bg-gray-50 border-b">
                         <td className="px-3 py-2 whitespace-nowrap">
