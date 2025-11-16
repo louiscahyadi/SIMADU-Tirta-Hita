@@ -372,15 +372,6 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
             </div>
             <ul className="divide-y">
               {latestComplaints.map((c) => {
-                const params = new URLSearchParams({
-                  flow: "service",
-                  customerName: c.customerName || "",
-                  address: c.address || "",
-                  phone: c.phone || "",
-                  connectionNumber: c.connectionNumber || "",
-                  category: c.category || "",
-                  complaintId: c.id,
-                });
                 return (
                   <li key={c.id} className="py-2 flex items-center justify-between gap-2">
                     <div className="min-w-0">
@@ -396,9 +387,6 @@ export default async function HumasDashboard({ searchParams }: PageProps) {
                         href={`/daftar-data/complaint/${c.id}?scope=humas`}
                       >
                         Detail
-                      </Link>
-                      <Link className="btn-outline btn-sm" href={`/${"?" + params.toString()}`}>
-                        Buat Service
                       </Link>
                     </div>
                   </li>
