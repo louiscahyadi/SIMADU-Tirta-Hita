@@ -207,14 +207,6 @@ export default async function RingkasanPage() {
               </thead>
               <tbody>
                 {latestComplaintsNew.map((c: any) => {
-                  const href =
-                    `/` +
-                    `?flow=service&complaintId=${encodeURIComponent(c.id)}` +
-                    `&customerName=${encodeURIComponent(c.customerName || "")}` +
-                    `&address=${encodeURIComponent(c.address || "")}` +
-                    `&phone=${encodeURIComponent(c.phone || "")}` +
-                    `&connectionNumber=${encodeURIComponent(c.connectionNumber || "")}` +
-                    `&category=${encodeURIComponent(c.category || "")}`;
                   return (
                     <tr key={c.id} className="odd:bg-white even:bg-gray-50 border-b">
                       <td className="px-3 py-2 whitespace-nowrap">
@@ -227,17 +219,12 @@ export default async function RingkasanPage() {
                       <td className="px-3 py-2">{c.category}</td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         {role === "humas" ? (
-                          <div className="flex items-center gap-2">
-                            <Link
-                              className="btn-outline btn-sm"
-                              href={`/daftar-data/complaint/${c.id}`}
-                            >
-                              Detail
-                            </Link>
-                            <Link className="btn-outline btn-sm" href={href}>
-                              Buat Service
-                            </Link>
-                          </div>
+                          <Link
+                            className="btn-outline btn-sm"
+                            href={`/daftar-data/complaint/${c.id}`}
+                          >
+                            Detail
+                          </Link>
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
