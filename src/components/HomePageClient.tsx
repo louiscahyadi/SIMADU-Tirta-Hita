@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 
-import RepairReportForm from "@/components/RepairReportForm";
 import ServiceRequestForm from "@/components/ServiceRequestForm";
 import WorkOrderForm from "@/components/WorkOrderForm";
 
 const tabs = [
   { id: "service", label: "Permintaan Service/Perbaikan" },
   { id: "workorder", label: "Surat Perintah Kerja" },
-  { id: "repair", label: "Berita Acara Perbaikan" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -51,9 +49,8 @@ export default function HomePageClient({
         {tabs.map((t) => {
           const roleAllows =
             (role === "humas" && t.id === "service") ||
-            (role === "distribusi" && (t.id === "workorder" || t.id === "repair"));
-          const disabledByFlow =
-            (t.id === "workorder" && !serviceRequestId) || (t.id === "repair" && !workOrderId);
+            (role === "distribusi" && t.id === "workorder");
+          const disabledByFlow = t.id === "workorder" && !serviceRequestId;
           const disabled = !roleAllows || disabledByFlow;
           return (
             <button
@@ -66,10 +63,6 @@ export default function HomePageClient({
                   }
                   if (t.id === "workorder") {
                     alert("Silakan simpan Permintaan Service terlebih dahulu.");
-                  } else if (t.id === "repair") {
-                    alert(
-                      "Berita Acara hanya dapat dibuat setelah SPK selesai dikerjakan di lapangan. Gunakan dashboard Distribusi untuk membuat BA dari SPK yang sudah selesai.",
-                    );
                   }
                   return;
                 }
@@ -86,7 +79,7 @@ export default function HomePageClient({
                     ? "Peran tidak diizinkan"
                     : t.id === "workorder"
                       ? "Kunci: butuh Permintaan Service"
-                      : "Kunci: butuh SPK yang telah selesai dikerjakan di lapangan"
+                      : undefined
                   : undefined
               }
             >
@@ -128,19 +121,6 @@ export default function HomePageClient({
               setWorkOrderId(id);
               // Don't automatically switch to repair - let distribusi handle it later via dashboard
               // setActive("repair");
-            }}
-          />
-        )}
-        {active === "repair" && role === "distribusi" && (
-          <RepairReportForm
-            caseId={complaintId}
-            spkId={workOrderId}
-            onSaved={() => {
-              // selesai flow
-              setActive("service");
-              setServiceRequestId(undefined);
-              setWorkOrderId(undefined);
-              setComplaintId(undefined);
             }}
           />
         )}
