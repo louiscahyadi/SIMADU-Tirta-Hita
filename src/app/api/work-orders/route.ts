@@ -79,6 +79,47 @@ export async function GET(req: NextRequest) {
     const token = await getToken({ req, secret: env.NEXTAUTH_SECRET }).catch(() => null);
     if (!token) return errorResponse(AppError.unauthorized());
     const url = new URL(req.url);
+
+    // Handle single work order query by ID
+    const workOrderId = url.searchParams.get("id");
+    if (workOrderId) {
+      const workOrder = await prisma.workOrder.findUnique({
+        where: { id: workOrderId },
+        include: {
+          serviceRequest: {
+            select: {
+              id: true,
+              reporterName: true,
+              customerName: true,
+              address: true,
+              urgency: true,
+            },
+          },
+          repairReport: {
+            select: {
+              id: true,
+              result: true,
+              startTime: true,
+              endTime: true,
+            },
+          },
+          complaint: {
+            select: {
+              id: true,
+              category: true,
+              status: true,
+            },
+          },
+        },
+      });
+
+      if (!workOrder) {
+        return NextResponse.json({ error: "Work order not found" }, { status: 404 });
+      }
+
+      return NextResponse.json(workOrder);
+    }
+
     const hasPage = url.searchParams.has("page") || url.searchParams.has("pageSize");
     if (!hasPage) {
       const list = await prisma.workOrder.findMany({
