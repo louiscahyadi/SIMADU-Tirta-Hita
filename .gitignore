@@ -43,3 +43,7 @@ prisma/*.db
 ### Misc
 dist/
 *.local
+
+### Development files (local only)
+docs/
+scripts/
