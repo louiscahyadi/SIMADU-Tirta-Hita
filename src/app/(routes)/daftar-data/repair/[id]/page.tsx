@@ -3,11 +3,9 @@ import Link from "next/link";
 
 import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import OfficialPrintButton from "@/components/print/OfficialPrintButton";
-import PrintButton from "@/components/PrintButton";
+import ClientPrintButton from "@/components/ClientPrintButton";
 import StatusHistoryPanel from "@/components/StatusHistoryPanel";
 import { prisma } from "@/lib/prisma";
-import { entityAbbr, entityLabel } from "@/lib/uiLabels";
 
 type PageProps = { params: { id: string } };
 
@@ -119,8 +117,6 @@ export default async function RepairDetail({
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Detail Berita Acara Perbaikan</h2>
         <div className="flex items-center gap-2">
-          <OfficialPrintButton documentType="repair" documentId={id} />
-          <PrintButton />
           <Link className="text-sm text-blue-700 hover:underline" href={`${listBase}?tab=repair`}>
             ← Kembali
           </Link>
@@ -201,83 +197,126 @@ export default async function RepairDetail({
 
       {/* Tanda Tangan Digital */}
       {(rr as any).executorSignature && (
-        <div className="card p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-blue-600 text-sm font-medium">✍️</span>
-            </div>
-            <h3 className="font-medium text-gray-800">Tanda Tangan Digital</h3>
-          </div>
-          <div className="bg-white rounded-lg p-4 border border-blue-100">
-            <div className="grid md:grid-cols-2 gap-4">
-              {/* Tanda Tangan Pelaksana */}
-              <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">Pelaksana Perbaikan:</div>
-                <div className="relative w-full h-32 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                  <Image
-                    src={(rr as any).executorSignature}
-                    alt="Tanda Tangan Pelaksana"
-                    fill
-                    className="object-contain p-2"
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                  />
-                </div>
-                <div className="text-xs text-gray-600 mt-2 space-y-1">
-                  <div>
-                    <span className="font-medium">Ditandatangani oleh:</span>{" "}
-                    {(rr as any).executorSignedBy || "-"}
-                  </div>
-                  <div>
-                    <span className="font-medium">Waktu:</span>{" "}
-                    {formatDate((rr as any).executorSignedAt)}
-                  </div>
-                </div>
+        <div className="card p-4">
+          <div className="font-medium mb-3 text-blue-900">Tanda Tangan Digital</div>
+          <div className="space-y-3">
+            <div className="max-w-xs">
+              <div className="text-sm text-gray-600 mb-2">Pelaksana Perbaikan:</div>
+              <div className="border rounded-lg p-2 bg-gray-50 relative h-24">
+                <Image
+                  src={(rr as any).executorSignature}
+                  alt="Tanda tangan pelaksana perbaikan"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 320px) 280px, 320px"
+                />
               </div>
-
-              {/* Info Tambahan */}
-              <div className="flex flex-col justify-center">
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                  <div className="text-xs text-blue-700 space-y-1">
-                    <div className="font-medium">🔒 Keamanan Tanda Tangan:</div>
-                    <div>• Tanda tangan tersimpan dengan aman dalam sistem</div>
-                    <div>• Timestamp otomatis untuk audit trail</div>
-                    <div>• Data tidak dapat diubah setelah disimpan</div>
-                  </div>
-                </div>
+              <div className="text-xs text-gray-500 mt-1">
+                <div>Ditandatangani oleh: {(rr as any).executorSignedBy || "Unknown"}</div>
+                <div>Waktu: {formatDate((rr as any).executorSignedAt)}</div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {(srEntity || wo || cFromRr) && (
-        <div className="card p-4 text-sm">
-          <div className="font-medium mb-2">Dokumen Terkait</div>
-          <div className="flex items-center gap-2">
-            {srEntity && (
-              <Link className="btn-outline btn-sm" href={`/daftar-data/service/${srEntity.id}`}>
-                {entityLabel("serviceRequest")}
-              </Link>
-            )}
-            {wo && (
-              <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${wo.id}`}>
-                {entityLabel("workOrder")}
-              </Link>
-            )}
-            <span
-              className="rounded bg-green-50 px-2 py-0.5 text-green-700"
-              title={entityLabel("repairReport")}
-            >
-              {entityAbbr("repairReport")}
-            </span>
-            {cFromRr && (
-              <Link className="btn-outline btn-sm" href={`/daftar-data/complaint/${cFromRr.id}`}>
-                Complaint
-              </Link>
-            )}
+      {/* Print-friendly summary section */}
+      <div
+        className="card p-4 bg-gradient-to-br from-green-50 to-green-100 border-green-200"
+        id="print-section"
+      >
+        <div className="flex items-center justify-between mb-3 print-hide">
+          <div className="font-medium text-green-900 flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+              />
+            </svg>
+            Ringkasan untuk Print/Cetak
+          </div>
+          <ClientPrintButton />
+        </div>
+        {/* Print Title - Only visible when printing */}
+        <div className="text-center mb-4 print:block hidden">
+          <h1 className="text-xl font-bold text-gray-900">Formulir Berita Acara Perbaikan</h1>
+        </div>
+        <div className="text-sm space-y-1 bg-white p-3 rounded border">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <strong>Tanggal Input:</strong> {formatDate(rr.createdAt)}
+            </div>
+            <div>
+              <strong>Kota:</strong> {rr.city || "-"}
+            </div>
+            <div>
+              <strong>Waktu Mulai:</strong> {formatDate((rr as any).startTime)}
+            </div>
+            <div>
+              <strong>Waktu Selesai:</strong> {formatDate((rr as any).endTime)}
+            </div>
+            <div>
+              <strong>Durasi:</strong> {formatDuration((rr as any).startTime, (rr as any).endTime)}
+            </div>
+            <div>
+              <strong>Tim/Pelaksana:</strong> {rr.team ?? rr.executorName ?? "-"}
+            </div>
+          </div>
+          <div className="mt-2 pt-2 border-t">
+            <strong>Hasil Perbaikan:</strong>{" "}
+            {(() => {
+              const res = ((rr as any).result as string | undefined) ?? undefined;
+              if (!res) return "-";
+              return (
+                <span
+                  className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
+                    res === "FIXED" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                  }`}
+                >
+                  {res}
+                </span>
+              );
+            })()}
+          </div>
+          <div className="mt-2 pt-2 border-t">
+            <strong>Tindakan Perbaikan:</strong>{" "}
+            {(rr as any).actionTaken?.trim?.() || joinJsonArray((rr as any).actions) || "-"}
           </div>
         </div>
-      )}
+        {/* Digital Signatures for Print - Official Format */}
+        <div className="mt-6 p-4 bg-white border rounded">
+          <div className="flex justify-start">
+            <div className="text-center ml-4">
+              <div className="mb-4">
+                {/* Space untuk tanda tangan */}
+                <div className="h-20 mb-4 flex items-center justify-center">
+                  {(rr as any).executorSignature && (
+                    <div className="w-16 h-10">
+                      <Image
+                        src={(rr as any).executorSignature as string}
+                        alt="Tanda tangan"
+                        width={64}
+                        height={40}
+                        className="object-contain w-full h-full"
+                      />
+                    </div>
+                  )}
+                </div>
+                {/* Garis tanda tangan */}
+                <div className="border-b-2 border-black w-40 mb-4"></div>
+                {/* Label jabatan */}
+                <div className="text-sm font-medium">Ka. Sub. Bag. Distribusi</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 text-xs text-green-700 print-hide">
+          💡 Informasi di atas siap untuk keperluan print/cetak dokumen resmi
+        </div>
+      </div>
+
       {cFromRr ? (
         <StatusHistoryPanel
           items={(cFromRr as any).histories}
