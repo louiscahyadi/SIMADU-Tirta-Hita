@@ -2,11 +2,9 @@ import Link from "next/link";
 
 import AutoPrintOnLoad from "@/components/AutoPrintOnLoad";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import OfficialPrintButton from "@/components/print/OfficialPrintButton";
 import PrintButton from "@/components/PrintButton";
 import StatusHistoryPanel from "@/components/StatusHistoryPanel";
 import { prisma } from "@/lib/prisma";
-import { entityAbbr, entityLabel } from "@/lib/uiLabels";
 
 type PageProps = { params: { id: string } };
 
@@ -95,10 +93,14 @@ export default async function ServiceDetail({
           },
         ]}
       />
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Detail Permintaan Service</h2>
-        <div className="flex items-center gap-2">
-          <OfficialPrintButton documentType="service" documentId={id} />
+      <div className="flex items-center justify-between print:justify-center">
+        <h2 className="text-xl font-semibold print:text-center print:w-full print:hidden">
+          Detail Permintaan Service
+        </h2>
+        <h2 className="hidden print:block text-xl font-semibold text-center w-full">
+          Permintaan Service/Perbaikan
+        </h2>
+        <div className="flex items-center gap-2 print:hidden">
           <PrintButton />
           <Link className="text-sm text-blue-700 hover:underline" href={`${listBase}?tab=service`}>
             ← Kembali
@@ -160,38 +162,14 @@ export default async function ServiceDetail({
           <span className="text-gray-600">Tgl Input:</span> {formatDate(service.createdAt)}
         </div>
         {/* No. SL, Alasan sudah ditampilkan di bagian utama */}
-        <div>
-          <span className="text-gray-600">Tindakan (opsional):</span> {service.actionTaken ?? "-"}
-        </div>
       </div>
-      {(wo || rr) && (
-        <div className="card p-4 text-sm">
-          <div className="font-medium mb-2">Dokumen Terkait</div>
-          <div className="flex items-center gap-2">
-            <span
-              className="rounded bg-indigo-50 px-2 py-0.5 text-indigo-700"
-              title={entityLabel("serviceRequest")}
-            >
-              {entityAbbr("serviceRequest")}
-            </span>
-            {wo && (
-              <Link className="btn-outline btn-sm" href={`/daftar-data/workorder/${wo.id}`}>
-                {entityLabel("workOrder")}
-              </Link>
-            )}
-            {rr && (
-              <Link className="btn-outline btn-sm" href={`/daftar-data/repair/${rr.id}`}>
-                {entityLabel("repairReport")}
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
       {complaint ? (
-        <StatusHistoryPanel
-          items={(complaint as any).histories}
-          currentStatus={(complaint as any).status}
-        />
+        <div className="print:hidden">
+          <StatusHistoryPanel
+            items={(complaint as any).histories}
+            currentStatus={(complaint as any).status}
+          />
+        </div>
       ) : null}
     </div>
   );
