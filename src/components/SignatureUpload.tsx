@@ -37,7 +37,7 @@ export default function SignatureUpload({
   };
 
   // Compress image if needed
-  const compressImage = (file: File, maxWidth = 800, quality = 0.8): Promise<string> => {
+  const compressImage = (file: File, maxWidth = 600, quality = 0.6): Promise<string> => {
     return new Promise((resolve) => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
@@ -76,12 +76,32 @@ export default function SignatureUpload({
 
         // Process image
         let result: string;
-        if (file.size > 100 * 1024) {
-          // If > 100KB, compress
+        if (file.size > 50 * 1024) {
+          // If > 50KB, compress
           result = await compressImage(file);
         } else {
           result = await fileToBase64(file);
         }
+
+        // Additional check: if result is still too large, compress further
+        if (result.length > 2 * 1024 * 1024) {
+          // 2MB in base64
+          // Force more aggressive compression
+          result = await compressImage(file, 400, 0.4);
+        }
+
+        // Final validation - ensure it's under reasonable size for database
+        if (result.length > 5 * 1024 * 1024) {
+          // 5MB limit
+          throw new Error(
+            "Gambar terlalu besar setelah kompresi. Gunakan gambar yang lebih kecil atau berkualitas rendah.",
+          );
+        }
+
+        // Log size for debugging
+        console.log(
+          `📝 Signature processed: ${Math.round(result.length / 1024)}KB (original: ${Math.round(file.size / 1024)}KB)`,
+        );
 
         onChange(result);
       } catch (err) {
