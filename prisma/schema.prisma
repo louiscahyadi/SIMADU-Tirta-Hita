@@ -64,10 +64,10 @@ model WorkOrder {
   scheduledDate       DateTime?
   instructions        String?         @db.Text
   serviceRequestId    String?         @unique
-  creatorSignature    String?         @db.Text
+  creatorSignature    String?         @db.LongText
   creatorSignedAt     DateTime?
   creatorSignedBy     String?
-  supervisorSignature String?         @db.Text
+  supervisorSignature String?         @db.LongText
   supervisorSignedAt  DateTime?
   supervisorSignedBy  String?
   complaint           Complaint?      @relation("ComplaintToWorkOrder")
@@ -101,7 +101,7 @@ model RepairReport {
   team                     String?
   authorizedBy             String?
   // Digital signature fields
-  executorSignature        String?       @db.Text
+  executorSignature        String?       @db.LongText
   executorSignedAt         DateTime?
   executorSignedBy         String?
   workOrderId              String?       @unique
