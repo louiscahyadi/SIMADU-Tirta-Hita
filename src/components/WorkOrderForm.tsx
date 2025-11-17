@@ -597,6 +597,9 @@ export default function WorkOrderForm({
           <p className="text-sm text-blue-700">
             Upload gambar tanda tangan untuk validasi dan otorisasi SPK ini
           </p>
+          <p className="text-xs text-blue-600 mt-1">
+            💡 Tips: Gunakan gambar berkualitas sedang (maks. 150KB) untuk hasil terbaik
+          </p>
         </div>
 
         <SignatureUpload
@@ -607,7 +610,7 @@ export default function WorkOrderForm({
           label="Tanda Tangan Digital"
           required={true}
           error={errors.creatorSignature?.message}
-          maxSizeKB={300} // Smaller size for faster loading
+          maxSizeKB={150} // Even smaller for database compatibility
         />
       </div>
 
