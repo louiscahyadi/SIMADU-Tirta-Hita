@@ -44,7 +44,14 @@ export async function POST(req: NextRequest) {
 
       // Add digital signature fields if present
       if ((data as any).creatorSignature) {
-        woData.creatorSignature = (data as any).creatorSignature;
+        const signature = (data as any).creatorSignature;
+
+        // Validate signature size (base64 strings should not exceed ~10MB for LONGTEXT)
+        if (signature.length > 10 * 1024 * 1024) {
+          throw new Error("Tanda tangan terlalu besar. Silakan gunakan gambar yang lebih kecil.");
+        }
+
+        woData.creatorSignature = signature;
         woData.creatorSignedAt = new Date();
         woData.creatorSignedBy = token?.name ?? token?.sub ?? "Unknown";
       }
