@@ -58,6 +58,11 @@ body {
   z-index: 1;
 }
 
+/* Screen-specific styles - hide print-only elements */
+.print-only {
+  display: none;
+}
+
 /* Print-specific styles */
 @media print {
   /* Hide web elements when printing regular pages */
@@ -69,6 +74,42 @@ body {
   .breadcrumbs,
   .print-hide {
     display: none !important;
+  }
+
+  /* Show elements only when printing */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Special styling for SPK title when printing */
+  .print-only h1 {
+    font-family: "Times New Roman", serif !important;
+    font-size: 18pt !important;
+    font-weight: bold !important;
+    letter-spacing: 2px !important;
+    margin: 0 0 20pt 0 !important;
+  }
+
+  /* Clean layout for print */
+  @media print {
+    .space-y-3 > * + * {
+      margin-top: 8pt !important;
+    }
+
+    .border-b {
+      border-bottom: 0.5pt solid #ccc !important;
+    }
+
+    .bg-gray-50,
+    .bg-blue-50 {
+      background: #f8f8f8 !important;
+      border: 0.5pt solid #ddd !important;
+    }
+
+    /* Signature area */
+    .border-black {
+      border-color: #000 !important;
+    }
   }
 
   /* Change service detail title for print */
