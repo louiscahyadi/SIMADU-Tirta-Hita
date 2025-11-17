@@ -36,6 +36,18 @@ function joinJsonArray(value: any) {
   return "-";
 }
 
+function formatDateOnly(d?: Date | string | null) {
+  if (!d) return "-";
+  const dt = typeof d === "string" ? new Date(d) : d;
+  try {
+    return new Intl.DateTimeFormat("id-ID", {
+      dateStyle: "long",
+    }).format(dt);
+  } catch {
+    return dt.toISOString().split("T")[0];
+  }
+}
+
 function formatDuration(start?: Date | string | null, end?: Date | string | null) {
   if (!start || !end) return "-";
   const s = typeof start === "string" ? new Date(start) : start;
@@ -239,76 +251,109 @@ export default async function RepairDetail({
           </div>
           <ClientPrintButton />
         </div>
-        {/* Print Title - Only visible when printing */}
-        <div className="text-center mb-4 print:block hidden">
-          <h1 className="text-xl font-bold text-gray-900">Formulir Berita Acara Perbaikan</h1>
+        {/* Judul untuk Print - Ditempatkan di atas seluruh konten */}
+        <div className="text-center mb-8 print-only">
+          <h1 className="text-3xl font-bold uppercase tracking-wider mb-6">
+            FORMULIR BERITA ACARA PERBAIKAN
+          </h1>
         </div>
-        <div className="text-sm space-y-1 bg-white p-3 rounded border">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <strong>Tanggal Input:</strong> {formatDate(rr.createdAt)}
+
+        <div className="bg-white p-6 rounded border">
+          <div className="space-y-4">
+            {/* Header Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Tanggal Input:</span>
+                  <span className="font-semibold">{formatDate(rr.createdAt)}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Kota:</span>
+                  <span className="font-semibold">{rr.city || "-"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Waktu Mulai:</span>
+                  <span className="font-semibold">{formatDate((rr as any).startTime)}</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Waktu Selesai:</span>
+                  <span className="font-semibold">{formatDate((rr as any).endTime)}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Durasi:</span>
+                  <span className="font-semibold">
+                    {formatDuration((rr as any).startTime, (rr as any).endTime)}
+                  </span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Tim/Pelaksana:</span>
+                  <span className="font-semibold">{rr.team ?? rr.executorName ?? "-"}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <strong>Kota:</strong> {rr.city || "-"}
+
+            {/* Hasil dan Tindakan Perbaikan */}
+            <div className="mt-4 pt-4 border-t">
+              <div className="flex flex-col space-y-2 mb-4">
+                <span className="font-medium text-gray-700">Hasil Perbaikan:</span>
+                <div className="bg-gray-50 p-3 rounded">
+                  {(() => {
+                    const res = ((rr as any).result as string | undefined) ?? undefined;
+                    if (!res) return "-";
+                    return (
+                      <span
+                        className={`inline-block rounded px-3 py-1 text-sm font-medium ${
+                          res === "FIXED"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {res}
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div className="flex flex-col space-y-2">
+                <span className="font-medium text-gray-700">Tindakan Perbaikan:</span>
+                <div className="bg-blue-50 p-4 rounded border-l-4 border-blue-400">
+                  <span className="text-gray-800">
+                    {(rr as any).actionTaken?.trim?.() || joinJsonArray((rr as any).actions) || "-"}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <strong>Waktu Mulai:</strong> {formatDate((rr as any).startTime)}
-            </div>
-            <div>
-              <strong>Waktu Selesai:</strong> {formatDate((rr as any).endTime)}
-            </div>
-            <div>
-              <strong>Durasi:</strong> {formatDuration((rr as any).startTime, (rr as any).endTime)}
-            </div>
-            <div>
-              <strong>Tim/Pelaksana:</strong> {rr.team ?? rr.executorName ?? "-"}
-            </div>
-          </div>
-          <div className="mt-2 pt-2 border-t">
-            <strong>Hasil Perbaikan:</strong>{" "}
-            {(() => {
-              const res = ((rr as any).result as string | undefined) ?? undefined;
-              if (!res) return "-";
-              return (
-                <span
-                  className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
-                    res === "FIXED" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                  }`}
-                >
-                  {res}
-                </span>
-              );
-            })()}
-          </div>
-          <div className="mt-2 pt-2 border-t">
-            <strong>Tindakan Perbaikan:</strong>{" "}
-            {(rr as any).actionTaken?.trim?.() || joinJsonArray((rr as any).actions) || "-"}
           </div>
         </div>
         {/* Digital Signatures for Print - Official Format */}
-        <div className="mt-6 p-4 bg-white border rounded">
-          <div className="flex justify-start">
-            <div className="text-center ml-4">
-              <div className="mb-4">
-                {/* Space untuk tanda tangan */}
-                <div className="h-20 mb-4 flex items-center justify-center">
-                  {(rr as any).executorSignature && (
-                    <div className="w-16 h-10">
-                      <Image
-                        src={(rr as any).executorSignature as string}
-                        alt="Tanda tangan"
-                        width={64}
-                        height={40}
-                        className="object-contain w-full h-full"
-                      />
-                    </div>
-                  )}
-                </div>
-                {/* Garis tanda tangan */}
-                <div className="border-b-2 border-black w-40 mb-4"></div>
-                {/* Label jabatan */}
-                <div className="text-sm font-medium">Ka. Sub. Bag. Distribusi</div>
+        <div className="mt-8 p-6 bg-white border rounded">
+          <div className="flex justify-end">
+            <div className="text-center">
+              {/* Tempat dan tanggal */}
+              <div className="mb-6">
+                <span className="text-sm font-medium">Singaraja, {formatDateOnly(new Date())}</span>
               </div>
+
+              {/* Space untuk tanda tangan */}
+              <div className="h-20 mb-6 flex items-center justify-center">
+                {(rr as any).executorSignature && (
+                  <div className="w-20 h-12">
+                    <Image
+                      src={(rr as any).executorSignature as string}
+                      alt="Tanda tangan"
+                      width={80}
+                      height={48}
+                      className="object-contain w-full h-full"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Jabatan */}
+              <div className="text-sm font-medium">Ka. Sub. Bag. Distribusi</div>
             </div>
           </div>
         </div>
