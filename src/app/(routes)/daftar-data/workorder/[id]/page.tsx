@@ -283,69 +283,102 @@ export default async function WorkOrderDetail({
           </div>
           <ClientPrintButton />
         </div>
-        <div className="text-sm space-y-1 bg-white p-3 rounded border">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <strong>Laporan Hari/Tanggal:</strong> {formatDateOnly(displayData.reportDate)}
+        {/* Judul untuk Print - Ditempatkan di atas seluruh konten */}
+        <div className="text-center mb-8 print-only">
+          <h1 className="text-3xl font-bold uppercase tracking-wider mb-6">SURAT PERINTAH KERJA</h1>
+        </div>
+
+        <div className="bg-white p-6 rounded border">
+          <div className="space-y-4">
+            {/* Header Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Laporan Hari/Tanggal:</span>
+                  <span className="font-semibold">{formatDateOnly(displayData.reportDate)}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">No:</span>
+                  <span className="font-semibold">{displayData.number || "09"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Nama Pelapor:</span>
+                  <span className="font-semibold">{displayData.reporterName || "-"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Lokasi Gangguan:</span>
+                  <span className="font-semibold">{displayData.disturbanceLocation || "-"}</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Jenis Gangguan:</span>
+                  <span className="font-semibold">{displayData.disturbanceType || "-"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Hari/Tanggal Ditangani:</span>
+                  <span className="font-semibold">{formatDateOnly(displayData.handledDate)}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Waktu Penanganan:</span>
+                  <span className="font-semibold">{displayData.handlingTime || "-"}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">Tim/Unit:</span>
+                  <span className="font-semibold">{displayData.team || "-"}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <strong>No:</strong>{" "}
-              {displayData.number || "09" /* fallback number from screenshot */}
-            </div>
-            <div>
-              <strong>Nama Pelapor:</strong> {displayData.reporterName || "-"}
-            </div>
-            <div>
-              <strong>Lokasi Gangguan:</strong> {displayData.disturbanceLocation || "-"}
-            </div>
-            <div>
-              <strong>Jenis Gangguan:</strong> {displayData.disturbanceType || "-"}
-            </div>
-            <div>
-              <strong>Hari/Tanggal Ditangani:</strong> {formatDateOnly(displayData.handledDate)}
-            </div>
-            <div>
-              <strong>Waktu Penanganan:</strong> {displayData.handlingTime || "-"}
-            </div>
-            <div>
-              <strong>Tim/Unit:</strong> {displayData.team || "-"}
-            </div>
+
+            {/* Additional Information */}
+            {displayData.technicians && (
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex flex-col space-y-2">
+                  <span className="font-medium text-gray-700">Teknisi:</span>
+                  <span className="font-semibold bg-gray-50 p-3 rounded">
+                    {displayData.technicians}
+                  </span>
+                </div>
+              </div>
+            )}
+            {displayData.instructions && (
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex flex-col space-y-2">
+                  <span className="font-medium text-gray-700">Instruksi Khusus:</span>
+                  <div className="bg-blue-50 p-4 rounded border-l-4 border-blue-400">
+                    <span className="text-gray-800">{displayData.instructions}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-          {displayData.technicians && (
-            <div className="mt-2 pt-2 border-t">
-              <strong>Teknisi:</strong> {displayData.technicians}
-            </div>
-          )}
-          {displayData.instructions && (
-            <div className="mt-2 pt-2 border-t">
-              <strong>Instruksi:</strong> {displayData.instructions}
-            </div>
-          )}
         </div>
         {/* Digital Signatures for Print - Official Format */}
-        <div className="mt-6 p-4 bg-white border rounded">
-          <div className="flex justify-start">
-            <div className="text-center ml-4">
-              <div className="mb-4">
-                {/* Space untuk tanda tangan */}
-                <div className="h-20 mb-4 flex items-center justify-center">
-                  {(wo as any).creatorSignature && (
-                    <div className="w-16 h-10">
-                      <Image
-                        src={(wo as any).creatorSignature as string}
-                        alt="Tanda tangan"
-                        width={64}
-                        height={40}
-                        className="object-contain w-full h-full"
-                      />
-                    </div>
-                  )}
-                </div>
-                {/* Garis tanda tangan */}
-                <div className="border-b-2 border-black w-40 mb-4"></div>
-                {/* Label jabatan */}
-                <div className="text-sm font-medium">Ka. Sub. Bag. Distribusi</div>
+        <div className="mt-8 p-6 bg-white border rounded">
+          <div className="flex justify-end">
+            <div className="text-center">
+              {/* Tempat dan tanggal */}
+              <div className="mb-6">
+                <span className="text-sm font-medium">Singaraja, {formatDateOnly(new Date())}</span>
               </div>
+
+              {/* Space untuk tanda tangan */}
+              <div className="h-20 mb-6 flex items-center justify-center">
+                {(wo as any).creatorSignature && (
+                  <div className="w-20 h-12">
+                    <Image
+                      src={(wo as any).creatorSignature as string}
+                      alt="Tanda tangan"
+                      width={80}
+                      height={48}
+                      className="object-contain w-full h-full"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Jabatan */}
+              <div className="text-sm font-medium">Ka. Sub. Bag. Distribusi</div>
             </div>
           </div>
         </div>
