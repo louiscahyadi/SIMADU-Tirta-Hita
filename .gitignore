@@ -47,3 +47,11 @@ dist/
 ### Development files (local only)
 docs/
 scripts/
+
+### Deployment configs (not needed in repo)
+.env.production
+prisma/schema.sqlite.prisma
+vercel.json
+DEPLOYMENT-GUIDE.md
+PROPOSAL-IT-DEPLOYMENT.md
+WORDPRESS-INTEGRATION.md

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
@@ -13,11 +13,13 @@
     "prisma": "prisma",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:up": "docker compose up -d mysql",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f mysql",
     "db:ps": "docker compose ps",
     "db:seed": "prisma db seed",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build",
     "setup": "npm install && npx prisma generate",
     "setup:passwords": "npx ts-node scripts/generate-hashed-passwords.ts",
     "db:migrate:prod": "npx prisma migrate deploy",
@@ -42,6 +44,7 @@
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
+    "sqlite3": "^5.1.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {
